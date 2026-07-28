@@ -1,0 +1,468 @@
+/* ---- Shared bits ---------------------------------------------------- */
+.muted {
+  color: var(--text);
+}
+
+.btn {
+  font: inherit;
+  font-size: 16px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.btn-primary {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+.btn-primary:hover {
+  box-shadow: var(--shadow);
+}
+.btn-ghost {
+  background: var(--social-bg);
+  color: var(--text-h);
+}
+.btn-ghost:hover {
+  border-color: var(--border);
+}
+
+.night-toggle {
+  font-size: 15px;
+  padding: 8px 14px;
+}
+
+/* ---- Menu ----------------------------------------------------------- */
+.menu {
+  padding: 32px 20px 48px;
+}
+.menu-bar {
+  display: flex;
+  justify-content: flex-end;
+  max-width: 820px;
+  margin: 0 auto 8px;
+}
+.menu-sub {
+  margin-bottom: 32px;
+}
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  max-width: 820px;
+  margin: 0 auto;
+}
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  padding: 28px 20px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--social-bg);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.1s;
+}
+.mode-card:hover {
+  border-color: var(--accent-border);
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+.mode-emoji {
+  font-size: 44px;
+  line-height: 1;
+}
+
+/* ---- Setup screen (how to play) ------------------------------------- */
+.setup h1 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.setup h1 .mode-emoji {
+  font-size: 32px;
+}
+.setup-panel {
+  max-width: 620px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.setup-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.setup-label {
+  font-family: var(--heading);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.setup-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.setup-option {
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--social-bg);
+  color: var(--text-h);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.setup-option:hover {
+  border-color: var(--accent-border);
+}
+.setup-option.is-active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  box-shadow: var(--shadow);
+}
+.setup-option-title {
+  font-size: 17px;
+  font-weight: 700;
+}
+.setup-option-hint {
+  font-size: 14px;
+  line-height: 1.35;
+}
+.setup-start {
+  margin-top: 28px;
+}
+.mode-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+.mode-blurb {
+  font-size: 15px;
+}
+
+/* ---- Game shell ----------------------------------------------------- */
+.game {
+  /* Definite width, so maps that size themselves from the container (the flat
+     world map, the globe's ResizeObserver) get the full column to work with. */
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px 20px 48px;
+  box-sizing: border-box;
+  text-align: center;
+}
+.game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.header-left {
+  display: flex;
+  gap: 8px;
+}
+.game-header h2 {
+  margin: 0;
+}
+.game-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 15px;
+  min-width: 96px;
+}
+.round-score {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ---- Prompt --------------------------------------------------------- */
+.prompt {
+  margin-bottom: 12px;
+}
+.prompt-card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 28px;
+  border-radius: 12px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+}
+.prompt-label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+.prompt-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+.flag {
+  border-radius: 4px;
+  box-shadow: var(--shadow);
+  margin-top: 4px;
+}
+
+/* ---- Map ------------------------------------------------------------ */
+.map-wrap {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #16171d;
+  line-height: 0;
+}
+
+/* WebGL globe fills the width; the canvas sizes itself via ResizeObserver. */
+.globe-wrap {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  border-radius: 12px;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, #1b2436 0%, #0a0d15 100%);
+}
+.globe-wrap canvas {
+  display: block;
+}
+
+/* Flat world map: same positioning contract as the tube map. */
+.world-wrap {
+  position: relative;
+  line-height: 0;
+}
+.map-loading {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  line-height: 1.4;
+  font-size: 15px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: rgba(12, 14, 20, 0.72);
+  color: #fff;
+}
+
+/* Map + overlaid fact card share a positioning context. */
+.map-area {
+  position: relative;
+}
+.fact-overlay {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  max-width: min(340px, 55%);
+  padding: 12px 16px;
+  border-radius: 12px;
+  text-align: left;
+  background: rgba(12, 14, 20, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  animation: fact-in 0.25s ease-out;
+}
+.fact-title {
+  display: block;
+  margin-bottom: 4px;
+}
+.fact-body {
+  font-size: 15px;
+  line-height: 1.4;
+}
+.fact-dyk {
+  font-weight: 700;
+  color: var(--accent);
+}
+.fact-overlay .fact-title {
+  color: #fff;
+}
+.fact-overlay .fact-body {
+  color: rgba(255, 255, 255, 0.88);
+}
+.fact-overlay .fact-dyk {
+  color: #d8b4fe;
+}
+
+/* Zoom +/- buttons overlaid on a map. */
+.map-zoom {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.map-zoom-btn {
+  width: 38px;
+  height: 38px;
+  font-size: 24px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(12, 14, 20, 0.8);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background 0.15s;
+}
+.map-zoom-btn:hover {
+  background: rgba(36, 40, 54, 0.92);
+}
+
+.tube-wrap {
+  line-height: 0;
+}
+/* The map itself is the positioning context for its zoom controls, so they
+   don't sit on top of the line key below it. */
+.tube-canvas {
+  position: relative;
+  line-height: 0;
+}
+
+/* Colour key for the eleven Underground lines, under the map. */
+.tube-key {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 14px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text);
+}
+.tube-key li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.tube-key-swatch {
+  width: 16px;
+  height: 5px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px var(--border);
+}
+@keyframes fact-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 640px) {
+  .fact-overlay {
+    max-width: none;
+    left: 12px;
+    right: 12px;
+    top: 8px;
+  }
+}
+.hint {
+  margin-top: 10px;
+  font-size: 15px;
+}
+
+/* ---- Result panel --------------------------------------------------- */
+.result-panel {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.result-headline {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+.result-distance {
+  font-size: 20px;
+  color: var(--text-h);
+}
+.result-points {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+}
+/* Full marks: the click landed inside the target's own area. */
+.result-hit {
+  font-weight: 700;
+  color: #16a34a;
+}
+@media (prefers-color-scheme: dark) {
+  .result-hit {
+    color: #4ade80;
+  }
+}
+.result-extra {
+  max-width: 520px;
+}
+.fact strong {
+  color: var(--text-h);
+}
+.fact p {
+  margin-top: 4px;
+  font-size: 15px;
+}
+
+/* ---- Summary -------------------------------------------------------- */
+.summary {
+  max-width: 480px;
+  margin: 24px auto 0;
+}
+.summary-score {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.summary-max {
+  font-size: 22px;
+  color: var(--text);
+  font-weight: 400;
+}
+.summary-list {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0;
+  text-align: left;
+}
+.summary-list li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 16px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.button-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
