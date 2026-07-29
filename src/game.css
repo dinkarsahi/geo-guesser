@@ -275,6 +275,11 @@ body:has(.game-play) {
 .game-topbar .prompt-title {
   font-size: 22px;
 }
+/* All caps with no descenders sits optically high against a larger name next
+   to it, so it's nudged onto the middle of the word it introduces. */
+.game-topbar .prompt-label {
+  transform: translateY(2px);
+}
 .game-topbar .flag {
   margin-top: 0;
   /* Big enough to read the detail on a busy flag, small enough that the bar

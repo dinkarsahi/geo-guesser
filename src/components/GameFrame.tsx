@@ -19,6 +19,8 @@ interface GameFrameProps<T> {
   renderResultExtra?: (target: T) => ReactNode;
   /** Names what a full-marks guess landed in, e.g. "Italy" or "Angel". */
   hitLabel?: (target: T) => string;
+  /** What to click, for modes where it isn't just anywhere on the map. */
+  hint?: string;
 }
 
 /** Only the tail of a long free run is worth listing. */
@@ -34,6 +36,7 @@ export default function GameFrame<T>({
   renderMap,
   renderResultExtra,
   hitLabel,
+  hint = "Click the map to place your guess.",
 }: GameFrameProps<T>) {
   const {
     target,
@@ -141,7 +144,7 @@ export default function GameFrame<T>({
       </div>
 
       {!isResult && !currentGuess && (
-        <p className="hint muted hud">Click the map to place your guess.</p>
+        <p className="hint muted hud">{hint}</p>
       )}
 
       {isResult && lastResult && (

@@ -22,11 +22,11 @@ export default function TubeGuesser({ onExit, night, onToggleNight, settings }: 
       night={night}
       onToggleNight={onToggleNight}
       hitLabel={(station) => station.name}
+      hint="Click a station to place your guess."
       renderPrompt={(station) => (
         <div className="prompt-card">
-          <span className="prompt-label">Find this station</span>
+          <span className="prompt-label">Find this station:</span>
           <span className="prompt-title">{station.name}</span>
-          <span className="muted">London Underground</span>
         </div>
       )}
       renderResultExtra={(station) => (

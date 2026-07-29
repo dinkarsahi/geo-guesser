@@ -24,6 +24,9 @@ const MAX_ZOOM = 25;
 // Below 1 the network sits smaller than the window, on the paper the svg's own
 // background already covers the whole box with.
 const MIN_ZOOM = 0.45;
+// How near a station a click has to land, in screen pixels, to count as that
+// station. Generous, because the dots are small when you're zoomed out.
+const SNAP_PX = 20;
 const MAX_ZONE_BAND = 6; // zones 6+ grouped into the outermost band
 
 // Zoomed-in stations are pushed apart on top of the plain zoom, so clusters
@@ -249,12 +252,12 @@ export default function LondonMap({
     ? {
         bg: "#16171d", zoneOdd: "#1b1d24", zoneEven: "#23262f", borough: "#3a3d49",
         dot: "#f3f4f6", dotStroke: "#000", labelBg: "#20222b", labelStroke: "#8b8f99",
-        labelText: "#eef", thames: "#3a6ea5",
+        labelText: "#eef", thames: "#3a6ea5", hoverRing: "#e9d5ff",
       }
     : {
         bg: "#ffffff", zoneOdd: "#ffffff", zoneEven: "#e6e6e6", borough: "#d3d3d3",
         dot: "#ffffff", dotStroke: "#222", labelBg: "#ffffff", labelStroke: "#8a8a8a",
-        labelText: "#333", thames: "#9dc3e6",
+        labelText: "#333", thames: "#9dc3e6", hoverRing: "#7c3aed",
       };
 
   // Black would all but vanish on the night background, so the Northern line
@@ -368,6 +371,10 @@ export default function LondonMap({
     // whichever way the map is drawn.
     const dots = tubeStations.map((s) => ({
       name: s.name,
+      // Kept alongside the projected point because the dots are also the only
+      // things you're allowed to click, and a guess is a lat/lng.
+      lat: s.lat,
+      lng: s.lng,
       at: projection([s.lng, s.lat]) as Pt,
       colors: tubeLines
         .filter((l) => s.lines.includes(l.name))
@@ -386,6 +393,8 @@ export default function LondonMap({
     coordinates: defaultCenter,
     zoom: 1,
   }));
+  /** Name of the station under the pointer, if the pointer is on one. */
+  const [hovered, setHovered] = useState<string | null>(null);
 
   // The fly-out runs outside React's render loop, so it reads the live view
   // through a ref rather than closing over a stale one.
@@ -512,20 +521,50 @@ export default function LondonMap({
     setPosition({ coordinates: inverted ?? p.coordinates, zoom: p.zoom });
   };
 
-  const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (disabled) return;
+  /**
+   * The station nearest the pointer, or null if the pointer isn't near one.
+   * The answer is always a station, so a point on open map isn't a guess worth
+   * taking — this is what makes the dots the only targets on the map.
+   */
+  const stationAt = (e: React.MouseEvent<SVGSVGElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     // The svg is fitted inside its box, so it's scaled by whichever axis has
     // the least room and centred, with the leftover showing as paper.
     const fit = Math.min(rect.width / WIDTH, rect.height / mapHeight);
     const sx = (e.clientX - rect.left - (rect.width - WIDTH * fit) / 2) / fit;
     const sy = (e.clientY - rect.top - (rect.height - mapHeight * fit) / 2) / fit;
+    // Back to un-zoomed map pixels, where one pixel is fit * k * s on screen —
+    // so the reach stays the same distance under the cursor at every zoom.
     const ux = anchor[0] + (sx - WIDTH / 2) / (k * s);
     const uy = anchor[1] + (sy - mapHeight / 2) / (k * s);
-    const inverted = projection.invert!([ux, uy]);
-    if (!inverted) return;
-    onGuess({ lat: inverted[1], lng: inverted[0] });
+    const reach = SNAP_PX / (fit * k * s);
+
+    let best: (typeof layout.dots)[number] | null = null;
+    let bestDist = reach * reach;
+    for (const d of layout.dots) {
+      const dx = d.at[0] - ux;
+      const dy = d.at[1] - uy;
+      const dist = dx * dx + dy * dy;
+      if (dist <= bestDist) {
+        bestDist = dist;
+        best = d;
+      }
+    }
+    return best;
   };
+
+  const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (disabled) return;
+    const station = stationAt(e);
+    // Clicking open map does nothing at all, rather than dropping a pin in a
+    // field. The guess is the station itself, so a right answer is exact.
+    if (station) onGuess({ lat: station.lat, lng: station.lng });
+  };
+
+  // Drives both the cursor and the ring under the dot, so it's visible that
+  // the stations are the targets before you click anything.
+  const handleMove = (e: React.MouseEvent<SVGSVGElement>) =>
+    setHovered(disabled ? null : (stationAt(e)?.name ?? null));
 
   const project = (c: Coord) => {
     const p = projection([c.lng, c.lat]);
@@ -546,6 +585,8 @@ export default function LondonMap({
           // the d3 instance is callable, so this works despite the stricter type.
           projection={projection as unknown as ProjectionFunction}
           onClick={handleClick}
+          onMouseMove={handleMove}
+          onMouseLeave={() => setHovered(null)}
           // Fitted rather than cropped: a station that's off the edge is a
           // station you can't click. The svg's own background fills the rest.
           preserveAspectRatio="xMidYMid meet"
@@ -554,7 +595,8 @@ export default function LondonMap({
             height: "100%",
             display: "block",
             background: theme.bg,
-            cursor: disabled ? "default" : "pointer",
+            // Only a pointer over a station, since that's all there is to hit.
+            cursor: disabled ? "default" : hovered ? "pointer" : "grab",
           }}
         >
           <ZoomableGroup
@@ -722,6 +764,10 @@ export default function LondonMap({
                   {/* Hairline so pale lines still read as a station on white. */}
                   <circle cx={q[0]} cy={q[1]} r={r + w / 2} fill="none"
                     stroke={theme.dotStroke} strokeWidth={sz(0.35)} strokeOpacity={0.6} />
+                  {d.name === hovered && (
+                    <circle cx={q[0]} cy={q[1]} r={r + sz(2.4)} fill="none"
+                      stroke={theme.hoverRing} strokeWidth={sz(1.3)} />
+                  )}
                 </g>
               );
             })}
