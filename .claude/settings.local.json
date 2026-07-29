@@ -51,7 +51,8 @@
       "Bash(sed -i 's|\\\\[\"new\", 7, \\\\[13,17,21\\\\]\\\\]|[\"new\", 8, [13,17,21]]|' lm.mjs)",
       "Bash(cp lm.mjs /c/Users/sahid/geo-guesser/lm-check.mjs)",
       "Bash(rm -f lm-check.mjs)",
-      "PowerShell(Stop-Process *)"
+      "PowerShell(Stop-Process *)",
+      "Bash(git push *)"
     ]
   }
 }

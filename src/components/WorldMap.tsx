@@ -16,6 +16,29 @@ const WIDTH = 900;
 const PAD = 8;
 const MAX_ZOOM = 12;
 
+const LAND_GRADIENT = "world-land-terrain";
+
+// A flat map can't carry the globe's satellite texture, so the land takes an
+// earth-toned gradient banded by latitude instead: green through the temperate
+// and tropical belts, brown across the desert latitudes, pale at the caps.
+const LAND_BANDS: [lat: number, color: string][] = [
+  [90, "#eef2f0"],
+  [74, "#d3ddd6"],
+  [64, "#728e5f"],
+  [50, "#5b8049"],
+  [37, "#7f8a4c"],
+  [25, "#ab8b57"],
+  [15, "#8b8c4e"],
+  [4, "#4a7d3c"],
+  [-7, "#4a7d3c"],
+  [-18, "#82894b"],
+  [-28, "#a3874f"],
+  [-42, "#5b8049"],
+  [-58, "#93a390"],
+  [-70, "#dde4df"],
+  [-90, "#eef2f0"],
+];
+
 type Pt = [number, number];
 
 interface WorldMapProps extends GuessMapProps {
@@ -48,8 +71,11 @@ export default function WorldMap({
         highlight: "#3f6d4a", highlightLine: "#6ee7a8",
       }
     : {
-        sea: "#cfe3f5", land: "#eef1e9", border: "#9aa3ae", graticule: "#bcd6ec",
-        highlight: "#bbf7d0", highlightLine: "#16a34a",
+        // Same green/brown/blue reading as the globe, laid out flat: the land
+        // fill is the latitude gradient defined below rather than a colour.
+        sea: "#2f6d99", land: `url(#${LAND_GRADIENT})`, border: "#4e5a45",
+        graticule: "#4a86ad",
+        highlight: "#bbf7d0", highlightLine: "#166534",
       };
 
   // Equal Earth keeps country areas honest, which matters when the whole
@@ -64,6 +90,23 @@ export default function WorldMap({
       .translate([PAD - x0 * scale, PAD - y0 * scale]);
     return { projection: proj, mapHeight: height };
   }, []);
+
+  // The bands are latitudes, so ask the projection where each one lands. The
+  // gradient is in the map's own coordinates, which means it stays pinned to
+  // the continents as you pan and zoom.
+  const landBands = useMemo(() => {
+    const y = (lat: number) => (projection([0, lat]) as Pt)[1];
+    const top = y(90);
+    const bottom = y(-90);
+    return {
+      top,
+      bottom,
+      stops: LAND_BANDS.map(([lat, color]) => ({
+        offset: (y(lat) - top) / (bottom - top),
+        color,
+      })),
+    };
+  }, [projection]);
 
   const defaultCenter = useMemo(
     () => projection.invert!([WIDTH / 2, mapHeight / 2]) as [number, number],
@@ -134,6 +177,21 @@ export default function WorldMap({
           cursor: disabled ? "default" : "pointer",
         }}
       >
+        <defs>
+          <linearGradient
+            id={LAND_GRADIENT}
+            gradientUnits="userSpaceOnUse"
+            x1={0}
+            y1={landBands.top}
+            x2={0}
+            y2={landBands.bottom}
+          >
+            {landBands.stops.map((s) => (
+              <stop key={s.offset} offset={s.offset} stopColor={s.color} />
+            ))}
+          </linearGradient>
+        </defs>
+
         <ZoomableGroup
           center={position.coordinates}
           zoom={position.zoom}

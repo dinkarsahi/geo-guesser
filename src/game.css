@@ -231,15 +231,30 @@
   line-height: 0;
 }
 
+/* The globe reads as floating in the page rather than sitting in a panel, so
+   it drops the framing the flat maps get. */
+.map-wrap:has(.globe-wrap) {
+  border: none;
+  border-radius: 0;
+  background: none;
+  overflow: visible;
+}
+
 /* WebGL globe fills the width; the canvas sizes itself via ResizeObserver. */
 .globe-wrap {
   position: relative;
   width: 100%;
   display: flex;
   justify-content: center;
-  border-radius: 12px;
-  overflow: hidden;
-  background: radial-gradient(circle at 50% 40%, #1b2436 0%, #0a0d15 100%);
+  /* The space glow fades out well before the edges, so there's no rectangle
+     around the globe — just the globe on the page. */
+  background: radial-gradient(
+    circle at 50% 45%,
+    rgba(27, 36, 54, 0.96) 0%,
+    rgba(12, 16, 26, 0.78) 36%,
+    rgba(10, 13, 21, 0.3) 56%,
+    rgba(10, 13, 21, 0) 70%
+  );
 }
 .globe-wrap canvas {
   display: block;
