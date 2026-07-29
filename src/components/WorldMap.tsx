@@ -6,42 +6,15 @@ import {
   ZoomableGroup,
   type ProjectionFunction,
 } from "react-simple-maps";
-import { geoEqualEarth, geoPath } from "d3-geo";
+import { geoEquirectangular, geoPath } from "d3-geo";
 import type { Coord } from "../lib/geo";
 import type { GuessMapProps } from "./mapTypes";
 import { useWorldShapes, type CountryFeature } from "../lib/worldShapes";
+import { DAY_TEXTURE, GREY_TEXTURE } from "../lib/textures";
 import MapZoomControls from "./MapZoomControls";
 
-const WIDTH = 900;
-const PAD = 8;
+const WIDTH = 1024;
 const MAX_ZOOM = 12;
-
-const LAND_GRADIENT = "world-land-terrain";
-
-// A flat map can't carry the globe's satellite texture, so the land takes a
-// gradient banded by latitude instead, sampled off the same blue marble
-// imagery: dark boreal green, olive steppe, desert sand across the dry
-// latitudes, near-black rainforest at the equator, ice at the caps.
-const LAND_BANDS: [lat: number, color: string][] = [
-  [90, "#e4e8ea"],
-  [80, "#d6dbdb"],
-  [70, "#8b9082"],
-  [62, "#4d5a3d"],
-  [50, "#4f5c39"],
-  [40, "#67684b"],
-  [30, "#93815c"],
-  [22, "#9a875e"],
-  [13, "#6f6f40"],
-  [3, "#3c5328"],
-  [-8, "#40562c"],
-  [-18, "#6a6943"],
-  [-28, "#918059"],
-  [-38, "#565e3d"],
-  [-50, "#6b7260"],
-  [-62, "#a9b0ad"],
-  [-72, "#d9dddd"],
-  [-90, "#e6eaea"],
-];
 
 type Pt = [number, number];
 
@@ -71,46 +44,31 @@ export default function WorldMap({
 
   const theme = night
     ? {
-        sea: "#0f1620", land: "#2b3340", border: "#5a6474", graticule: "#1d2530",
-        highlight: "#3f6d4a", highlightLine: "#6ee7a8",
+        sea: "#0f1620", border: "rgba(226,232,240,0.75)",
+        highlight: "rgba(74,222,128,0.35)", highlightLine: "#6ee7a8",
       }
     : {
-        // Same reading as the globe, laid out flat: deep ocean, and a land
-        // fill that's the latitude gradient below rather than a colour.
-        sea: "#1b3a5a", land: `url(#${LAND_GRADIENT})`, border: "#7c826e",
-        graticule: "#27547d",
-        highlight: "#bbf7d0", highlightLine: "#34d399",
+        // The land is the satellite image, so the only colours left to pick
+        // are the lines drawn over it. White reads on every biome, which is
+        // why the globe uses it too.
+        sea: "#0b1a2b", border: "rgba(255,255,255,0.85)",
+        highlight: "rgba(74,222,128,0.35)", highlightLine: "#4ade80",
       };
 
-  // Equal Earth keeps country areas honest, which matters when the whole
-  // country is the target. Fit it to the width, then size height to the data.
+  // Plate carrée: longitude and latitude map straight onto x and y, which is
+  // exactly how the texture is stored, so the image needs no warping to line
+  // up with the country shapes — and the map is a rectangle, so it can fill a
+  // screen without leaving gaps at the corners.
   const { projection, mapHeight } = useMemo(() => {
-    const unit = geoEqualEarth().scale(1).translate([0, 0]);
+    const unit = geoEquirectangular().scale(1).translate([0, 0]);
     const [[x0, y0], [x1, y1]] = geoPath(unit).bounds({ type: "Sphere" });
-    const scale = (WIDTH - 2 * PAD) / (x1 - x0);
-    const height = Math.round((y1 - y0) * scale + 2 * PAD);
-    const proj = geoEqualEarth()
+    const scale = WIDTH / (x1 - x0);
+    const height = Math.round((y1 - y0) * scale);
+    const proj = geoEquirectangular()
       .scale(scale)
-      .translate([PAD - x0 * scale, PAD - y0 * scale]);
+      .translate([-x0 * scale, -y0 * scale]);
     return { projection: proj, mapHeight: height };
   }, []);
-
-  // The bands are latitudes, so ask the projection where each one lands. The
-  // gradient is in the map's own coordinates, which means it stays pinned to
-  // the continents as you pan and zoom.
-  const landBands = useMemo(() => {
-    const y = (lat: number) => (projection([0, lat]) as Pt)[1];
-    const top = y(90);
-    const bottom = y(-90);
-    return {
-      top,
-      bottom,
-      stops: LAND_BANDS.map(([lat, color]) => ({
-        offset: (y(lat) - top) / (bottom - top),
-        color,
-      })),
-    };
-  }, [projection]);
 
   const defaultCenter = useMemo(
     () => projection.invert!([WIDTH / 2, mapHeight / 2]) as [number, number],
@@ -145,8 +103,11 @@ export default function WorldMap({
   const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
     if (disabled) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const sx = ((e.clientX - rect.left) / rect.width) * WIDTH;
-    const sy = ((e.clientY - rect.top) / rect.height) * mapHeight;
+    // The svg is sliced to cover its box, so it's scaled by whichever axis
+    // needs the most and centred, with the overflow cropped off both ends.
+    const cover = Math.max(rect.width / WIDTH, rect.height / mapHeight);
+    const sx = (e.clientX - rect.left - (rect.width - WIDTH * cover) / 2) / cover;
+    const sy = (e.clientY - rect.top - (rect.height - mapHeight * cover) / 2) / cover;
     const inverted = projection.invert!([
       anchor[0] + (sx - WIDTH / 2) / k,
       anchor[1] + (sy - mapHeight / 2) / k,
@@ -166,10 +127,7 @@ export default function WorldMap({
   };
 
   return (
-    <div
-      className="world-wrap"
-      style={{ "--map-aspect": (WIDTH / mapHeight).toFixed(3) } as React.CSSProperties}
-    >
+    <div className="world-wrap">
       <ComposableMap
         width={WIDTH}
         height={mapHeight}
@@ -177,28 +135,15 @@ export default function WorldMap({
         // runtime, despite the stricter declared type.
         projection={projection as unknown as ProjectionFunction}
         onClick={handleClick}
+        preserveAspectRatio="xMidYMid slice"
         style={{
           width: "100%",
-          height: "auto",
+          height: "100%",
+          display: "block",
           background: theme.sea,
           cursor: disabled ? "default" : "pointer",
         }}
       >
-        <defs>
-          <linearGradient
-            id={LAND_GRADIENT}
-            gradientUnits="userSpaceOnUse"
-            x1={0}
-            y1={landBands.top}
-            x2={0}
-            y2={landBands.bottom}
-          >
-            {landBands.stops.map((s) => (
-              <stop key={s.offset} offset={s.offset} stopColor={s.color} />
-            ))}
-          </linearGradient>
-        </defs>
-
         <ZoomableGroup
           center={position.coordinates}
           zoom={position.zoom}
@@ -210,6 +155,18 @@ export default function WorldMap({
             return !e.button;
           }}
         >
+          {/* The same satellite imagery the globe is wrapped in. Plate carrée
+              is how the file is stored, so it drops straight onto the sphere's
+              bounds with no warping. */}
+          <image
+            href={night ? GREY_TEXTURE : DAY_TEXTURE}
+            x={0}
+            y={0}
+            width={WIDTH}
+            height={mapHeight}
+            preserveAspectRatio="none"
+          />
+
           {shapes && (
             <Geographies geography={{ type: "FeatureCollection", features: shapes.features }}>
               {({ geographies }) =>
@@ -219,17 +176,14 @@ export default function WorldMap({
                     <Geography
                       key={geo.rsmKey}
                       geography={geo}
-                      fill={lit ? theme.highlight : theme.land}
-                      // Without borders the land reads as one silhouette. That
-                      // means outlining each country in the land colour rather
-                      // than dropping the stroke: neighbours are separate paths
-                      // and the antialiased seam between them would otherwise
-                      // let the sea through as a hairline "border" — obvious
-                      // against the dark night palette.
+                      // The imagery underneath is the land, so the shapes are
+                      // only ever outlines — except the country being revealed,
+                      // which is washed over to pick it out.
+                      fill={lit ? theme.highlight : "transparent"}
                       stroke={
-                        lit ? theme.highlightLine : borders ? theme.border : theme.land
+                        lit ? theme.highlightLine : borders ? theme.border : "transparent"
                       }
-                      strokeWidth={sz(lit ? 1.2 : 0.5)}
+                      strokeWidth={sz(lit ? 1.4 : 0.7)}
                       style={{
                         default: { outline: "none" },
                         hover: { outline: "none" },

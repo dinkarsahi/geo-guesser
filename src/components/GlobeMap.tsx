@@ -2,16 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Globe, { type GlobeMethods } from "react-globe.gl";
 import type { GuessMapProps } from "./mapTypes";
 import { useWorldShapes, type CountryFeature } from "../lib/worldShapes";
+import { DAY_TEXTURE, GREY_TEXTURE } from "../lib/textures";
 import MapZoomControls from "./MapZoomControls";
 
 const MIN_ALTITUDE = 0.05; // closest button zoom
 const MAX_ALTITUDE = 3.5; // farthest button zoom
 
-// three-globe's example textures, served from a CDN (per the chosen setup).
-const CDN = "https://cdn.jsdelivr.net/npm/three-globe/example/img";
-const DAY_TEXTURE = `${CDN}/earth-blue-marble.jpg`; // colourful satellite terrain
-const GREY_TEXTURE = `${CDN}/earth-topology.png`; // greyscale relief for night mode
-const BUMP_TEXTURE = `${CDN}/earth-topology.png`; // relief bump in both modes
+const BUMP_TEXTURE = GREY_TEXTURE; // relief bump in both modes
 
 interface GlobeMapProps extends GuessMapProps {
   /** When true, render the greyscale globe; otherwise the colourful one. */
@@ -53,31 +50,15 @@ export default function GlobeMap({
   // Land is the only valid guess, so the cursor says so while it's over some.
   const [overLand, setOverLand] = useState(false);
 
-  // Keep the canvas sized to its container, leaving room for the rest of the
-  // page so the globe is as big as the window comfortably allows.
+  // The canvas is the whole layer it's given, which is the whole window.
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const update = () =>
-      setSize({
-        w: el.clientWidth,
-        h: Math.min(
-          Math.max(el.clientWidth, 320),
-          // Room for the header, the prompt card (tallest with a flag in it)
-          // and the hint line, so the whole globe stays on screen. Kept in
-          // step with --map-reserve on .globe-wrap.
-          Math.max(360, window.innerHeight - 300),
-        ),
-      });
+    const update = () => setSize({ w: el.clientWidth, h: el.clientHeight });
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
-    // The height also tracks the viewport, which the observer never sees.
-    window.addEventListener("resize", update);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", update);
-    };
+    return () => ro.disconnect();
   }, []);
 
   // Tune the orbit controls and set an opening view once the globe is ready.
@@ -90,7 +71,8 @@ export default function GlobeMap({
     controls.maxDistance = 520; // how far you can zoom out
     controls.rotateSpeed = 0.6;
     controls.zoomSpeed = 1; // a touch faster so deep zoom isn't tedious
-    g.pointOfView({ lat: 20, lng: 0, altitude: 2.4 });
+    // Close enough that the globe fills most of the window it now owns.
+    g.pointOfView({ lat: 20, lng: 0, altitude: 2 });
   };
 
   // Zoom by changing the camera altitude, keeping the current lat/lng centred.

@@ -109,9 +109,20 @@ export default function GameFrame<T>({
   const isResult = phase === "result";
   const lastRound = !freeRun && totalRounds !== null && roundIndex + 1 >= totalRounds;
 
+  // The map is the screen. Everything else floats over it, pinned to an edge,
+  // so nothing steals height from the thing being played on.
   return (
-    <div className="game">
-      <header className="game-header">
+    <div className="game game-play">
+      <div className="map-layer">
+        {renderMap({
+          onGuess: submitGuess,
+          guess: currentGuess,
+          answer: isResult && lastResult ? lastResult.answer : null,
+          disabled: isResult,
+        })}
+      </div>
+
+      <header className="game-header hud">
         <div className="header-left">
           <button className="btn btn-ghost" onClick={onExit}>
             ← Menu
@@ -127,25 +138,16 @@ export default function GameFrame<T>({
         </div>
       </header>
 
-      <div className="prompt">{renderPrompt(target, phase)}</div>
-
-      <div className="map-area">
-        <div className="map-wrap">
-          {renderMap({
-            onGuess: submitGuess,
-            guess: currentGuess,
-            answer: isResult && lastResult ? lastResult.answer : null,
-            disabled: isResult,
-          })}
-        </div>
-      </div>
+      {/* Only while guessing: once the answer is out the result panel names it
+          anyway, and the card sits over the northern half of the map. */}
+      {!isResult && <div className="prompt hud">{renderPrompt(target, phase)}</div>}
 
       {!isResult && !currentGuess && (
-        <p className="hint muted">Click the map to place your guess.</p>
+        <p className="hint muted hud">Click the map to place your guess.</p>
       )}
 
       {isResult && lastResult && (
-        <div className="result-panel">
+        <div className="result-panel hud">
           <div className="result-headline">
             {lastResult.hit ? (
               <span className="result-distance result-hit">
@@ -160,7 +162,6 @@ export default function GameFrame<T>({
               +{lastResult.score.toLocaleString()} pts
             </span>
           </div>
-          {/* Below the map, so it never sits over the place just revealed. */}
           {renderResultExtra && (
             <div className="fact-panel">{renderResultExtra(target)}</div>
           )}

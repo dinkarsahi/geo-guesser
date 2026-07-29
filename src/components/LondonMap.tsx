@@ -508,8 +508,11 @@ export default function LondonMap({
   const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
     if (disabled) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const sx = ((e.clientX - rect.left) / rect.width) * WIDTH;
-    const sy = ((e.clientY - rect.top) / rect.height) * mapHeight;
+    // The svg is fitted inside its box, so it's scaled by whichever axis has
+    // the least room and centred, with the leftover showing as paper.
+    const fit = Math.min(rect.width / WIDTH, rect.height / mapHeight);
+    const sx = (e.clientX - rect.left - (rect.width - WIDTH * fit) / 2) / fit;
+    const sy = (e.clientY - rect.top - (rect.height - mapHeight * fit) / 2) / fit;
     const ux = anchor[0] + (sx - WIDTH / 2) / (k * s);
     const uy = anchor[1] + (sy - mapHeight / 2) / (k * s);
     const inverted = projection.invert!([ux, uy]);
@@ -528,10 +531,7 @@ export default function LondonMap({
 
   return (
     <div className="tube-wrap">
-      <div
-        className="tube-canvas"
-        style={{ "--map-aspect": (WIDTH / mapHeight).toFixed(3) } as React.CSSProperties}
-      >
+      <div className="tube-canvas">
         <ComposableMap
           width={WIDTH}
           height={mapHeight}
@@ -539,9 +539,13 @@ export default function LondonMap({
           // the d3 instance is callable, so this works despite the stricter type.
           projection={projection as unknown as ProjectionFunction}
           onClick={handleClick}
+          // Fitted rather than cropped: a station that's off the edge is a
+          // station you can't click. The svg's own background fills the rest.
+          preserveAspectRatio="xMidYMid meet"
           style={{
             width: "100%",
-            height: "auto",
+            height: "100%",
+            display: "block",
             background: theme.bg,
             cursor: disabled ? "default" : "pointer",
           }}

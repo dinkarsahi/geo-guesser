@@ -160,14 +160,39 @@ body.playing #root {
   width: 100%;
   border-inline: none;
 }
+/* Nothing scrolls during a round — the map is pinned to the window and the
+   controls float on top of it. */
+body:has(.game-play) {
+  overflow: hidden;
+}
 .game {
-  /* Definite width, so maps that size themselves from the container (the flat
-     world map, the globe's ResizeObserver) get the full window to work with. */
   width: 100%;
   margin: 0 auto;
   padding: 16px 16px 40px;
   box-sizing: border-box;
   text-align: center;
+}
+/* A round in progress: the whole window, edge to edge. */
+.game-play {
+  position: fixed;
+  inset: 0;
+  padding: 0;
+}
+/* The map underneath everything, filling the window. */
+.map-layer {
+  position: absolute;
+  inset: 0;
+  line-height: 0;
+}
+/* Anything laid over the map. Only the controls themselves take the pointer,
+   so the map stays clickable through the gaps between them. */
+.hud {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+}
+.hud > * {
+  pointer-events: auto;
 }
 .game-header {
   display: flex;
@@ -175,6 +200,26 @@ body.playing #root {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+}
+.game-header.hud {
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 14px 18px;
+  box-sizing: border-box;
+  /* A scrim, so the title and score stay legible over bright terrain. */
+  background: linear-gradient(
+    to bottom,
+    rgba(6, 8, 12, 0.72) 0%,
+    rgba(6, 8, 12, 0.35) 55%,
+    rgba(6, 8, 12, 0) 100%
+  );
+}
+.game-header.hud h2,
+.game-header.hud .game-stats {
+  color: #f3f4f6;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 .header-left {
   display: flex;
@@ -198,6 +243,27 @@ body.playing #root {
 /* ---- Prompt --------------------------------------------------------- */
 .prompt {
   margin-bottom: 12px;
+}
+.prompt.hud {
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  max-width: min(92vw, 520px);
+}
+/* Over satellite terrain the card has to carry its own contrast. */
+.prompt.hud .prompt-card {
+  background: rgba(12, 15, 22, 0.82);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+}
+.prompt.hud .prompt-label,
+.prompt.hud .muted {
+  color: #cbd5e1;
+}
+.prompt.hud .prompt-title {
+  color: #fff;
 }
 .prompt-card {
   display: inline-flex;
@@ -227,53 +293,30 @@ body.playing #root {
 }
 
 /* ---- Map ------------------------------------------------------------ */
-/* Structural only. Each map draws its own frame, because they don't all want
-   one and the frame has to hug a map that's capped by the window height. */
-.map-wrap {
-  line-height: 0;
-}
-
-/* Every map grows with the window but stops before it runs off the bottom of
-   it: --map-aspect is the map's own width/height, set by the component, and
-   the subtraction is the room the header, prompt and controls need. */
+/* Every map fills the layer it's handed, which is the whole window. */
+.globe-wrap,
 .world-wrap,
-.tube-canvas {
-  max-width: calc((100svh - var(--map-reserve, 300px)) * var(--map-aspect));
-  margin: 0 auto;
+.tube-wrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
 }
 
-/* WebGL globe fills the width; the canvas sizes itself via ResizeObserver. */
+/* WebGL globe: the canvas sizes itself to this box via ResizeObserver. */
 .globe-wrap {
-  position: relative;
-  width: 100%;
   display: flex;
   justify-content: center;
-  /* Held to a landscape box around the globe. Left to span a wide screen the
-     canvas would be mostly empty, and the glow below would spread with it.
-     The subtraction matches the canvas height GlobeMap works out. */
-  max-width: calc((100svh - 300px) * 1.6);
-  margin: 0 auto;
-  /* The space glow fades out well before the edges, so there's no rectangle
-     around the globe — just the globe on the page. */
+  align-items: center;
+  /* Deep space, brightening behind the globe. */
   background: radial-gradient(
-    circle at 50% 45%,
-    rgba(27, 36, 54, 0.96) 0%,
-    rgba(12, 16, 26, 0.78) 36%,
-    rgba(10, 13, 21, 0.3) 56%,
-    rgba(10, 13, 21, 0) 70%
+    circle at 50% 50%,
+    #1b2436 0%,
+    #0d121d 45%,
+    #07090f 100%
   );
 }
 .globe-wrap canvas {
   display: block;
-}
-
-/* Flat world map: same positioning contract as the tube map. The ocean runs
-   to the edge, so the rounded corner is the only frame it needs. */
-.world-wrap {
-  position: relative;
-  line-height: 0;
-  border-radius: 12px;
-  overflow: hidden;
 }
 .map-loading {
   position: absolute;
@@ -288,11 +331,7 @@ body.playing #root {
   color: #fff;
 }
 
-.map-area {
-  position: relative;
-}
-
-/* The revealed fact sits under the map, clear of the answer it describes. */
+/* The revealed fact sits with the score, clear of the place just revealed. */
 .fact-panel {
   max-width: 640px;
   margin: 0 auto;
@@ -347,34 +386,35 @@ body.playing #root {
   background: rgba(36, 40, 54, 0.92);
 }
 
-.tube-wrap {
-  line-height: 0;
-}
-/* The map itself is the positioning context for its zoom controls, so they
-   don't sit on top of the line key below it. */
+/* The map itself is the positioning context for its zoom controls. */
 .tube-canvas {
-  position: relative;
+  position: absolute;
+  inset: 0;
   line-height: 0;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
   background: #16171d;
-  /* A little more reserved than the world maps, for the line key underneath. */
-  --map-reserve: 320px;
 }
 
-/* Colour key for the eleven Underground lines, under the map. */
+/* Colour key for the eleven Underground lines, floated into the corner the
+   score and the guess prompt leave free. */
 .tube-key {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 3;
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: 4px 14px;
-  margin: 10px 0 0;
-  padding: 0;
+  max-width: 300px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(12, 15, 22, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(6px);
   list-style: none;
   font-size: 13px;
   line-height: 18px;
-  color: var(--text);
+  color: #d1d5db;
 }
 .tube-key li {
   display: flex;
@@ -402,6 +442,19 @@ body.playing #root {
   margin-top: 10px;
   font-size: 15px;
 }
+.hint.hud {
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: rgba(12, 15, 22, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(6px);
+  color: #d1d5db;
+}
 
 /* ---- Result panel --------------------------------------------------- */
 .result-panel {
@@ -410,6 +463,37 @@ body.playing #root {
   flex-direction: column;
   align-items: center;
   gap: 12px;
+}
+/* Pinned to the bottom of the window, over the map, and no wider than it
+   needs to be so the answer stays visible behind it. */
+.result-panel.hud {
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(92vw, 620px);
+  margin: 0;
+  padding: 14px 18px;
+  box-sizing: border-box;
+  gap: 10px;
+  border-radius: 16px;
+  background: rgba(12, 15, 22, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+.result-panel.hud .result-distance {
+  color: #f3f4f6;
+}
+.result-panel.hud .fact-panel {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #d1d5db;
+}
+.result-panel.hud .fact-title {
+  color: #fff;
 }
 .result-headline {
   display: flex;

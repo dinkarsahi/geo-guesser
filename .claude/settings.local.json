@@ -52,7 +52,10 @@
       "Bash(cp lm.mjs /c/Users/sahid/geo-guesser/lm-check.mjs)",
       "Bash(rm -f lm-check.mjs)",
       "PowerShell(Stop-Process *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "PowerShell($tmp=\"$env:TEMP\\\\bm.jpg\"; Invoke-WebRequest \"https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg\" -OutFile $tmp; $img=[System.Drawing.Image]::FromFile\\($tmp\\); \"blue-marble: $\\($img.Width\\)x$\\($img.Height\\)  $\\([math]::Round\\(\\(Get-Item $tmp\\).Length/1KB\\)\\)KB\"; $img.Dispose\\(\\))",
+      "PowerShell(Add-Type -AssemblyName System.Drawing; $tmp=\"$env:TEMP\\\\bm.jpg\"; $img=[System.Drawing.Image]::FromFile\\($tmp\\); \"blue-marble: $\\($img.Width\\)x$\\($img.Height\\)\"; $img.Dispose\\(\\))",
+      "PowerShell(npx tsc -b --pretty false 2>&1 | Select-Object -First 20)"
     ]
   }
 }
