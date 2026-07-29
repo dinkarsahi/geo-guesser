@@ -18,25 +18,29 @@ const MAX_ZOOM = 12;
 
 const LAND_GRADIENT = "world-land-terrain";
 
-// A flat map can't carry the globe's satellite texture, so the land takes an
-// earth-toned gradient banded by latitude instead: green through the temperate
-// and tropical belts, brown across the desert latitudes, pale at the caps.
+// A flat map can't carry the globe's satellite texture, so the land takes a
+// gradient banded by latitude instead, sampled off the same blue marble
+// imagery: dark boreal green, olive steppe, desert sand across the dry
+// latitudes, near-black rainforest at the equator, ice at the caps.
 const LAND_BANDS: [lat: number, color: string][] = [
-  [90, "#eef2f0"],
-  [74, "#d3ddd6"],
-  [64, "#728e5f"],
-  [50, "#5b8049"],
-  [37, "#7f8a4c"],
-  [25, "#ab8b57"],
-  [15, "#8b8c4e"],
-  [4, "#4a7d3c"],
-  [-7, "#4a7d3c"],
-  [-18, "#82894b"],
-  [-28, "#a3874f"],
-  [-42, "#5b8049"],
-  [-58, "#93a390"],
-  [-70, "#dde4df"],
-  [-90, "#eef2f0"],
+  [90, "#e4e8ea"],
+  [80, "#d6dbdb"],
+  [70, "#8b9082"],
+  [62, "#4d5a3d"],
+  [50, "#4f5c39"],
+  [40, "#67684b"],
+  [30, "#93815c"],
+  [22, "#9a875e"],
+  [13, "#6f6f40"],
+  [3, "#3c5328"],
+  [-8, "#40562c"],
+  [-18, "#6a6943"],
+  [-28, "#918059"],
+  [-38, "#565e3d"],
+  [-50, "#6b7260"],
+  [-62, "#a9b0ad"],
+  [-72, "#d9dddd"],
+  [-90, "#e6eaea"],
 ];
 
 type Pt = [number, number];
@@ -71,11 +75,11 @@ export default function WorldMap({
         highlight: "#3f6d4a", highlightLine: "#6ee7a8",
       }
     : {
-        // Same green/brown/blue reading as the globe, laid out flat: the land
-        // fill is the latitude gradient defined below rather than a colour.
-        sea: "#2f6d99", land: `url(#${LAND_GRADIENT})`, border: "#4e5a45",
-        graticule: "#4a86ad",
-        highlight: "#bbf7d0", highlightLine: "#166534",
+        // Same reading as the globe, laid out flat: deep ocean, and a land
+        // fill that's the latitude gradient below rather than a colour.
+        sea: "#1b3a5a", land: `url(#${LAND_GRADIENT})`, border: "#7c826e",
+        graticule: "#27547d",
+        highlight: "#bbf7d0", highlightLine: "#34d399",
       };
 
   // Equal Earth keeps country areas honest, which matters when the whole
@@ -162,7 +166,10 @@ export default function WorldMap({
   };
 
   return (
-    <div className="world-wrap">
+    <div
+      className="world-wrap"
+      style={{ "--map-aspect": (WIDTH / mapHeight).toFixed(3) } as React.CSSProperties}
+    >
       <ComposableMap
         width={WIDTH}
         height={mapHeight}

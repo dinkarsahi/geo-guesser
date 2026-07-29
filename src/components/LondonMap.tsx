@@ -528,7 +528,10 @@ export default function LondonMap({
 
   return (
     <div className="tube-wrap">
-      <div className="tube-canvas">
+      <div
+        className="tube-canvas"
+        style={{ "--map-aspect": (WIDTH / mapHeight).toFixed(3) } as React.CSSProperties}
+      >
         <ComposableMap
           width={WIDTH}
           height={mapHeight}

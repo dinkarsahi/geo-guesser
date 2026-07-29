@@ -154,12 +154,16 @@
 }
 
 /* ---- Game shell ----------------------------------------------------- */
+/* While a game is on, the app shell drops its column width and side rules so
+   the map can use the whole window rather than being boxed into the middle. */
+body.playing #root {
+  width: 100%;
+  border-inline: none;
+}
 .game {
   /* Definite width, so maps that size themselves from the container (the flat
-     world map, the globe's ResizeObserver) get the full column to work with. */
+     world map, the globe's ResizeObserver) get the full window to work with. */
   width: 100%;
-  /* Matches the app shell, so the map gets every pixel of the column. */
-  max-width: 1126px;
   margin: 0 auto;
   padding: 16px 16px 40px;
   box-sizing: border-box;
@@ -223,21 +227,19 @@
 }
 
 /* ---- Map ------------------------------------------------------------ */
+/* Structural only. Each map draws its own frame, because they don't all want
+   one and the frame has to hug a map that's capped by the window height. */
 .map-wrap {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-  background: #16171d;
   line-height: 0;
 }
 
-/* The globe reads as floating in the page rather than sitting in a panel, so
-   it drops the framing the flat maps get. */
-.map-wrap:has(.globe-wrap) {
-  border: none;
-  border-radius: 0;
-  background: none;
-  overflow: visible;
+/* Every map grows with the window but stops before it runs off the bottom of
+   it: --map-aspect is the map's own width/height, set by the component, and
+   the subtraction is the room the header, prompt and controls need. */
+.world-wrap,
+.tube-canvas {
+  max-width: calc((100svh - var(--map-reserve, 300px)) * var(--map-aspect));
+  margin: 0 auto;
 }
 
 /* WebGL globe fills the width; the canvas sizes itself via ResizeObserver. */
@@ -246,6 +248,11 @@
   width: 100%;
   display: flex;
   justify-content: center;
+  /* Held to a landscape box around the globe. Left to span a wide screen the
+     canvas would be mostly empty, and the glow below would spread with it.
+     The subtraction matches the canvas height GlobeMap works out. */
+  max-width: calc((100svh - 300px) * 1.6);
+  margin: 0 auto;
   /* The space glow fades out well before the edges, so there's no rectangle
      around the globe — just the globe on the page. */
   background: radial-gradient(
@@ -260,10 +267,13 @@
   display: block;
 }
 
-/* Flat world map: same positioning contract as the tube map. */
+/* Flat world map: same positioning contract as the tube map. The ocean runs
+   to the edge, so the rounded corner is the only frame it needs. */
 .world-wrap {
   position: relative;
   line-height: 0;
+  border-radius: 12px;
+  overflow: hidden;
 }
 .map-loading {
   position: absolute;
@@ -345,6 +355,12 @@
 .tube-canvas {
   position: relative;
   line-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #16171d;
+  /* A little more reserved than the world maps, for the line key underneath. */
+  --map-reserve: 320px;
 }
 
 /* Colour key for the eleven Underground lines, under the map. */

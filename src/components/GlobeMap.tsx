@@ -64,7 +64,8 @@ export default function GlobeMap({
         h: Math.min(
           Math.max(el.clientWidth, 320),
           // Room for the header, the prompt card (tallest with a flag in it)
-          // and the hint line, so the whole globe stays on screen.
+          // and the hint line, so the whole globe stays on screen. Kept in
+          // step with --map-reserve on .globe-wrap.
           Math.max(360, window.innerHeight - 300),
         ),
       });

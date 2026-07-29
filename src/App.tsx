@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CityLocator from "./modes/CityLocator";
 import FlagGuesser from "./modes/FlagGuesser";
 import TubeGuesser from "./modes/TubeGuesser";
@@ -147,6 +147,14 @@ export default function App() {
   };
   const toggleNight = () => setNight((n) => !n);
   const modeProps = { onExit: toMenu, night, onToggleNight: toggleNight, settings };
+
+  // A running game gets the whole window: the menu's fixed-width shell and its
+  // side rules would otherwise pen the map in well short of the screen edges.
+  const playing = mode !== null && started;
+  useEffect(() => {
+    document.body.classList.toggle("playing", playing);
+    return () => document.body.classList.remove("playing");
+  }, [playing]);
 
   if (mode && started) {
     if (mode === "city") return <CityLocator {...modeProps} />;
