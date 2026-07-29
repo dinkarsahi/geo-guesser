@@ -20,7 +20,7 @@ export default function CityLocator({ onExit, night, onToggleNight, settings }: 
       onToggleNight={onToggleNight}
       renderPrompt={(city) => (
         <div className="prompt-card">
-          <span className="prompt-label">Locate this city</span>
+          <span className="prompt-label">Locate this city:</span>
           {/* One phrase, not three lines: the city is picked out by colour
               rather than by being bigger than what follows it. */}
           <span className="prompt-place">
