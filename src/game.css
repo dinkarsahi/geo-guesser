@@ -303,6 +303,15 @@ body:has(.game-play) {
   font-weight: 600;
   color: var(--text-h);
 }
+/* "City, Country" at one size, the city marked out by colour and weight. */
+.prompt-place {
+  color: var(--text);
+  white-space: nowrap;
+}
+.prompt-place-name {
+  color: var(--text-h);
+  font-weight: 600;
+}
 .flag {
   border-radius: 4px;
   box-shadow: var(--shadow);
