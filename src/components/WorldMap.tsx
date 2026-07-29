@@ -15,6 +15,9 @@ import MapZoomControls from "./MapZoomControls";
 
 const WIDTH = 1024;
 const MAX_ZOOM = 12;
+// Below 1 the map is smaller than the window and the backdrop shows around it,
+// which is why the backdrop is the ocean's own colour.
+const MIN_ZOOM = 0.45;
 
 type Pt = [number, number];
 
@@ -44,14 +47,16 @@ export default function WorldMap({
 
   const theme = night
     ? {
-        sea: "#0f1620", border: "rgba(226,232,240,0.75)",
+        sea: "#000000", border: "rgba(226,232,240,0.75)",
         highlight: "rgba(74,222,128,0.35)", highlightLine: "#6ee7a8",
       }
     : {
         // The land is the satellite image, so the only colours left to pick
         // are the lines drawn over it. White reads on every biome, which is
-        // why the globe uses it too.
-        sea: "#0b1a2b", border: "rgba(255,255,255,0.85)",
+        // why the globe uses it too. The sea is sampled from the texture's own
+        // deep ocean (sampled off the file at 150W/0N and 25W/30S), so zoomed
+        // out the map has no edge to speak of.
+        sea: "#050c22", border: "rgba(255,255,255,0.85)",
         highlight: "rgba(74,222,128,0.35)", highlightLine: "#4ade80",
       };
 
@@ -97,7 +102,7 @@ export default function WorldMap({
   const zoomBy = (factor: number) =>
     setPosition((p) => ({
       coordinates: p.coordinates,
-      zoom: Math.min(MAX_ZOOM, Math.max(1, p.zoom * factor)),
+      zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, p.zoom * factor)),
     }));
 
   const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -147,7 +152,7 @@ export default function WorldMap({
         <ZoomableGroup
           center={position.coordinates}
           zoom={position.zoom}
-          minZoom={1}
+          minZoom={MIN_ZOOM}
           maxZoom={MAX_ZOOM}
           onMoveEnd={setPosition}
           filterZoomEvent={(event) => {

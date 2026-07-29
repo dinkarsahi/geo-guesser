@@ -109,27 +109,20 @@ export default function GameFrame<T>({
   const isResult = phase === "result";
   const lastRound = !freeRun && totalRounds !== null && roundIndex + 1 >= totalRounds;
 
-  // The map is the screen. Everything else floats over it, pinned to an edge,
-  // so nothing steals height from the thing being played on.
+  // A solid bar across the top, and the map gets every pixel below it. The bar
+  // holds what you need to see at all times, so nothing has to sit on the map
+  // and hide the part of the world you were about to click.
   return (
     <div className="game game-play">
-      <div className="map-layer">
-        {renderMap({
-          onGuess: submitGuess,
-          guess: currentGuess,
-          answer: isResult && lastResult ? lastResult.answer : null,
-          disabled: isResult,
-        })}
-      </div>
-
-      <header className="game-header hud">
+      <header className="game-topbar">
         <div className="header-left">
           <button className="btn btn-ghost" onClick={onExit}>
             ← Menu
           </button>
           <NightToggle night={night} onToggle={onToggleNight} />
+          <h2>{title}</h2>
         </div>
-        <h2>{title}</h2>
+        <div className="prompt">{renderPrompt(target, phase)}</div>
         <div className="game-stats">
           <span>
             {freeRun ? `Round ${roundIndex + 1}` : `Round ${roundIndex + 1}/${totalRounds}`}
@@ -138,9 +131,14 @@ export default function GameFrame<T>({
         </div>
       </header>
 
-      {/* Only while guessing: once the answer is out the result panel names it
-          anyway, and the card sits over the northern half of the map. */}
-      {!isResult && <div className="prompt hud">{renderPrompt(target, phase)}</div>}
+      <div className="map-layer">
+        {renderMap({
+          onGuess: submitGuess,
+          guess: currentGuess,
+          answer: isResult && lastResult ? lastResult.answer : null,
+          disabled: isResult,
+        })}
+      </div>
 
       {!isResult && !currentGuess && (
         <p className="hint muted hud">Click the map to place your guess.</p>

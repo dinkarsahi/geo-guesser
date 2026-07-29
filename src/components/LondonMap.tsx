@@ -21,12 +21,18 @@ const londonTopoUrl =
 const WIDTH = 800;
 const PAD = 44;
 const MAX_ZOOM = 25;
+// Below 1 the network sits smaller than the window, on the paper the svg's own
+// background already covers the whole box with.
+const MIN_ZOOM = 0.45;
 const MAX_ZONE_BAND = 6; // zones 6+ grouped into the outermost band
 
 // Zoomed-in stations are pushed apart on top of the plain zoom, so clusters
-// like Bank/Monument separate into individually clickable dots.
+// like Bank/Monument separate into individually clickable dots. Zoomed out
+// there's nothing to separate, and the un-clamped curve would run negative and
+// turn the network inside out.
 const MAX_SPREAD = 2.4;
-const spreadFor = (zoom: number) => 1 + (MAX_SPREAD - 1) * (1 - 1 / zoom);
+const spreadFor = (zoom: number) =>
+  1 + (MAX_SPREAD - 1) * (1 - 1 / Math.max(1, zoom));
 
 // How long the view takes to pull back to the whole network once the answer is
 // revealed, and the easing that gets it there.
@@ -479,13 +485,14 @@ export default function LondonMap({
   // 0 fully zoomed out, 1 once a landmark has grown to full size and walked
   // onto its true coordinates. Smoothstepped, so neither end of the zoom range
   // is where all the movement happens.
-  const settleT = Math.min(1, Math.log(k) / Math.log(LANDMARK_SETTLE_ZOOM));
+  // Clamped at both ends: zoomed out past 1 the log goes negative.
+  const settleT = Math.max(0, Math.min(1, Math.log(k) / Math.log(LANDMARK_SETTLE_ZOOM)));
   const settled = settleT * settleT * (3 - 2 * settleT);
 
   const zoomBy = (factor: number) => {
     setPosition((p) => ({
       coordinates: p.coordinates,
-      zoom: Math.min(MAX_ZOOM, Math.max(1, p.zoom * factor)),
+      zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, p.zoom * factor)),
     }));
   };
 
@@ -553,7 +560,7 @@ export default function LondonMap({
           <ZoomableGroup
             center={position.coordinates}
             zoom={position.zoom}
-            minZoom={1}
+            minZoom={MIN_ZOOM}
             maxZoom={MAX_ZOOM}
             // Grabbing the map mid-flight hands control straight back.
             onMoveStart={stopFlight}

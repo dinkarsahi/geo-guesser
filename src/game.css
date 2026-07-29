@@ -172,16 +172,19 @@ body:has(.game-play) {
   box-sizing: border-box;
   text-align: center;
 }
-/* A round in progress: the whole window, edge to edge. */
+/* A round in progress: the whole window, edge to edge. The bar takes the
+   height it needs and the map is handed everything left over. */
 .game-play {
   position: fixed;
   inset: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
 }
-/* The map underneath everything, filling the window. */
 .map-layer {
-  position: absolute;
-  inset: 0;
+  flex: 1;
+  position: relative;
+  min-height: 0;
   line-height: 0;
 }
 /* Anything laid over the map. Only the controls themselves take the pointer,
@@ -201,32 +204,37 @@ body:has(.game-play) {
   gap: 12px;
   margin-bottom: 12px;
 }
-.game-header.hud {
-  top: 0;
-  left: 0;
-  right: 0;
-  margin: 0;
-  padding: 14px 18px;
-  box-sizing: border-box;
-  /* A scrim, so the title and score stay legible over bright terrain. */
-  background: linear-gradient(
-    to bottom,
-    rgba(6, 8, 12, 0.72) 0%,
-    rgba(6, 8, 12, 0.35) 55%,
-    rgba(6, 8, 12, 0) 100%
-  );
-}
-.game-header.hud h2,
-.game-header.hud .game-stats {
-  color: #f3f4f6;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+/* The bar that everything permanent lives in. It's what stops the map at the
+   top, so the map never has to be read through a floating card. */
+.game-topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 18px;
+  background: var(--code-bg);
+  border-bottom: 1px solid var(--border);
 }
 .header-left {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
-.game-header h2 {
+.game-header h2,
+.game-topbar h2 {
   margin: 0;
+}
+/* Second to the prompt in the middle — it can drop out before that does. */
+.game-topbar h2 {
+  font-size: 18px;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+@media (max-width: 900px) {
+  .game-topbar h2 {
+    display: none;
+  }
 }
 .game-stats {
   display: flex;
@@ -244,26 +252,35 @@ body:has(.game-play) {
 .prompt {
   margin-bottom: 12px;
 }
-.prompt.hud {
-  top: 72px;
-  left: 50%;
-  transform: translateX(-50%);
+/* The two ends share the slack so the prompt sits in the middle of the window
+   rather than the middle of whatever's left. */
+.game-topbar .header-left,
+.game-topbar .game-stats {
+  flex: 1;
+}
+/* In the bar the prompt is already on a surface, so it drops the card and
+   lays out along the row to keep the bar shallow. */
+.game-topbar .prompt {
   margin: 0;
-  max-width: min(92vw, 520px);
+  min-width: 0;
 }
-/* Over satellite terrain the card has to carry its own contrast. */
-.prompt.hud .prompt-card {
-  background: rgba(12, 15, 22, 0.82);
-  border-color: rgba(255, 255, 255, 0.14);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
+.game-topbar .prompt-card {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  background: none;
+  border: none;
 }
-.prompt.hud .prompt-label,
-.prompt.hud .muted {
-  color: #cbd5e1;
+.game-topbar .prompt-title {
+  font-size: 22px;
 }
-.prompt.hud .prompt-title {
-  color: #fff;
+.game-topbar .flag {
+  margin-top: 0;
+  /* Big enough to read the detail on a busy flag, small enough that the bar
+     stays the same depth it is for a city name. */
+  height: 58px;
+  width: auto;
 }
 .prompt-card {
   display: inline-flex;
