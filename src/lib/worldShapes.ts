@@ -11,11 +11,20 @@ import type { Coord } from "./geo";
 const WORLD_URL =
   "https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_110m_admin_0_countries.geojson";
 
-interface CountryProps {
+export interface CountryProps {
   NAME?: string;
+  /** Unabbreviated English name ("Dem. Rep. Congo" -> the full thing). */
+  NAME_EN?: string;
+  NAME_LONG?: string;
   ISO_A2?: string;
   /** ISO_A2 with de-facto codes filled in (e.g. Norway, France). */
   ISO_A2_EH?: string;
+  CONTINENT?: string;
+  SUBREGION?: string;
+  POP_EST?: number;
+  /** Natural Earth's label anchor — a point inside the country's main body. */
+  LABEL_X?: number;
+  LABEL_Y?: number;
 }
 
 export type CountryFeature = Feature<Geometry, CountryProps>;

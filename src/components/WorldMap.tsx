@@ -155,11 +155,16 @@ export default function WorldMap({
                       key={geo.rsmKey}
                       geography={geo}
                       fill={lit ? theme.highlight : theme.land}
-                      stroke={lit ? theme.highlightLine : theme.border}
-                      // Without borders the land reads as one silhouette; the
-                      // highlighted answer still gets its outline.
-                      strokeWidth={borders || lit ? sz(lit ? 1.2 : 0.5) : 0}
-                      strokeOpacity={borders || lit ? 1 : 0}
+                      // Without borders the land reads as one silhouette. That
+                      // means outlining each country in the land colour rather
+                      // than dropping the stroke: neighbours are separate paths
+                      // and the antialiased seam between them would otherwise
+                      // let the sea through as a hairline "border" — obvious
+                      // against the dark night palette.
+                      stroke={
+                        lit ? theme.highlightLine : borders ? theme.border : theme.land
+                      }
+                      strokeWidth={sz(lit ? 1.2 : 0.5)}
                       style={{
                         default: { outline: "none" },
                         hover: { outline: "none" },

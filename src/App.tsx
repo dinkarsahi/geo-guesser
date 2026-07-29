@@ -2,7 +2,6 @@ import { useState } from "react";
 import CityLocator from "./modes/CityLocator";
 import FlagGuesser from "./modes/FlagGuesser";
 import TubeGuesser from "./modes/TubeGuesser";
-import NightToggle from "./components/NightToggle";
 import type { GameSettings } from "./modes/ModeProps";
 
 type Mode = "city" | "flag" | "tube";
@@ -167,11 +166,10 @@ export default function App() {
     );
   }
 
+  // No day/night toggle out here — it belongs with the map it changes, so it
+  // only appears once a game is running.
   return (
     <div className="menu">
-      <div className="menu-bar">
-        <NightToggle night={night} onToggle={toggleNight} />
-      </div>
       <h1>SpotOn</h1>
       <p className="muted menu-sub">Pick a mode, then choose how you want to play.</p>
       <div className="mode-grid">

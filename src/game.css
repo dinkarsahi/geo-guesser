@@ -37,9 +37,10 @@
 .menu {
   padding: 32px 20px 48px;
 }
+/* Setup screen's back button, aligned with the panel below it. */
 .menu-bar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   max-width: 820px;
   margin: 0 auto 8px;
 }
@@ -157,9 +158,10 @@
   /* Definite width, so maps that size themselves from the container (the flat
      world map, the globe's ResizeObserver) get the full column to work with. */
   width: 100%;
-  max-width: 900px;
+  /* Matches the app shell, so the map gets every pixel of the column. */
+  max-width: 1126px;
   margin: 0 auto;
-  padding: 16px 20px 48px;
+  padding: 16px 16px 40px;
   box-sizing: border-box;
   text-align: center;
 }
@@ -261,28 +263,25 @@
   color: #fff;
 }
 
-/* Map + overlaid fact card share a positioning context. */
 .map-area {
   position: relative;
 }
-.fact-overlay {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  max-width: min(340px, 55%);
-  padding: 12px 16px;
+
+/* The revealed fact sits under the map, clear of the answer it describes. */
+.fact-panel {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 12px 18px;
   border-radius: 12px;
   text-align: left;
-  background: rgba(12, 14, 20, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(6px);
-  pointer-events: none;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
   animation: fact-in 0.25s ease-out;
 }
 .fact-title {
   display: block;
   margin-bottom: 4px;
+  color: var(--text-h);
 }
 .fact-body {
   font-size: 15px;
@@ -291,15 +290,6 @@
 .fact-dyk {
   font-weight: 700;
   color: var(--accent);
-}
-.fact-overlay .fact-title {
-  color: #fff;
-}
-.fact-overlay .fact-body {
-  color: rgba(255, 255, 255, 0.88);
-}
-.fact-overlay .fact-dyk {
-  color: #d8b4fe;
 }
 
 /* Zoom +/- buttons overlaid on a map. */
@@ -375,14 +365,6 @@
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-@media (max-width: 640px) {
-  .fact-overlay {
-    max-width: none;
-    left: 12px;
-    right: 12px;
-    top: 8px;
   }
 }
 .hint {

@@ -50,17 +50,33 @@ export default function GlobeMap({
   const shapes = useWorldShapes();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 520 });
+  // Land is the only valid guess, so the cursor says so while it's over some.
+  const [overLand, setOverLand] = useState(false);
 
-  // Keep the canvas sized to its container.
+  // Keep the canvas sized to its container, leaving room for the rest of the
+  // page so the globe is as big as the window comfortably allows.
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
     const update = () =>
-      setSize({ w: el.clientWidth, h: Math.min(Math.max(el.clientWidth, 320), 560) });
+      setSize({
+        w: el.clientWidth,
+        h: Math.min(
+          Math.max(el.clientWidth, 320),
+          // Room for the header, the prompt card (tallest with a flag in it)
+          // and the hint line, so the whole globe stays on screen.
+          Math.max(360, window.innerHeight - 300),
+        ),
+      });
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
-    return () => ro.disconnect();
+    // The height also tracks the viewport, which the observer never sees.
+    window.addEventListener("resize", update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+    };
   }, []);
 
   // Tune the orbit controls and set an opening view once the globe is ready.
@@ -111,12 +127,13 @@ export default function GlobeMap({
     (f.properties?.ISO_A2_EH || f.properties?.ISO_A2 || "").toLowerCase();
   const lit = highlightCode && answer ? highlightCode.toLowerCase() : null;
 
-  const polygons = useMemo<CountryFeature[]>(() => {
-    if (!shapes) return [];
-    if (borders) return shapes.features;
-    const only = lit ? shapes.byCode[lit] : null;
-    return only ? [only] : [];
-  }, [shapes, borders, lit]);
+  // Every country is always in the scene: the polygons are what makes land
+  // clickable (they sit in front of the globe, so they take the click), and
+  // whether they're *drawn* is just a matter of their stroke colour below.
+  const polygons = useMemo<CountryFeature[]>(
+    () => (shapes ? shapes.features : []),
+    [shapes],
+  );
 
   const arcs = useMemo(() => {
     if (guess && answer) {
@@ -136,7 +153,7 @@ export default function GlobeMap({
     <div
       ref={wrapRef}
       className="globe-wrap"
-      style={{ cursor: disabled ? "default" : "grab" }}
+      style={{ cursor: disabled ? "default" : overLand ? "pointer" : "grab" }}
     >
       <Globe
         ref={globeRef}
@@ -150,18 +167,31 @@ export default function GlobeMap({
         atmosphereAltitude={0.18}
         onGlobeReady={handleReady}
         onGlobeClick={({ lat, lng }) => {
+          // The bare globe is the sea. It's only a valid guess when the country
+          // shapes never arrived — without them there'd be nothing to click.
+          if (!disabled && !shapes) onGuess({ lat, lng });
+        }}
+        onPolygonClick={(_polygon, _event, { lat, lng }) => {
           if (!disabled) onGuess({ lat, lng });
         }}
+        onPolygonHover={(polygon) => setOverLand(!!polygon)}
         polygonsData={polygons}
-        polygonAltitude={(d) => (codeOf(d as CountryFeature) === lit ? 0.014 : 0.006)}
+        // Kept as flat to the surface as the stroke allows: the polygons are
+        // what you click, so the further they float the further a click at a
+        // shallow angle lands from the spot under the cursor.
+        polygonAltitude={(d) => (codeOf(d as CountryFeature) === lit ? 0.008 : 0.002)}
         polygonCapColor={(d) =>
           codeOf(d as CountryFeature) === lit ? "rgba(34,197,94,0.45)" : "rgba(0,0,0,0)"
         }
         polygonSideColor={() => "rgba(0,0,0,0)"}
+        // An empty colour draws no outline at all, which is how the invisible
+        // click targets stay invisible when borders are off.
         polygonStrokeColor={(d) =>
           codeOf(d as CountryFeature) === lit
             ? "#22c55e"
-            : night ? "#9aa3ae" : "#f8fafc"
+            : borders
+              ? night ? "#9aa3ae" : "#f8fafc"
+              : ""
         }
         polygonsTransitionDuration={0}
         pointsData={points}
@@ -184,6 +214,7 @@ export default function GlobeMap({
         onZoomIn={() => zoomBy(0.6)}
         onZoomOut={() => zoomBy(1 / 0.6)}
       />
+      {!shapes && <p className="map-loading muted">Loading the world…</p>}
     </div>
   );
 }

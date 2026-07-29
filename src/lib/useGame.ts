@@ -45,14 +45,43 @@ export interface Game<T> {
   restart: () => void;
 }
 
-/** Fisher-Yates shuffle, then take the first `n`. */
-function pickTargets<T>(pool: T[], n: number): T[] {
-  const arr = [...pool];
+/** Fisher-Yates shuffle, in place. */
+function shuffle<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  return arr.slice(0, Math.min(n, arr.length));
+  return arr;
+}
+
+/**
+ * What each pool has already dealt this session, oldest first. A fair shuffle
+ * will still hand you the same city two games running often enough to feel
+ * broken, so recent targets are held back until the pool has moved on. Keyed by
+ * the pool array itself, and only for as long as it's alive.
+ */
+const dealtBefore = new WeakMap<object, unknown[]>();
+
+/** How much of a pool is off-limits as "just seen" — never more than half. */
+const recencyWindow = (poolSize: number) => Math.floor(poolSize / 2);
+
+/** `n` targets from the pool, avoiding the ones dealt most recently. */
+function pickTargets<T>(pool: T[], n: number): T[] {
+  const key = pool as unknown as object;
+  const history = dealtBefore.get(key) ?? [];
+  const recent = new Set(history);
+
+  let candidates = pool.filter((t) => !recent.has(t));
+  // Asked for more than the pool has left to offer: everything's fair game
+  // again, which is also how a free run gets to deal the whole pool.
+  if (candidates.length < n) {
+    candidates = [...pool];
+    history.length = 0;
+  }
+
+  const picked = shuffle(candidates).slice(0, Math.min(n, candidates.length));
+  dealtBefore.set(key, [...history, ...picked].slice(-recencyWindow(pool.length)));
+  return picked;
 }
 
 /**

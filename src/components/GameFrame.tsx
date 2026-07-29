@@ -138,11 +138,6 @@ export default function GameFrame<T>({
             disabled: isResult,
           })}
         </div>
-
-        {/* Fact card overlaid on the map, beside the revealed dots. */}
-        {isResult && renderResultExtra && (
-          <div className="fact-overlay">{renderResultExtra(target)}</div>
-        )}
       </div>
 
       {!isResult && !currentGuess && (
@@ -165,6 +160,10 @@ export default function GameFrame<T>({
               +{lastResult.score.toLocaleString()} pts
             </span>
           </div>
+          {/* Below the map, so it never sits over the place just revealed. */}
+          {renderResultExtra && (
+            <div className="fact-panel">{renderResultExtra(target)}</div>
+          )}
           <div className="button-row">
             <button className="btn btn-primary" onClick={next}>
               {lastRound ? "See results" : "Next round →"}

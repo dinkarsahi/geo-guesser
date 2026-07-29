@@ -1,4 +1,5 @@
 import type { Coord } from "../lib/geo";
+import type { CountryProps, WorldShapes } from "../lib/worldShapes";
 
 export interface Country extends Coord {
   name: string;
@@ -15,216 +16,136 @@ export function flagUrl(code: string): string {
   return `https://flagcdn.com/w320/${code}.png`;
 }
 
-/** lat/lng are the country's approximate geographic centre. */
-export const countries: Country[] = [
-  {
-    name: "France",
-    code: "fr",
-    lat: 46.2276,
-    lng: 2.2137,
-    fact: "France is the most visited country in the world, drawing around 90 million tourists a year.",
-  },
-  {
-    name: "Japan",
-    code: "jp",
-    lat: 36.2048,
-    lng: 138.2529,
-    fact: "Japan is made up of roughly 14,000 islands stretched along the Pacific.",
-  },
-  {
-    name: "Brazil",
-    code: "br",
-    lat: -14.235,
-    lng: -51.9253,
-    fact: "Brazil holds about 60% of the Amazon rainforest within its borders.",
-  },
-  {
-    name: "Australia",
-    code: "au",
-    lat: -25.2744,
-    lng: 133.7751,
-    fact: "Australia is the only country that is also a continent in its own right.",
-  },
-  {
-    name: "Canada",
-    code: "ca",
-    lat: 56.1304,
-    lng: -106.3468,
-    fact: "Canada has the longest coastline of any country — over 200,000 km.",
-  },
-  {
-    name: "Egypt",
-    code: "eg",
-    lat: 26.8206,
-    lng: 30.8025,
-    fact: "The Great Pyramid of Giza was the tallest human-made structure for about 3,800 years.",
-  },
-  {
-    name: "India",
-    code: "in",
-    lat: 20.5937,
-    lng: 78.9629,
-    fact: "India is the most populous country in the world, home to over 1.4 billion people.",
-  },
-  {
-    name: "Kenya",
-    code: "ke",
-    lat: -0.0236,
-    lng: 37.9062,
-    fact: "The Great Rift Valley runs the length of Kenya and is visible from space.",
-  },
-  {
-    name: "Norway",
-    code: "no",
-    lat: 60.472,
-    lng: 8.4689,
-    fact: "Norway's coastline of fjords would stretch over 100,000 km if pulled straight.",
-  },
-  {
-    name: "Peru",
-    code: "pe",
-    lat: -9.19,
-    lng: -75.0152,
-    fact: "Machu Picchu sits about 2,430 m above sea level in the Andes.",
-  },
-  {
-    name: "Italy",
-    code: "it",
-    lat: 41.8719,
-    lng: 12.5674,
-    fact: "Italy has more UNESCO World Heritage Sites than any other country.",
-  },
-  {
-    name: "Germany",
-    code: "de",
-    lat: 51.1657,
-    lng: 10.4515,
-    fact: "Germany has no official speed limit on large stretches of its Autobahn.",
-  },
-  {
-    name: "Mexico",
-    code: "mx",
-    lat: 23.6345,
-    lng: -102.5528,
-    fact: "Mexico introduced chocolate, chillies and corn to the rest of the world.",
-  },
-  {
-    name: "South Africa",
-    code: "za",
-    lat: -30.5595,
-    lng: 22.9375,
-    fact: "South Africa has three capital cities: Pretoria, Cape Town and Bloemfontein.",
-  },
-  {
-    name: "Thailand",
-    code: "th",
-    lat: 15.87,
-    lng: 100.9925,
-    fact: "Thailand is the only Southeast Asian country never colonised by a European power.",
-  },
-  {
-    name: "Argentina",
-    code: "ar",
-    lat: -38.4161,
-    lng: -63.6167,
-    fact: "Aconcagua in Argentina is the highest mountain outside of Asia.",
-  },
-  {
-    name: "Turkey",
-    code: "tr",
-    lat: 38.9637,
-    lng: 35.2433,
-    fact: "Istanbul is the only major city that sits on two continents at once.",
-  },
-  {
-    name: "Iceland",
-    code: "is",
-    lat: 64.9631,
-    lng: -19.0208,
-    fact: "Iceland runs almost entirely on renewable geothermal and hydro power.",
-  },
-  {
-    name: "New Zealand",
-    code: "nz",
-    lat: -40.9006,
-    lng: 174.886,
-    fact: "New Zealand was the first country to give women the right to vote, in 1893.",
-  },
-  {
-    name: "Nigeria",
-    code: "ng",
-    lat: 9.082,
-    lng: 8.6753,
-    fact: "Nigeria is Africa's most populous country and home to Nollywood, a huge film industry.",
-  },
-  {
-    name: "Indonesia",
-    code: "id",
-    lat: -0.7893,
-    lng: 113.9213,
-    fact: "Indonesia spans more than 17,000 islands across three time zones.",
-  },
-  {
-    name: "South Korea",
-    code: "kr",
-    lat: 35.9078,
-    lng: 127.7669,
-    fact: "South Korea has some of the fastest average internet speeds in the world.",
-  },
-  {
-    name: "Spain",
-    code: "es",
-    lat: 40.4637,
-    lng: -3.7492,
-    fact: "Spain produces almost half of the world's olive oil.",
-  },
-  {
-    name: "Sweden",
-    code: "se",
-    lat: 60.1282,
-    lng: 18.6435,
-    fact: "Sweden has one of the highest numbers of islands of any country — about 267,000.",
-  },
-  {
-    name: "Portugal",
-    code: "pt",
-    lat: 39.3999,
-    lng: -8.2245,
-    fact: "Portugal's borders have been essentially unchanged since 1139, among Europe's oldest.",
-  },
-  {
-    name: "Greece",
-    code: "gr",
-    lat: 39.0742,
-    lng: 21.8243,
-    fact: "Greece has thousands of islands, but only about 200 are inhabited.",
-  },
-  {
-    name: "Kazakhstan",
-    code: "kz",
-    lat: 48.0196,
-    lng: 66.9237,
-    fact: "Kazakhstan is the largest landlocked country in the world.",
-  },
-  {
-    name: "Chile",
-    code: "cl",
-    lat: -35.6751,
-    lng: -71.543,
-    fact: "Chile stretches over 4,300 km north to south but averages only ~180 km wide.",
-  },
-  {
-    name: "Morocco",
-    code: "ma",
-    lat: 31.7917,
-    lng: -7.0926,
-    fact: "Morocco's Sahara dunes at Erg Chebbi can rise as high as 150 m.",
-  },
-  {
-    name: "Vietnam",
-    code: "vn",
-    lat: 14.0583,
-    lng: 108.2772,
-    fact: "Vietnam is the world's second-largest exporter of coffee.",
-  },
-];
+/**
+ * On the map but out of the game: nobody lives there and there's no national
+ * flag to recognise.
+ */
+const NOT_PLAYABLE = new Set(["aq", "tf"]);
+
+/**
+ * Hand-written facts, by ISO alpha-2 code. Everything else in the world gets a
+ * fact built from the map data instead (see `autoFact`) — the same fallback the
+ * tube map uses for stations without a write-up. That way the pool is every
+ * country on the map rather than just the ones somebody got round to.
+ */
+const writtenFacts: Record<string, string> = {
+  fr: "France is the most visited country in the world, drawing around 90 million tourists a year.",
+  jp: "Japan is made up of roughly 14,000 islands stretched along the Pacific.",
+  br: "Brazil holds about 60% of the Amazon rainforest within its borders.",
+  au: "Australia is the only country that is also a continent in its own right.",
+  ca: "Canada has the longest coastline of any country — over 200,000 km.",
+  eg: "The Great Pyramid of Giza was the tallest human-made structure for about 3,800 years.",
+  in: "India is the most populous country in the world, home to over 1.4 billion people.",
+  ke: "The Great Rift Valley runs the length of Kenya and is visible from space.",
+  no: "Norway's coastline of fjords would stretch over 100,000 km if pulled straight.",
+  pe: "Machu Picchu sits about 2,430 m above sea level in the Andes.",
+  it: "Italy has more UNESCO World Heritage Sites than any other country.",
+  de: "Germany has no official speed limit on large stretches of its Autobahn.",
+  mx: "Mexico introduced chocolate, chillies and corn to the rest of the world.",
+  za: "South Africa has three capital cities: Pretoria, Cape Town and Bloemfontein.",
+  th: "Thailand is the only Southeast Asian country never colonised by a European power.",
+  ar: "Aconcagua in Argentina is the highest mountain outside of Asia.",
+  tr: "Istanbul is the only major city that sits on two continents at once.",
+  is: "Iceland runs almost entirely on renewable geothermal and hydro power.",
+  nz: "New Zealand was the first country to give women the right to vote, in 1893.",
+  ng: "Nigeria is Africa's most populous country and home to Nollywood, a huge film industry.",
+  id: "Indonesia spans more than 17,000 islands across three time zones.",
+  kr: "South Korea has some of the fastest average internet speeds in the world.",
+  es: "Spain produces almost half of the world's olive oil.",
+  se: "Sweden has one of the highest numbers of islands of any country — about 267,000.",
+  pt: "Portugal's borders have been essentially unchanged since 1139, among Europe's oldest.",
+  gr: "Greece has thousands of islands, but only about 200 are inhabited.",
+  kz: "Kazakhstan is the largest landlocked country in the world.",
+  cl: "Chile stretches over 4,300 km north to south but averages only ~180 km wide.",
+  ma: "Morocco's Sahara dunes at Erg Chebbi can rise as high as 150 m.",
+  vn: "Vietnam is the world's second-largest exporter of coffee.",
+  us: "The contiguous United States spans four time zones, and six once Alaska and Hawaii join in.",
+  gb: "The United Kingdom is made up of four nations: England, Scotland, Wales and Northern Ireland.",
+  ru: "Russia is the largest country on Earth and stretches across eleven time zones.",
+  cn: "China's Grand Canal, still in use, is the longest artificial waterway in the world.",
+  nl: "About a quarter of the Netherlands lies below sea level.",
+  ch: "Switzerland has four national languages: German, French, Italian and Romansh.",
+  mn: "Mongolia is the most sparsely populated sovereign country in the world.",
+  np: "Nepal has the only national flag that isn't a rectangle.",
+  bt: "Bhutan measures its progress in Gross National Happiness.",
+  bo: "Bolivia's Salar de Uyuni is the largest salt flat on Earth.",
+  cu: "Cuba is the largest island in the Caribbean.",
+  mg: "Around 90% of the wildlife in Madagascar is found nowhere else.",
+  cd: "The Congo is the deepest river in the world, over 220 m at its deepest point.",
+  sa: "Saudi Arabia has no permanent rivers anywhere in the country.",
+  ir: "Iran's Persepolis has stood since around 500 BC.",
+  et: "Ethiopia follows its own calendar, which runs about seven years behind the Gregorian one.",
+  ua: "Ukraine's rich black soil makes it one of the world's great grain exporters.",
+  pl: "Poland's Białowieża Forest is one of the last stretches of primeval forest left in Europe.",
+  ie: "Ireland has no native snakes.",
+  fi: "Finland has around 188,000 lakes — more per person than any other country.",
+};
+
+/** "1.4 billion people", "about 12 million people", "3,398 people". */
+function people(n: number): string {
+  if (n >= 1e9) return `${(n / 1e9).toFixed(1)} billion people`;
+  if (n >= 1e7) return `${Math.round(n / 1e6)} million people`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1)} million people`;
+  if (n >= 1e4) return `${Math.round(n / 1e3).toLocaleString()},000 people`;
+  return `${Math.round(n).toLocaleString()} people`;
+}
+
+/** Country names that take a plural verb — "the Philippines sit", not "sits". */
+const PLURAL_NAME = /(Islands|Lands|Netherlands|Philippines|Emirates|Bahamas|States)\b/;
+
+/**
+ * A fact from the map data for countries without a written one. The subregion
+ * is the more interesting half of the sentence, but it's no use when it just
+ * repeats the country's own name ("Australia and New Zealand"), so those fall
+ * back to the continent.
+ */
+function autoFact(name: string, props: CountryProps): string {
+  const sub = props.SUBREGION ?? "";
+  const where = !sub || sub.includes(name) ? props.CONTINENT : sub;
+  const pop = typeof props.POP_EST === "number" ? props.POP_EST : null;
+  const [sit, is] = PLURAL_NAME.test(name) ? ["sit", "are"] : ["sits", "is"];
+  if (!where) return pop ? `${name} ${is} home to about ${people(pop)}.` : name;
+  if (!pop) return `${name} ${sit} in ${where}.`;
+  return `${name} ${sit} in ${where} and ${is} home to about ${people(pop)}.`;
+}
+
+/** The full English name, in preference to the map's abbreviated label. */
+const nameOf = (p: CountryProps) => p.NAME_EN || p.NAME_LONG || p.NAME || "";
+
+function build(shapes: WorldShapes): Country[] {
+  const out: Country[] = [];
+  for (const [code, feature] of Object.entries(shapes.byCode)) {
+    if (NOT_PLAYABLE.has(code)) continue;
+    const props = feature.properties ?? {};
+    const name = nameOf(props);
+    // Without a name to show or a point to score against there's no round to
+    // play, so the country sits this one out.
+    if (!name || typeof props.LABEL_X !== "number" || typeof props.LABEL_Y !== "number")
+      continue;
+    out.push({
+      name,
+      code,
+      lat: props.LABEL_Y,
+      lng: props.LABEL_X,
+      fact: writtenFacts[code] ?? autoFact(name, props),
+    });
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+let cachedFor: WorldShapes | null = null;
+let cached: Country[] = [];
+
+/**
+ * Every country on the world map, ready to be guessed. Empty until the shapes
+ * have downloaded. The result is cached by shapes identity, so the pool keeps
+ * the same array (and so the same "recently seen" history) all session.
+ */
+export function countryPool(shapes: WorldShapes | null): Country[] {
+  if (!shapes) return [];
+  if (shapes !== cachedFor) {
+    cachedFor = shapes;
+    cached = build(shapes);
+  }
+  return cached;
+}

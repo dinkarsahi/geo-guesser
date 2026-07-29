@@ -1,17 +1,23 @@
 import FactCard from "../components/FactCard";
 import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
+import NightToggle from "../components/NightToggle";
 import WorldMap from "../components/WorldMap";
-import { countries, flagUrl, type Country } from "../data/countries";
+import { countryPool, flagUrl, type Country } from "../data/countries";
 import { useGame } from "../lib/useGame";
-import { isInCountry, useWorldShapes } from "../lib/worldShapes";
+import { isInCountry, useWorldShapes, type WorldShapes } from "../lib/worldShapes";
 import type { ModeProps } from "./ModeProps";
 
-export default function FlagGuesser({ onExit, night, onToggleNight, settings }: ModeProps) {
+interface GameProps extends ModeProps {
+  /** Every country on the map — see `countryPool`. */
+  pool: Country[];
+  shapes: WorldShapes;
+}
+
+function FlagGame({ onExit, night, onToggleNight, settings, pool, shapes }: GameProps) {
   // The whole country is the target: click anywhere inside its borders for full
   // marks, and fall back to distance from its centre if you miss.
-  const shapes = useWorldShapes();
-  const game = useGame<Country>(countries, (c) => c, 2000, {
+  const game = useGame<Country>(pool, (c) => c, 2000, {
     endless: settings.endless,
     hitTest: (guess, country) => isInCountry(shapes, country.code, guess),
   });
@@ -57,4 +63,31 @@ export default function FlagGuesser({ onExit, night, onToggleNight, settings }: 
       }
     />
   );
+}
+
+export default function FlagGuesser(props: ModeProps) {
+  // The countries to guess come from the same map data the maps are drawn from,
+  // so there's no game to start until it lands.
+  const shapes = useWorldShapes();
+  const pool = countryPool(shapes);
+
+  if (!shapes || !pool.length) {
+    return (
+      <div className="game">
+        <header className="game-header">
+          <div className="header-left">
+            <button className="btn btn-ghost" onClick={props.onExit}>
+              ← Menu
+            </button>
+            <NightToggle night={props.night} onToggle={props.onToggleNight} />
+          </div>
+          <h2>Flag Guesser</h2>
+          <span />
+        </header>
+        <p className="muted hint">Loading the world…</p>
+      </div>
+    );
+  }
+
+  return <FlagGame {...props} pool={pool} shapes={shapes} />;
 }
