@@ -67,10 +67,33 @@
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.1s;
 }
-.mode-card:hover {
+.mode-card:hover:not(:disabled) {
   border-color: var(--accent-border);
   box-shadow: var(--shadow);
   transform: translateY(-2px);
+}
+/* Modes that aren't built yet: on the board so people can see what's coming,
+   but faded, unclickable and badged so they don't read as broken buttons. */
+.mode-card.is-soon {
+  position: relative;
+  cursor: not-allowed;
+  opacity: 0.55;
+  border-style: dashed;
+  background: transparent;
+}
+.mode-tag {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-family: var(--heading);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--social-bg);
+  color: var(--text);
 }
 .mode-emoji {
   font-size: 44px;

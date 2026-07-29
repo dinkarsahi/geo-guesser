@@ -27,6 +27,38 @@ const MODES: { id: Mode; title: string; blurb: string; emoji: string }[] = [
   },
 ];
 
+/** Modes we've sketched out but haven't built — shown greyed out on the menu. */
+const UPCOMING: { id: string; title: string; blurb: string; emoji: string; tag: string }[] = [
+  {
+    id: "currency",
+    title: "Currency Guesser",
+    blurb: "Given a currency and its symbol, name the country that spends it.",
+    emoji: "💱",
+    tag: "Coming soon",
+  },
+  {
+    id: "population",
+    title: "Population Guesser",
+    blurb: "See how many people live somewhere and work out where it is.",
+    emoji: "👥",
+    tag: "Coming soon",
+  },
+  {
+    id: "brand",
+    title: "Brand HQ",
+    blurb: "Spot a company from its logo, then guess where it's headquartered.",
+    emoji: "🏢",
+    tag: "In the works",
+  },
+  {
+    id: "headsup",
+    title: "Head to Head",
+    blurb: "Race a friend through the same rounds against the clock.",
+    emoji: "⚔️",
+    tag: "In the works",
+  },
+];
+
 const DEFAULT_SETTINGS: GameSettings = { endless: false, flat: false, borders: true };
 
 /** A two-option toggle rendered as a pair of buttons. */
@@ -183,6 +215,14 @@ export default function App() {
       <div className="mode-grid">
         {MODES.map((m) => (
           <button key={m.id} className="mode-card" onClick={() => setMode(m.id)}>
+            <span className="mode-emoji">{m.emoji}</span>
+            <span className="mode-title">{m.title}</span>
+            <span className="muted mode-blurb">{m.blurb}</span>
+          </button>
+        ))}
+        {UPCOMING.map((m) => (
+          <button key={m.id} className="mode-card is-soon" disabled aria-disabled="true">
+            <span className="mode-tag">{m.tag}</span>
             <span className="mode-emoji">{m.emoji}</span>
             <span className="mode-title">{m.title}</span>
             <span className="muted mode-blurb">{m.blurb}</span>
