@@ -137,7 +137,11 @@ export default function GameFrame<T>({
       <div className="map-layer">
         {renderMap({
           onGuess: submitGuess,
-          guess: currentGuess,
+          // A guess that landed inside the right country is the answer, so it
+          // isn't drawn as somewhere separate. Left in, it becomes a second pin
+          // with a line running off to the country's centre — the picture of a
+          // near miss, over a round that scored full marks.
+          guess: isResult && lastResult?.hit ? null : currentGuess,
           answer: isResult && lastResult ? lastResult.answer : null,
           disabled: isResult,
         })}
