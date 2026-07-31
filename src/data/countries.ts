@@ -18,9 +18,10 @@ export function flagUrl(code: string): string {
 
 /**
  * On the map but out of the game: nobody lives there and there's no national
- * flag to recognise.
+ * flag to recognise. Heard Island and South Georgia join the ice on the finer
+ * map — between them they're home to a few dozen researchers.
  */
-const NOT_PLAYABLE = new Set(["aq", "tf"]);
+const NOT_PLAYABLE = new Set(["aq", "tf", "hm", "gs"]);
 
 /**
  * Hand-written facts, by ISO alpha-2 code. Everything else in the world gets a

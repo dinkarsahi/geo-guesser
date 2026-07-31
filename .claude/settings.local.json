@@ -60,7 +60,9 @@
       "PowerShell(git fetch *)",
       "PowerShell(git *)",
       "Bash(npx esbuild *)",
-      "Bash(echo \"TYPECHECK_EXIT=$?\")"
+      "Bash(echo \"TYPECHECK_EXIT=$?\")",
+      "Bash(cp C:/Users/sahid/AppData/Local/Temp/claude/C--Users-sahid-geo-guesser/89eeae6b-7159-4e44-83f7-3363e146cf68/scratchpad/dup.mjs ./_dup.mjs)",
+      "Bash(rm -f ./_dup.mjs)"
     ]
   }
 }

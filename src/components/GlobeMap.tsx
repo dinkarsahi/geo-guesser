@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Globe, { type GlobeMethods } from "react-globe.gl";
 import type { GuessMapProps } from "./mapTypes";
-import { useWorldShapes, type CountryFeature } from "../lib/worldShapes";
+import { nearSmallCountry, useWorldShapes, type CountryFeature } from "../lib/worldShapes";
 import { DAY_TEXTURE, GREY_TEXTURE } from "../lib/textures";
 import MapZoomControls from "./MapZoomControls";
 
@@ -32,6 +32,7 @@ interface PointDatum {
   lat: number;
   lng: number;
   color: string;
+  radius: number;
 }
 
 export default function GlobeMap({
@@ -97,12 +98,29 @@ export default function GlobeMap({
     }
   }, [answer]);
 
+  /**
+   * A country too small to draw gets a dot of its own to stand in for it: its
+   * polygon is smaller than a pixel, so on the bare globe there is nothing to
+   * see and nothing to click. Always in the scene, because the dot is the click
+   * target — with borders off it's simply painted in nothing, the same trick
+   * the invisible country outlines use.
+   */
+  const smallPoints = useMemo<PointDatum[]>(() => {
+    if (!shapes) return [];
+    return Object.values(shapes.smallTargets).map((c) => ({
+      lat: c.lat,
+      lng: c.lng,
+      color: borders ? (night ? "rgba(154,163,174,0.9)" : "rgba(248,250,252,0.9)") : "rgba(0,0,0,0)",
+      radius: 0.4,
+    }));
+  }, [shapes, borders, night]);
+
   const points = useMemo<PointDatum[]>(() => {
-    const pts: PointDatum[] = [];
-    if (guess) pts.push({ lat: guess.lat, lng: guess.lng, color: "#e11d48" });
-    if (answer) pts.push({ lat: answer.lat, lng: answer.lng, color: "#22c55e" });
+    const pts = [...smallPoints];
+    if (guess) pts.push({ lat: guess.lat, lng: guess.lng, color: "#e11d48", radius: 0.55 });
+    if (answer) pts.push({ lat: answer.lat, lng: answer.lng, color: "#22c55e", radius: 0.55 });
     return pts;
-  }, [guess, answer]);
+  }, [smallPoints, guess, answer]);
 
   // Country outlines: every country when borders are on, plus the answer's own
   // country picked out once the round is scored.
@@ -150,14 +168,23 @@ export default function GlobeMap({
         atmosphereAltitude={0.18}
         onGlobeReady={handleReady}
         onGlobeClick={({ lat, lng }) => {
-          // The bare globe is the sea. It's only a valid guess when the country
-          // shapes never arrived — without them there'd be nothing to click.
-          if (!disabled && !shapes) onGuess({ lat, lng });
+          if (disabled) return;
+          // The bare globe is the sea, and normally not a guess — but an island
+          // state is a dot in the middle of it, far too small to land a click
+          // on, so water near one counts as reaching for it. Without the
+          // shapes there's nothing to click at all, so everything counts.
+          if (!shapes || nearSmallCountry(shapes, { lat, lng })) onGuess({ lat, lng });
         }}
         onPolygonClick={(_polygon, _event, { lat, lng }) => {
           if (!disabled) onGuess({ lat, lng });
         }}
         onPolygonHover={(polygon) => setOverLand(!!polygon)}
+        // The dot standing in for a speck of a country is a guess at it.
+        onPointClick={(point) => {
+          const p = point as PointDatum;
+          if (!disabled) onGuess({ lat: p.lat, lng: p.lng });
+        }}
+        onPointHover={(point) => setOverLand(!!point)}
         polygonsData={polygons}
         // Kept as flat to the surface as the stroke allows: the polygons are
         // what you click, so the further they float the further a click at a
@@ -182,7 +209,7 @@ export default function GlobeMap({
         pointLng="lng"
         pointColor="color"
         pointAltitude={0.02}
-        pointRadius={0.55}
+        pointRadius="radius"
         pointsMerge={false}
         pointsTransitionDuration={0}
         arcsData={arcs}
