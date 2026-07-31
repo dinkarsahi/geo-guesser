@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ComposableMap,
   Geographies,
@@ -18,6 +18,18 @@ const MAX_ZOOM = 12;
 // Below 1 the map is smaller than the window and the backdrop shows around it,
 // which is why the backdrop is the ocean's own colour.
 const MIN_ZOOM = 0.45;
+
+// How long the map takes to travel to the answer once it's out, and how close
+// it comes to rest — near enough to see where you've landed, far enough that
+// the line back to your guess still leads somewhere.
+const REVEAL_MS = 1200;
+const REVEAL_ZOOM = 2.5;
+
+const easeInOutCubic = (t: number) =>
+  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 type Pt = [number, number];
 
@@ -87,12 +99,81 @@ export default function WorldMap({
   // Land is the only valid guess, so the cursor says so while it's over some.
   const [overLand, setOverLand] = useState(false);
 
-  // Back to the whole world whenever a new round starts.
+  // The flight runs outside React's render loop, so it reads the live view
+  // through a ref rather than closing over a stale one.
+  const positionRef = useRef(position);
+  useEffect(() => {
+    positionRef.current = position;
+  }, [position]);
+  const frameRef = useRef<number | null>(null);
+
+  const stopFlight = useCallback(() => {
+    if (frameRef.current !== null) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+  }, []);
+
+  /**
+   * Travels the map across to `to` instead of cutting there. The centre moves
+   * in a straight line across the projection while the zoom moves
+   * geometrically — every frame the same proportional step, which reads as one
+   * steady approach rather than a rush at one end.
+   */
+  const flyTo = useCallback(
+    (to: Position) => {
+      stopFlight();
+      const from = positionRef.current;
+      const a = projection(from.coordinates);
+      const b = projection(to.coordinates);
+      if (!a || !b || prefersReducedMotion()) {
+        setPosition(to);
+        return;
+      }
+      const start = performance.now();
+      const step = (now: number) => {
+        const t = Math.min(1, (now - start) / REVEAL_MS);
+        if (t >= 1) {
+          frameRef.current = null;
+          setPosition(to);
+          return;
+        }
+        const e = easeInOutCubic(t);
+        const centre = projection.invert!([
+          a[0] + (b[0] - a[0]) * e,
+          a[1] + (b[1] - a[1]) * e,
+        ]);
+        setPosition({
+          coordinates: centre ?? to.coordinates,
+          zoom: from.zoom * Math.pow(to.zoom / from.zoom, e),
+        });
+        frameRef.current = requestAnimationFrame(step);
+      };
+      frameRef.current = requestAnimationFrame(step);
+    },
+    [projection, stopFlight],
+  );
+
+  useEffect(() => stopFlight, [stopFlight]);
+
+  // Back to the whole world whenever a new round starts. Nothing is left on
+  // screen to follow, so there's nothing to animate.
   const [prevAnswer, setPrevAnswer] = useState(answer);
   if (answer !== prevAnswer) {
     setPrevAnswer(answer);
     if (!answer) setPosition({ coordinates: defaultCenter, zoom: 1 });
   }
+
+  /**
+   * The answer is flown to rather than simply drawn, so the map carries you
+   * from the part of the world you picked to the part you were looking for,
+   * with the line between the two to follow. Any flight still in the air is
+   * dropped when the next round resets the view above.
+   */
+  useEffect(() => {
+    if (answer) flyTo({ coordinates: [answer.lng, answer.lat], zoom: REVEAL_ZOOM });
+    else stopFlight();
+  }, [answer, flyTo, stopFlight]);
 
   const k = position.zoom;
   const anchor = useMemo(
@@ -176,6 +257,8 @@ export default function WorldMap({
           zoom={position.zoom}
           minZoom={MIN_ZOOM}
           maxZoom={MAX_ZOOM}
+          // Grabbing the map mid-flight hands control straight back.
+          onMoveStart={stopFlight}
           onMoveEnd={setPosition}
           filterZoomEvent={(event) => {
             const e = event as unknown as { button?: number };
@@ -223,8 +306,14 @@ export default function WorldMap({
             </Geographies>
           )}
 
+          {/* Guess to answer, dashes running the length of it — the flat map's
+              version of the arc the globe throws between the two. The period
+              goes out with it so the travel loops seamlessly at any zoom. */}
           {guessPt && answerPt && (
-            <line x1={guessPt[0]} y1={guessPt[1]} x2={answerPt[0]} y2={answerPt[1]}
+            <line
+              className="guess-line"
+              style={{ "--dash": sz(7) } as React.CSSProperties}
+              x1={guessPt[0]} y1={guessPt[1]} x2={answerPt[0]} y2={answerPt[1]}
               stroke="#c084fc" strokeWidth={sz(1.5)} strokeDasharray={`${sz(4)} ${sz(3)}`} />
           )}
           {guessPt && (

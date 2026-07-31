@@ -448,6 +448,23 @@ body:has(.game-play) {
   background: rgba(36, 40, 54, 0.92);
 }
 
+/* The line from the guess to the answer, its dashes travelling the way the
+   globe's arc does. `--dash` is one dash plus one gap, set by the map so the
+   loop closes on itself however far you're zoomed in. */
+.guess-line {
+  animation: guess-line-travel 0.8s linear infinite;
+}
+@keyframes guess-line-travel {
+  to {
+    stroke-dashoffset: calc(var(--dash) * -1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .guess-line {
+    animation: none;
+  }
+}
+
 /* The map itself is the positioning context for its zoom controls. */
 .tube-canvas {
   position: absolute;
