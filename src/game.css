@@ -374,6 +374,53 @@ body:has(.game-play) {
   }
 }
 
+/* Logo beside the name. The marks arrive in each company's own colour, several
+   of them black or near it, so they sit on a light plate rather than straight
+   on the bar — which in night mode is darker than they are. */
+.prompt-company {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.company-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: var(--shadow);
+  flex: none;
+}
+.company-logo img {
+  display: block;
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+.prompt-company-name {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+.game-topbar .prompt-company-name {
+  font-size: 20px;
+}
+@media (max-width: 700px) {
+  .company-logo {
+    width: 34px;
+    height: 34px;
+  }
+  .company-logo img {
+    width: 24px;
+    height: 24px;
+  }
+  .game-topbar .prompt-company-name {
+    font-size: 17px;
+  }
+}
+
 /* "City, Country" at one size, the city marked out by colour and weight. */
 .prompt-place {
   color: var(--text);
