@@ -395,6 +395,13 @@ export default function LondonMap({
   }));
   /** Name of the station under the pointer, if the pointer is on one. */
   const [hovered, setHovered] = useState<string | null>(null);
+  // Eleven lines is a lot of corner to give up on a phone, where the map has
+  // little enough room as it is — so there the key starts folded away.
+  const [keyOpen, setKeyOpen] = useState(
+    () =>
+      typeof window === "undefined" ||
+      !window.matchMedia?.("(max-width: 700px)").matches,
+  );
 
   // The fly-out runs outside React's render loop, so it reads the live view
   // through a ref rather than closing over a stale one.
@@ -804,14 +811,27 @@ export default function LondonMap({
         <MapZoomControls onZoomIn={() => zoomBy(1.6)} onZoomOut={() => zoomBy(1 / 1.6)} />
       </div>
 
-      <ul className="tube-key">
-        {tubeLines.map((l) => (
-          <li key={l.id}>
-            <span className="tube-key-swatch" style={{ background: lineColor(l.color) }} />
-            {l.name}
-          </li>
-        ))}
-      </ul>
+      <div className="tube-key-wrap">
+        {keyOpen && (
+          <ul className="tube-key" id="tube-key">
+            {tubeLines.map((l) => (
+              <li key={l.id}>
+                <span className="tube-key-swatch" style={{ background: lineColor(l.color) }} />
+                {l.name}
+              </li>
+            ))}
+          </ul>
+        )}
+        <button
+          type="button"
+          className="tube-key-toggle"
+          aria-expanded={keyOpen}
+          aria-controls="tube-key"
+          onClick={() => setKeyOpen((open) => !open)}
+        >
+          {keyOpen ? "Hide key ▾" : "Line key ▴"}
+        </button>
+      </div>
     </div>
   );
 }

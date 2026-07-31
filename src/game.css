@@ -10,6 +10,9 @@
   border-radius: 8px;
   border: 2px solid transparent;
   cursor: pointer;
+  /* A button is its label — narrow windows shrink the bar, not break "← Menu"
+     across two lines. */
+  white-space: nowrap;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
 .btn-primary {
@@ -453,13 +456,38 @@ body:has(.game-play) {
   background: #16171d;
 }
 
-/* Colour key for the eleven Underground lines, floated into the corner the
-   score and the guess prompt leave free. */
-.tube-key {
+/* The key and its button share the bottom-left corner: the button is what's
+   anchored there, and the list opens upwards out of it. */
+.tube-key-wrap {
   position: absolute;
   left: 14px;
   bottom: 14px;
   z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: calc(100% - 68px);
+}
+.tube-key-toggle {
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(12, 15, 22, 0.78);
+  color: #d1d5db;
+  cursor: pointer;
+  white-space: nowrap;
+  backdrop-filter: blur(6px);
+  transition: background 0.15s;
+}
+.tube-key-toggle:hover {
+  background: rgba(36, 40, 54, 0.92);
+}
+/* Colour key for the eleven Underground lines, floated into the corner the
+   score and the guess prompt leave free. */
+.tube-key {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 14px;
@@ -540,6 +568,9 @@ body:has(.game-play) {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(8px);
   pointer-events: auto;
+  /* Above the map's own furniture — the key and the zoom buttons share this
+     corner, and neither may end up drawn over the button out of the round. */
+  z-index: 4;
 }
 .result-panel.hud .result-distance {
   color: #f3f4f6;
@@ -621,4 +652,91 @@ body:has(.game-play) {
   display: flex;
   gap: 12px;
   justify-content: center;
+}
+
+/* ---- Phones --------------------------------------------------------- */
+/* A phone can't hold the controls, the prompt and the score across one row —
+   squeezed into it they end up printed over one another. The prompt drops onto
+   a row of its own underneath, which leaves the other two the width they were
+   asking for and costs a line of height only where there isn't a choice. */
+@media (max-width: 700px) {
+  .game-topbar {
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    padding: 8px 12px;
+  }
+  .game-topbar .header-left,
+  .game-topbar .game-stats {
+    flex: 0 0 auto;
+  }
+  .game-topbar .prompt {
+    order: 3;
+    flex: 1 0 100%;
+    display: flex;
+    justify-content: center;
+  }
+  /* Round and score sit side by side rather than stacked: the bar is short of
+     width, not height, once the prompt has moved out of the row. */
+  .game-stats {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 10px;
+    min-width: 0;
+    font-size: 14px;
+  }
+  .btn {
+    font-size: 15px;
+    padding: 8px 12px;
+  }
+  .night-toggle {
+    font-size: 14px;
+    padding: 7px 10px;
+  }
+  .game-topbar .prompt-card {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 8px;
+  }
+  .game-topbar .prompt-title {
+    font-size: 20px;
+    line-height: 1.15;
+  }
+  .game-topbar .flag {
+    height: 44px;
+  }
+  /* A long "City, Country" wraps instead of pushing the bar wider than the
+     phone; the label above it keeps the two halves apart. */
+  .prompt-place {
+    white-space: normal;
+  }
+  /* Floating controls pull into the corners so the map keeps its middle. */
+  .result-panel.hud {
+    bottom: 12px;
+    width: calc(100% - 20px);
+    padding: 12px 14px;
+  }
+  .result-headline {
+    gap: 12px;
+  }
+  .result-distance,
+  .result-points {
+    font-size: 18px;
+  }
+  .hint.hud {
+    bottom: 14px;
+    max-width: calc(100% - 28px);
+    white-space: normal;
+    font-size: 14px;
+  }
+  .tube-key {
+    max-width: 100%;
+    font-size: 12px;
+    gap: 2px 10px;
+  }
+  .summary {
+    margin-top: 12px;
+  }
+  .summary-score {
+    font-size: 40px;
+  }
 }
