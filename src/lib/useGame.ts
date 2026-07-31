@@ -31,6 +31,12 @@ export interface GameOptions<T> {
    * for the miss, since "800 m away" would be the wrong thing to report.
    */
   scoreGuess?: (guess: Coord, target: T) => { score: number; label: string };
+  /**
+   * Where the answer is, when the target has more than one right place to be.
+   * A currency is spent across twenty countries and the one worth showing is
+   * whichever was nearest the guess — both to score against and to fly to.
+   */
+  answerFor?: (guess: Coord, target: T) => Coord;
 }
 
 export interface Game<T> {
@@ -106,7 +112,7 @@ export function useGame<T>(
   scaleKm: number,
   options: GameOptions<T> = {},
 ): Game<T> {
-  const { rounds = 5, endless = false, hitTest, scoreGuess } = options;
+  const { rounds = 5, endless = false, hitTest, scoreGuess, answerFor } = options;
   // A free run deals the whole pool, reshuffled again whenever it runs dry.
   const dealt = endless ? pool.length : rounds;
 
@@ -121,7 +127,7 @@ export function useGame<T>(
   const submitGuess = useCallback(
     (guess: Coord) => {
       if (phase !== "guessing") return;
-      const answer = getCoord(target);
+      const answer = answerFor?.(guess, target) ?? getCoord(target);
       const distanceKm = haversineKm(guess, answer);
       const hit = hitTest?.(guess, target) ?? false;
       const scored = scoreGuess?.(guess, target);
@@ -134,7 +140,7 @@ export function useGame<T>(
       ]);
       setPhase("result");
     },
-    [phase, target, getCoord, scaleKm, hitTest, scoreGuess],
+    [phase, target, getCoord, scaleKm, hitTest, scoreGuess, answerFor],
   );
 
   const next = useCallback(() => {

@@ -50,14 +50,14 @@ function FlagGame({ onExit, night, onToggleNight, settings, pool, shapes }: Game
             {...props}
             night={night}
             borders={settings.borders}
-            highlightCode={game.target.code}
+            highlightCodes={[game.target.code]}
           />
         ) : (
           <GlobeMap
             {...props}
             night={night}
             borders={settings.borders}
-            highlightCode={game.target.code}
+            highlightCodes={[game.target.code]}
           />
         )
       }

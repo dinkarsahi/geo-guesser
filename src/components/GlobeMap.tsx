@@ -18,8 +18,11 @@ interface GlobeMapProps extends GuessMapProps {
   night?: boolean;
   /** Draw the country outlines over the terrain. */
   borders?: boolean;
-  /** ISO alpha-2 code of a country to highlight once the answer is out. */
-  highlightCode?: string | null;
+  /**
+   * ISO alpha-2 codes to highlight once the answer is out. Usually the one
+   * country being asked about, but a currency lights up everywhere it's spent.
+   */
+  highlightCodes?: string[] | null;
 }
 
 /** Minimal shape of the three OrbitControls we touch (three ships no types here). */
@@ -44,7 +47,7 @@ export default function GlobeMap({
   disabled = false,
   night = false,
   borders = false,
-  highlightCode = null,
+  highlightCodes = null,
 }: GlobeMapProps) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const shapes = useWorldShapes();
@@ -111,7 +114,14 @@ export default function GlobeMap({
   // country picked out once the round is scored.
   const codeOf = (f: CountryFeature) =>
     (f.properties?.ISO_A2_EH || f.properties?.ISO_A2 || "").toLowerCase();
-  const lit = highlightCode && answer ? highlightCode.toLowerCase() : null;
+  // Keyed by value, not by the array's identity, so a caller building the list
+  // inline doesn't hand the globe a new set — and with it a re-style of all 242
+  // countries — on every render.
+  const litKey = answer ? (highlightCodes ?? []).join(",").toLowerCase() : "";
+  const lit = useMemo(
+    () => new Set(litKey ? litKey.split(",") : []),
+    [litKey],
+  );
 
   /**
    * These three have to keep the same identity between renders. The globe
@@ -123,12 +133,12 @@ export default function GlobeMap({
    */
   const polygonCap = useCallback(
     (d: object) =>
-      codeOf(d as CountryFeature) === lit ? "rgba(34,197,94,0.45)" : "rgba(0,0,0,0)",
+      lit.has(codeOf(d as CountryFeature)) ? "rgba(34,197,94,0.45)" : "rgba(0,0,0,0)",
     [lit],
   );
   const polygonStroke = useCallback(
     (d: object) =>
-      codeOf(d as CountryFeature) === lit
+      lit.has(codeOf(d as CountryFeature))
         ? "#22c55e"
         : borders
           ? night ? "#9aa3ae" : "#f8fafc"

@@ -1,0 +1,114 @@
+import FactCard from "../components/FactCard";
+import GameFrame from "../components/GameFrame";
+import GlobeMap from "../components/GlobeMap";
+import NightToggle from "../components/NightToggle";
+import WorldMap from "../components/WorldMap";
+import { countryPool } from "../data/countries";
+import { currencyPool, type CurrencyTarget } from "../data/currencies";
+import { haversineKm, type Coord } from "../lib/geo";
+import { useGame } from "../lib/useGame";
+import { isInCountry, useWorldShapes, type WorldShapes } from "../lib/worldShapes";
+import type { ModeProps } from "./ModeProps";
+
+interface GameProps extends ModeProps {
+  pool: CurrencyTarget[];
+  shapes: WorldShapes;
+}
+
+/** The country spending this currency that the guess landed nearest. */
+function nearestSpender(guess: Coord, money: CurrencyTarget): Coord {
+  let best = money.countries[0];
+  let bestKm = Infinity;
+  for (const c of money.countries) {
+    const km = haversineKm(guess, c);
+    if (km < bestKm) {
+      bestKm = km;
+      best = c;
+    }
+  }
+  return { lat: best.lat, lng: best.lng };
+}
+
+function CurrencyGame({ onExit, night, onToggleNight, settings, pool, shapes }: GameProps) {
+  // Anywhere the money is spent is the right answer, so every country using it
+  // is full marks — click Portugal or Finland for the euro and both are home.
+  // Miss, and the distance that counts is to the nearest of them rather than to
+  // some average of a currency zone, which for the euro would be a field in
+  // Austria and for the US dollar the middle of the Pacific.
+  const game = useGame<CurrencyTarget>(pool, (m) => m, 2000, {
+    endless: settings.endless,
+    hitTest: (guess, money) =>
+      money.countries.some((c) => isInCountry(shapes, c.code, guess)),
+    answerFor: nearestSpender,
+  });
+
+  const spenders = game.target.countries.map((c) => c.code);
+
+  return (
+    <GameFrame
+      title="Currency Guesser"
+      game={game}
+      onExit={onExit}
+      night={night}
+      onToggleNight={onToggleNight}
+      hitLabel={(money) => money.name}
+      hint="Click a country that spends it."
+      renderPrompt={(money) => (
+        <div className="prompt-card">
+          <span className="prompt-label">Who spends this?</span>
+          <span className="prompt-money">
+            <span className="prompt-money-symbol">{money.symbol}</span>
+            <span className="prompt-money-code">{money.code}</span>
+          </span>
+        </div>
+      )}
+      renderResultExtra={(money) => (
+        <FactCard title={`${money.name} (${money.code})`} fact={money.fact} />
+      )}
+      renderMap={(props) =>
+        settings.flat ? (
+          <WorldMap
+            {...props}
+            night={night}
+            borders={settings.borders}
+            highlightCodes={spenders}
+          />
+        ) : (
+          <GlobeMap
+            {...props}
+            night={night}
+            borders={settings.borders}
+            highlightCodes={spenders}
+          />
+        )
+      }
+    />
+  );
+}
+
+export default function CurrencyGuesser(props: ModeProps) {
+  // The currencies are grouped from the same country pool the flag round uses,
+  // so nothing can be asked about until the map data lands.
+  const shapes = useWorldShapes();
+  const pool = currencyPool(countryPool(shapes));
+
+  if (!shapes || !pool.length) {
+    return (
+      <div className="game">
+        <header className="game-header">
+          <div className="header-left">
+            <button className="btn btn-ghost" onClick={props.onExit}>
+              ← Menu
+            </button>
+            <NightToggle night={props.night} onToggle={props.onToggleNight} />
+          </div>
+          <h2>Currency Guesser</h2>
+          <span />
+        </header>
+        <p className="muted hint">Loading the world…</p>
+      </div>
+    );
+  }
+
+  return <CurrencyGame {...props} pool={pool} shapes={shapes} />;
+}

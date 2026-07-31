@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import CityLocator from "./modes/CityLocator";
+import CurrencyGuesser from "./modes/CurrencyGuesser";
 import FlagGuesser from "./modes/FlagGuesser";
 import TubeGuesser from "./modes/TubeGuesser";
 import type { GameSettings } from "./modes/ModeProps";
 
-type Mode = "city" | "flag" | "tube";
+type Mode = "city" | "flag" | "currency" | "tube";
 
 const MODES: { id: Mode; title: string; blurb: string; emoji: string }[] = [
   {
@@ -20,6 +21,12 @@ const MODES: { id: Mode; title: string; blurb: string; emoji: string }[] = [
     emoji: "🚩",
   },
   {
+    id: "currency",
+    title: "Currency Guesser",
+    blurb: "See a currency and its symbol, then find somewhere that spends it.",
+    emoji: "💱",
+  },
+  {
     id: "tube",
     title: "Tube Station Guesser",
     blurb: "Pinpoint a London Underground station on a zoomed-in map.",
@@ -29,12 +36,6 @@ const MODES: { id: Mode; title: string; blurb: string; emoji: string }[] = [
 
 /** Modes we've sketched out but haven't built — shown greyed out on the menu. */
 const UPCOMING: { id: string; title: string; blurb: string; emoji: string }[] = [
-  {
-    id: "currency",
-    title: "Currency Guesser",
-    blurb: "Given a currency and its symbol, name the country that spends it.",
-    emoji: "💱",
-  },
   {
     id: "population",
     title: "Population Guesser",
@@ -187,6 +188,7 @@ export default function App() {
   if (mode && started) {
     if (mode === "city") return <CityLocator {...modeProps} />;
     if (mode === "flag") return <FlagGuesser {...modeProps} />;
+    if (mode === "currency") return <CurrencyGuesser {...modeProps} />;
     return <TubeGuesser {...modeProps} />;
   }
 

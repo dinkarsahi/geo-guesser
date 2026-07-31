@@ -339,6 +339,41 @@ body:has(.game-play) {
   font-weight: 600;
   color: var(--text-h);
 }
+/* The symbol carries the round, so it's set large and in the accent; the code
+   sits beside it for the many currencies whose sign is shared or unfamiliar —
+   a lone "$" could be any of a dozen countries. */
+.prompt-money {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.prompt-money-symbol {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent);
+}
+.prompt-money-code {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-h);
+}
+.game-topbar .prompt-money-symbol {
+  font-size: 26px;
+}
+.game-topbar .prompt-money-code {
+  font-size: 19px;
+}
+@media (max-width: 700px) {
+  .game-topbar .prompt-money-symbol {
+    font-size: 23px;
+  }
+  .game-topbar .prompt-money-code {
+    font-size: 17px;
+  }
+}
+
 /* "City, Country" at one size, the city marked out by colour and weight. */
 .prompt-place {
   color: var(--text);

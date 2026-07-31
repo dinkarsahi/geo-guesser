@@ -60,8 +60,11 @@ interface WorldMapProps extends GuessMapProps {
   night?: boolean;
   /** Draw the country outlines. */
   borders?: boolean;
-  /** ISO alpha-2 code of a country to highlight once the answer is out. */
-  highlightCode?: string | null;
+  /**
+   * ISO alpha-2 codes to highlight once the answer is out. Usually the one
+   * country being asked about, but a currency lights up everywhere it's spent.
+   */
+  highlightCodes?: string[] | null;
 }
 
 interface Position {
@@ -76,7 +79,7 @@ export default function WorldMap({
   disabled = false,
   night = false,
   borders = true,
-  highlightCode = null,
+  highlightCodes = null,
 }: WorldMapProps) {
   const shapes = useWorldShapes();
 
@@ -248,10 +251,18 @@ export default function WorldMap({
   const guessPt = guess ? project(guess) : null;
   const answerPt = answer ? project(answer) : null;
 
+  // Keyed by value, not by the array's identity, so a caller building the list
+  // inline doesn't rebuild the set on every render.
+  const litKey = (highlightCodes ?? []).join(",").toLowerCase();
+  const lit = useMemo(
+    () => new Set(litKey ? litKey.split(",") : []),
+    [litKey],
+  );
+
   const isHighlit = (geo: CountryFeature) => {
-    if (!highlightCode || !answer) return false;
+    if (!lit.size || !answer) return false;
     const code = (geo.properties?.ISO_A2_EH || geo.properties?.ISO_A2 || "").toLowerCase();
-    return code === highlightCode.toLowerCase();
+    return lit.has(code);
   };
 
   return (
