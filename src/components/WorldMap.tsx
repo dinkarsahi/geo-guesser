@@ -9,7 +9,7 @@ import {
 import { geoEquirectangular, geoPath } from "d3-geo";
 import type { Coord } from "../lib/geo";
 import type { GuessMapProps } from "./mapTypes";
-import { useWorldShapes, type CountryFeature } from "../lib/worldShapes";
+import { countryAt, useWorldShapes, type CountryFeature } from "../lib/worldShapes";
 import { DAY_TEXTURE, GREY_TEXTURE } from "../lib/textures";
 import MapZoomControls from "./MapZoomControls";
 
@@ -84,6 +84,8 @@ export default function WorldMap({
     coordinates: defaultCenter,
     zoom: 1,
   }));
+  // Land is the only valid guess, so the cursor says so while it's over some.
+  const [overLand, setOverLand] = useState(false);
 
   // Back to the whole world whenever a new round starts.
   const [prevAnswer, setPrevAnswer] = useState(answer);
@@ -105,8 +107,8 @@ export default function WorldMap({
       zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, p.zoom * factor)),
     }));
 
-  const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (disabled) return;
+  /** Where on the globe a mouse event landed, or null if it missed the map. */
+  const coordAt = (e: React.MouseEvent<SVGSVGElement>): Coord | null => {
     const rect = e.currentTarget.getBoundingClientRect();
     // The svg is sliced to cover its box, so it's scaled by whichever axis
     // needs the most and centred, with the overflow cropped off both ends.
@@ -117,8 +119,25 @@ export default function WorldMap({
       anchor[0] + (sx - WIDTH / 2) / k,
       anchor[1] + (sy - mapHeight / 2) / k,
     ]);
-    if (!inverted) return;
-    onGuess({ lat: inverted[1], lng: inverted[0] });
+    return inverted ? { lat: inverted[1], lng: inverted[0] } : null;
+  };
+
+  const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (disabled) return;
+    const c = coordAt(e);
+    // Only land is a guess. Dropping a pin in the ocean names no country and
+    // answers no question, so the click is left to do nothing at all — the
+    // same rule the globe has always played by.
+    if (c && countryAt(shapes, c)) onGuess(c);
+  };
+
+  // Drives the cursor, so it's visible which half of the map you can guess on
+  // before you try. Cheap enough per move: a box test rules out all but a
+  // country or two before any coastline is walked.
+  const handleMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (disabled) return setOverLand(false);
+    const c = coordAt(e);
+    setOverLand(!!c && !!countryAt(shapes, c));
   };
 
   const project = (c: Coord) => projection([c.lng, c.lat]) as Pt | null;
@@ -140,13 +159,16 @@ export default function WorldMap({
         // runtime, despite the stricter declared type.
         projection={projection as unknown as ProjectionFunction}
         onClick={handleClick}
+        onMouseMove={handleMove}
+        onMouseLeave={() => setOverLand(false)}
         preserveAspectRatio="xMidYMid slice"
         style={{
           width: "100%",
           height: "100%",
           display: "block",
           background: theme.sea,
-          cursor: disabled ? "default" : "pointer",
+          // Only a pointer over land, since that's all there is to hit.
+          cursor: disabled ? "default" : overLand ? "pointer" : "grab",
         }}
       >
         <ZoomableGroup

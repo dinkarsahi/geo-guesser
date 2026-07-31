@@ -219,6 +219,70 @@ export function loadWorldShapes(): Promise<WorldShapes> {
   return pending;
 }
 
+/**
+ * A crude box round every separate landmass, worked out once. Point-in-polygon
+ * over 242 coastlines is far too much to do on every mouse move, and almost all
+ * of them can be ruled out by four comparisons first.
+ *
+ * One box per landmass rather than per country, which matters more than it
+ * sounds: Canada's box is most of a hemisphere, and a point anywhere in it
+ * would otherwise have to be tested against all several hundred of its islands.
+ * Per landmass, a click on the mainland tests the mainland and nothing else.
+ */
+interface Boxed {
+  feature: CountryFeature;
+  /** Outer ring first, then any holes — a single polygon of the country. */
+  rings: Pt[][];
+  west: number;
+  east: number;
+  south: number;
+  north: number;
+}
+
+const boxesFor = new WeakMap<WorldShapes, Boxed[]>();
+
+function landBoxes(shapes: WorldShapes): Boxed[] {
+  let boxes = boxesFor.get(shapes);
+  if (boxes) return boxes;
+  boxes = [];
+  for (const feature of shapes.features) {
+    const g = feature.geometry;
+    if (g.type !== "Polygon" && g.type !== "MultiPolygon") continue;
+    const parts: Pt[][][] =
+      g.type === "MultiPolygon" ? (g.coordinates as Pt[][][]) : [g.coordinates as Pt[][]];
+    for (const rings of parts) {
+      let west = Infinity, east = -Infinity, south = Infinity, north = -Infinity;
+      for (const [lng, lat] of rings[0]) {
+        if (lng < west) west = lng;
+        if (lng > east) east = lng;
+        if (lat < south) south = lat;
+        if (lat > north) north = lat;
+      }
+      if (west <= east) boxes.push({ feature, rings, west, east, south, north });
+    }
+  }
+  boxesFor.set(shapes, boxes);
+  return boxes;
+}
+
+/**
+ * The country a point lands in, or null for open water. The maps use it to
+ * turn away guesses dropped in the sea — there's no country there to be
+ * looking for, so a click on it isn't an answer to anything.
+ */
+export function countryAt(
+  shapes: WorldShapes | null,
+  c: Coord,
+): CountryFeature | null {
+  if (!shapes) return null;
+  for (const b of landBoxes(shapes)) {
+    if (c.lng < b.west || c.lng > b.east || c.lat < b.south || c.lat > b.north) continue;
+    const one = { type: "Polygon", coordinates: b.rings } as unknown as ExtendedFeature;
+    if (geoContains(one, [c.lng, c.lat])) return b.feature;
+  }
+  return null;
+}
+
 /** The country polygons once they've downloaded; null until then. */
 export function useWorldShapes(): WorldShapes | null {
   const [shapes, setShapes] = useState<WorldShapes | null>(null);
