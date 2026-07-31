@@ -10,6 +10,8 @@ export interface RoundResult {
   score: number;
   /** The guess landed inside the target's own area (country, station…). */
   hit: boolean;
+  /** How the miss is phrased when distance isn't the measure, e.g. "3 stops away". */
+  label?: string;
 }
 
 export interface GameOptions<T> {
@@ -23,6 +25,12 @@ export interface GameOptions<T> {
    * (a city is a point) just score on distance.
    */
   hitTest?: (guess: Coord, target: T) => boolean;
+  /**
+   * Scores the round on something other than how far the click landed — the
+   * tube map counts stops, where metres say little. Also supplies the wording
+   * for the miss, since "800 m away" would be the wrong thing to report.
+   */
+  scoreGuess?: (guess: Coord, target: T) => { score: number; label: string };
 }
 
 export interface Game<T> {
@@ -98,7 +106,7 @@ export function useGame<T>(
   scaleKm: number,
   options: GameOptions<T> = {},
 ): Game<T> {
-  const { rounds = 5, endless = false, hitTest } = options;
+  const { rounds = 5, endless = false, hitTest, scoreGuess } = options;
   // A free run deals the whole pool, reshuffled again whenever it runs dry.
   const dealt = endless ? pool.length : rounds;
 
@@ -116,12 +124,17 @@ export function useGame<T>(
       const answer = getCoord(target);
       const distanceKm = haversineKm(guess, answer);
       const hit = hitTest?.(guess, target) ?? false;
-      const score = hit ? MAX_ROUND_SCORE : scoreFromDistance(distanceKm, scaleKm);
+      const scored = scoreGuess?.(guess, target);
+      const score =
+        scored?.score ?? (hit ? MAX_ROUND_SCORE : scoreFromDistance(distanceKm, scaleKm));
       setCurrentGuess(guess);
-      setResults((r) => [...r, { guess, answer, distanceKm, score, hit }]);
+      setResults((r) => [
+        ...r,
+        { guess, answer, distanceKm, score, hit, label: scored?.label },
+      ]);
       setPhase("result");
     },
-    [phase, target, getCoord, scaleKm, hitTest],
+    [phase, target, getCoord, scaleKm, hitTest, scoreGuess],
   );
 
   const next = useCallback(() => {

@@ -1,17 +1,29 @@
 import FactCard from "../components/FactCard";
 import GameFrame from "../components/GameFrame";
 import LondonMap from "../components/LondonMap";
-import { nearestStation, tubeStations, type TubeStation } from "../data/tube";
+import {
+  formatStops,
+  nearestStation,
+  scoreFromStops,
+  stopsBetween,
+  tubeStations,
+  type TubeStation,
+} from "../data/tube";
 import { useGame } from "../lib/useGame";
 import type { ModeProps } from "./ModeProps";
 
 export default function TubeGuesser({ onExit, night, onToggleNight, settings }: ModeProps) {
-  // Tiny scale: on the London map even a few hundred metres matters. Landing in
-  // the right station's patch of the map is full marks, though — a station has
-  // no borders, so its catchment is the area you're aiming at.
+  // Scored in stops, not metres: distance on the London map is a poor guide to
+  // whether you knew where a station was. Whichever station's patch of the map
+  // you clicked counts as your answer, and the ride from there to the right one
+  // is what costs you. The right station is full marks.
   const game = useGame<TubeStation>(tubeStations, (s) => s, 1.2, {
     endless: settings.endless,
     hitTest: (guess, station) => nearestStation(guess).name === station.name,
+    scoreGuess: (guess, station) => {
+      const stops = stopsBetween(nearestStation(guess).name, station.name);
+      return { score: scoreFromStops(stops), label: formatStops(stops) };
+    },
   });
 
   return (

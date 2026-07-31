@@ -87,7 +87,7 @@ export default function GameFrame<T>({
               <li key={hidden + i}>
                 <span>Round {hidden + i + 1}</span>
                 <span className="muted">
-                  {r.hit ? "spot on" : formatDistance(r.distanceKm)}
+                  {r.hit ? "spot on" : r.label ?? formatDistance(r.distanceKm)}
                 </span>
                 <span className="round-score">{r.score.toLocaleString()}</span>
               </li>
@@ -156,7 +156,7 @@ export default function GameFrame<T>({
               </span>
             ) : (
               <span className="result-distance">
-                {formatDistance(lastResult.distanceKm)} away
+                {lastResult.label ?? `${formatDistance(lastResult.distanceKm)} away`}
               </span>
             )}
             <span className="result-points">

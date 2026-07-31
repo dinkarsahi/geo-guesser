@@ -1,4 +1,4 @@
-import type { Coord } from "../lib/geo";
+import { MAX_ROUND_SCORE, type Coord } from "../lib/geo";
 import { tubeStationsRaw, tubeConnections as rawConnections, tubeLineDefs } from "./tubeData";
 import type { TubeConnectionRaw, TubeLineDef } from "./tubeData";
 import { stationFacts } from "./tubeFacts";
@@ -101,6 +101,95 @@ export const tubeConnections: TubeConnectionRaw[] = (() => {
 export const stationCoords: Record<string, Coord> = Object.fromEntries(
   tubeStations.map((s) => [s.name, { lat: s.lat, lng: s.lng }]),
 );
+
+/**
+ * Interchanges joined on foot rather than by track. The dataset only knows
+ * about trains, but the map draws these as one interchange and so does anyone
+ * standing in them.
+ */
+const footLinks: [string, string][] = [["Bank", "Monument"]];
+
+/**
+ * Who neighbours whom on the network, ignoring which line you'd ride. Changing
+ * lines at a station costs nothing here: what's being counted is stations, not
+ * journeys.
+ */
+const neighbours: Map<string, string[]> = (() => {
+  const map = new Map<string, string[]>();
+  const known = new Set(tubeStations.map((s) => s.name));
+  const link = (a: string, b: string) => {
+    const list = map.get(a);
+    if (!list) map.set(a, [b]);
+    else if (!list.includes(b)) list.push(b);
+  };
+  for (const c of tubeConnections) {
+    if (!known.has(c.a) || !known.has(c.b)) continue;
+    link(c.a, c.b);
+    link(c.b, c.a);
+  }
+  for (const [a, b] of footLinks) {
+    if (!known.has(a) || !known.has(b)) continue;
+    link(a, b);
+    link(b, a);
+  }
+  return map;
+})();
+
+/** BFS results from a station, so repeat rounds on the same target are free. */
+const stopsFrom = new Map<string, Map<string, number>>();
+
+/** Every station's distance in stops from `origin`. */
+function stopDistances(origin: string): Map<string, number> {
+  const cached = stopsFrom.get(origin);
+  if (cached) return cached;
+
+  const dist = new Map<string, number>([[origin, 0]]);
+  let frontier = [origin];
+  let depth = 0;
+  while (frontier.length) {
+    depth += 1;
+    const next: string[] = [];
+    for (const name of frontier) {
+      for (const n of neighbours.get(name) ?? []) {
+        if (dist.has(n)) continue;
+        dist.set(n, depth);
+        next.push(n);
+      }
+    }
+    frontier = next;
+  }
+
+  stopsFrom.set(origin, dist);
+  return dist;
+}
+
+/**
+ * How many stops apart two stations are — the fewest you'd ride through to get
+ * from one to the other, changing lines freely. Infinity if the network in the
+ * dataset doesn't join them up at all.
+ */
+export function stopsBetween(a: string, b: string): number {
+  return stopDistances(a).get(b) ?? Infinity;
+}
+
+/**
+ * Score a tube guess out of MAX_ROUND_SCORE by stops rather than metres. Two
+ * stations a few hundred metres apart can be a long ride from each other, and
+ * two a mile apart can be one stop — on a tube map it's the stops you know.
+ * The right station is full marks; from there the score halves roughly every
+ * three stops, so a near miss still pays and the far side of London doesn't.
+ */
+export function scoreFromStops(stops: number): number {
+  if (!Number.isFinite(stops)) return 0;
+  return Math.round(MAX_ROUND_SCORE * Math.exp(-stops / 4));
+}
+
+/** "Spot on", "1 stop away", "6 stops away". */
+export function formatStops(stops: number): string {
+  if (!Number.isFinite(stops)) return "off the network";
+  if (stops === 0) return "spot on";
+  return `${stops} ${stops === 1 ? "stop" : "stops"} away`;
+}
 
 /**
  * The station whose patch of the map a point falls in — the nearest one. A

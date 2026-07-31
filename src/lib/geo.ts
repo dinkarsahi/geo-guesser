@@ -23,7 +23,11 @@ export function haversineKm(a: Coord, b: Coord): number {
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
-export const MAX_ROUND_SCORE = 5000;
+/**
+ * A round is marked out of 100. Small numbers stay meaningful — 87 reads as
+ * "nearly perfect" at a glance in a way 4,350 never did.
+ */
+export const MAX_ROUND_SCORE = 100;
 
 /**
  * Convert a guess distance into a 0..MAX_ROUND_SCORE score.

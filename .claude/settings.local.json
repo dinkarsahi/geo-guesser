@@ -58,7 +58,9 @@
       "PowerShell(npx tsc -b --pretty false 2>&1 | Select-Object -First 20)",
       "PowerShell(npx tsc -b --pretty false 2>&1 | Select-Object -First 15)",
       "PowerShell(git fetch *)",
-      "PowerShell(git *)"
+      "PowerShell(git *)",
+      "Bash(npx esbuild *)",
+      "Bash(echo \"TYPECHECK_EXIT=$?\")"
     ]
   }
 }
