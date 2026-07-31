@@ -303,6 +303,11 @@ body:has(.game-play) {
 .game-topbar .prompt-label {
   transform: translateY(2px);
 }
+/* Except beside a city, which is set small enough that the label already lands
+   on its middle — the same nudge there only pushes it below the line. */
+.game-topbar .prompt-card:has(.prompt-place) .prompt-label {
+  transform: none;
+}
 .game-topbar .flag {
   margin-top: 0;
   /* Big enough to read the detail on a busy flag, small enough that the bar
