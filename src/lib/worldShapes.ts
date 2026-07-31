@@ -33,6 +33,110 @@ const SMALL_KM2 = 12_000;
  */
 const SMALL_TARGET_KM = 250;
 
+/**
+ * The flat map draws its countries as SVG paths, which it can do at any detail
+ * for nothing. The globe builds a 3D mesh out of every one of them, and the
+ * 1:50m coastline is far more of it than a globe can spin: at full detail it
+ * drops to single figures for frames a second, which takes the reveal flight
+ * down with it. So the globe gets its own coarser copy of the world — every
+ * country still there and still clickable, drawn from about a tenth of the
+ * points. These two numbers are what buy that back, and they were picked by
+ * measuring: together they land the globe on the vertex count it used to run
+ * at 60fps.
+ */
+const GLOBE_TOLERANCE_DEG = 0.2;
+const GLOBE_MIN_ISLAND_KM2 = 500;
+
+type Pt = [number, number];
+
+/** Square of the distance from p to the segment a-b. */
+function sqSegDist(p: Pt, a: Pt, b: Pt): number {
+  let x = a[0];
+  let y = a[1];
+  const dx = b[0] - x;
+  const dy = b[1] - y;
+  if (dx || dy) {
+    const t = ((p[0] - x) * dx + (p[1] - y) * dy) / (dx * dx + dy * dy);
+    if (t > 1) {
+      x = b[0];
+      y = b[1];
+    } else if (t > 0) {
+      x += dx * t;
+      y += dy * t;
+    }
+  }
+  return (p[0] - x) ** 2 + (p[1] - y) ** 2;
+}
+
+/**
+ * Ramer-Douglas-Peucker: drops the points that sit close enough to the line
+ * between their neighbours to not be missed. The ends are always kept, so a
+ * ring stays closed.
+ */
+function simplifyRing(points: Pt[], tolerance: number): Pt[] {
+  if (points.length <= 4) return points;
+  const maxSq = tolerance * tolerance;
+  const keep = new Uint8Array(points.length);
+  keep[0] = 1;
+  keep[points.length - 1] = 1;
+  const stack: [number, number][] = [[0, points.length - 1]];
+  while (stack.length) {
+    const [from, to] = stack.pop()!;
+    let worst = 0;
+    let at = -1;
+    for (let i = from + 1; i < to; i++) {
+      const d = sqSegDist(points[i], points[from], points[to]);
+      if (d > worst) {
+        worst = d;
+        at = i;
+      }
+    }
+    if (worst > maxSq && at > 0) {
+      keep[at] = 1;
+      stack.push([from, at], [at, to]);
+    }
+  }
+  const out = points.filter((_, i) => keep[i]);
+  // Fewer than four points isn't a ring any more — keep the original instead.
+  return out.length >= 4 ? out : points;
+}
+
+const ringKm2 = (ring: Pt[]) =>
+  geoArea({ type: "Polygon", coordinates: [ring] } as unknown as ExtendedFeature) *
+  EARTH_KM2;
+
+/** The same countries, cheap enough to spin: fewer islands, fewer points. */
+function coarsenForGlobe(features: CountryFeature[]): CountryFeature[] {
+  return features.map((f) => {
+    const g = f.geometry;
+    if (g.type !== "Polygon" && g.type !== "MultiPolygon") return f;
+
+    const parts: Pt[][][] =
+      g.type === "MultiPolygon" ? (g.coordinates as Pt[][][]) : [g.coordinates as Pt[][]];
+
+    // Biggest landmass first, so a country always keeps at least its main body
+    // however small that is — an island state is nothing but small islands.
+    const ranked = parts
+      .map((rings) => ({ rings, km2: ringKm2(rings[0]) }))
+      .sort((a, b) => b.km2 - a.km2);
+
+    const kept = ranked
+      .filter((p, i) => i === 0 || p.km2 >= GLOBE_MIN_ISLAND_KM2)
+      .map(({ rings }) =>
+        rings
+          .map((ring) => simplifyRing(ring, GLOBE_TOLERANCE_DEG))
+          .filter((ring) => ring.length >= 4),
+      )
+      .filter((rings) => rings.length > 0);
+
+    if (!kept.length) return f;
+    return {
+      ...f,
+      geometry: { type: "MultiPolygon", coordinates: kept },
+    } as CountryFeature;
+  });
+}
+
 export interface CountryProps {
   NAME?: string;
   /** Unabbreviated English name ("Dem. Rep. Congo" -> the full thing). */
@@ -53,6 +157,11 @@ export type CountryFeature = Feature<Geometry, CountryProps>;
 
 export interface WorldShapes {
   features: CountryFeature[];
+  /**
+   * The same countries at a detail a 3D globe can spin. Only for drawing and
+   * clicking on the globe — never for deciding whether a guess was right.
+   */
+  globeFeatures: CountryFeature[];
   /** Lowercase ISO alpha-2 code -> country polygon. */
   byCode: Record<string, CountryFeature>;
   /**
@@ -100,7 +209,7 @@ export function loadWorldShapes(): Promise<WorldShapes> {
       for (const [code, f] of Object.entries(byCode))
         if ((areaOf.get(f) ?? 0) < SMALL_KM2) smallTargets[code] = aimPoint(f);
 
-      return { features, byCode, smallTargets };
+      return { features, globeFeatures: coarsenForGlobe(features), byCode, smallTargets };
     })
     .catch((err) => {
       // Let a later attempt retry rather than caching the failure forever.
@@ -121,18 +230,6 @@ export function useWorldShapes(): WorldShapes | null {
     return () => { live = false; };
   }, []);
   return shapes;
-}
-
-/**
- * True when a point is within reach of some speck of a country. The globe
- * throws away clicks that land in the sea, which would otherwise make the
- * island states unanswerable — every one of them is surrounded by it.
- */
-export function nearSmallCountry(shapes: WorldShapes | null, c: Coord): boolean {
-  if (!shapes) return false;
-  return Object.values(shapes.smallTargets).some(
-    (spot) => haversineKm(c, spot) <= SMALL_TARGET_KM,
-  );
 }
 
 /**

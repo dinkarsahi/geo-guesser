@@ -125,14 +125,6 @@ export default function WorldMap({
   const guessPt = guess ? project(guess) : null;
   const answerPt = answer ? project(answer) : null;
 
-  // Where the specks of countries sit, projected once rather than every frame.
-  const smallSpots = useMemo(() => {
-    if (!shapes) return [];
-    return Object.entries(shapes.smallTargets)
-      .map(([code, c]) => ({ code, at: projection([c.lng, c.lat]) as Pt | null }))
-      .filter((s): s is { code: string; at: Pt } => !!s.at);
-  }, [shapes, projection]);
-
   const isHighlit = (geo: CountryFeature) => {
     if (!highlightCode || !answer) return false;
     const code = (geo.properties?.ISO_A2_EH || geo.properties?.ISO_A2 || "").toLowerCase();
@@ -208,24 +200,6 @@ export default function WorldMap({
               }
             </Geographies>
           )}
-
-          {/* A ring where a country is too small to draw. Malta and the
-              Maldives are a pixel of coastline at this scale — without a mark
-              of their own they're invisible, and there's nothing to aim at.
-              Sized against the zoom so the ring stays a target you can hit
-              rather than growing into a blot over its own neighbourhood. */}
-          {shapes && borders &&
-            smallSpots.map(({ code, at }) => (
-              <circle
-                key={code}
-                cx={at[0]}
-                cy={at[1]}
-                r={sz(6)}
-                fill="none"
-                stroke={theme.border}
-                strokeWidth={sz(1.1)}
-              />
-            ))}
 
           {guessPt && answerPt && (
             <line x1={guessPt[0]} y1={guessPt[1]} x2={answerPt[0]} y2={answerPt[1]}
