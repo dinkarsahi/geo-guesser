@@ -35,7 +35,7 @@ function CompanyGame({ onExit, night, onToggleNight, settings, pool, shapes }: G
       hint="Click the country it's headquartered in."
       renderPrompt={(company) => (
         <div className="prompt-card">
-          <span className="prompt-label">Where is this company from?</span>
+          <span className="prompt-label">Where is this company headquartered?</span>
           <span className="prompt-company">
             {/* On its own plate: these marks come in the company's own colour,
                 and several of them are black, which the bar is too. */}
