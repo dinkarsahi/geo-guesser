@@ -25,6 +25,29 @@ const MIN_ZOOM = 0.45;
 const REVEAL_MS = 1200;
 const REVEAL_ZOOM = 2.5;
 
+/**
+ * A gently bowed path from one point to the other, standing in for the arc the
+ * globe lifts off its surface. It always bows towards the top of the map, so
+ * two places the same distance apart are drawn the same way round wherever
+ * they are, and the bow is capped so a guess on the far side of the world
+ * doesn't balloon off the top of it.
+ */
+function arcBetween(a: Pt, b: Pt): string {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const len = Math.hypot(dx, dy) || 1;
+  let nx = -dy / len;
+  let ny = dx / len;
+  if (ny > 0) {
+    nx = -nx;
+    ny = -ny;
+  }
+  const bow = Math.min(len * 0.16, 70);
+  const cx = (a[0] + b[0]) / 2 + nx * bow;
+  const cy = (a[1] + b[1]) / 2 + ny * bow;
+  return `M ${a[0]} ${a[1]} Q ${cx} ${cy} ${b[0]} ${b[1]}`;
+}
+
 const easeInOutCubic = (t: number) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 const prefersReducedMotion = () =>
@@ -306,15 +329,21 @@ export default function WorldMap({
             </Geographies>
           )}
 
-          {/* Guess to answer, dashes running the length of it — the flat map's
-              version of the arc the globe throws between the two. The period
-              goes out with it so the travel loops seamlessly at any zoom. */}
+          {/* Guess to answer: the arc the globe throws between the two, bowed
+              and with its dashes running along it. The stroke doesn't scale
+              with the map, so the dashes stay the same size on screen at any
+              zoom and the travel loops seamlessly however far you're in. */}
           {guessPt && answerPt && (
-            <line
+            <path
               className="guess-line"
-              style={{ "--dash": sz(7) } as React.CSSProperties}
-              x1={guessPt[0]} y1={guessPt[1]} x2={answerPt[0]} y2={answerPt[1]}
-              stroke="#c084fc" strokeWidth={sz(1.5)} strokeDasharray={`${sz(4)} ${sz(3)}`} />
+              d={arcBetween(guessPt, answerPt)}
+              fill="none"
+              stroke="#c084fc"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeDasharray="6 5"
+              vectorEffect="non-scaling-stroke"
+            />
           )}
           {guessPt && (
             <circle cx={guessPt[0]} cy={guessPt[1]} r={sz(5)} fill="#e11d48"
