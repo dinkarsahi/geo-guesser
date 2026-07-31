@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Globe, { type GlobeMethods } from "react-globe.gl";
 import type { GuessMapProps } from "./mapTypes";
-import { useWorldShapes, type CountryFeature } from "../lib/worldShapes";
+import { countryAt, useWorldShapes, type CountryFeature } from "../lib/worldShapes";
 import { DAY_TEXTURE, GREY_TEXTURE } from "../lib/textures";
 import MapZoomControls from "./MapZoomControls";
 
@@ -9,6 +9,9 @@ const MIN_ALTITUDE = 0.05; // closest button zoom
 const MAX_ALTITUDE = 3.5; // farthest button zoom
 
 const BUMP_TEXTURE = GREY_TEXTURE; // relief bump in both modes
+
+/** Constant, so the globe isn't handed a new one to re-apply on every render. */
+const noSide = () => "rgba(0,0,0,0)";
 
 interface GlobeMapProps extends GuessMapProps {
   /** When true, render the greyscale globe; otherwise the colourful one. */
@@ -110,6 +113,29 @@ export default function GlobeMap({
     (f.properties?.ISO_A2_EH || f.properties?.ISO_A2 || "").toLowerCase();
   const lit = highlightCode && answer ? highlightCode.toLowerCase() : null;
 
+  /**
+   * These three have to keep the same identity between renders. The globe
+   * re-applies an accessor to all 242 countries the moment it's handed a new
+   * one, and written inline they were new on every render — including the ones
+   * from following the pointer on and off land, which happens constantly while
+   * you drag. Re-styling the whole world several times a second is what was
+   * stamping on the flight out to the answer.
+   */
+  const polygonCap = useCallback(
+    (d: object) =>
+      codeOf(d as CountryFeature) === lit ? "rgba(34,197,94,0.45)" : "rgba(0,0,0,0)",
+    [lit],
+  );
+  const polygonStroke = useCallback(
+    (d: object) =>
+      codeOf(d as CountryFeature) === lit
+        ? "#22c55e"
+        : borders
+          ? night ? "#9aa3ae" : "#f8fafc"
+          : "",
+    [lit, borders, night],
+  );
+
   // Every country is always in the scene: the polygons are what makes land
   // clickable (they sit in front of the globe, so they take the click), and
   // whether they're *drawn* is just a matter of their stroke colour below.
@@ -156,28 +182,31 @@ export default function GlobeMap({
           // shapes never arrived — without them there'd be nothing to click.
           if (!disabled && !shapes) onGuess({ lat, lng });
         }}
+        // Which polygon the ray struck is no use on its own: a click on open
+        // ocean carries on through the globe and comes out of the far side,
+        // where it hits whichever country happens to be there. That fired this
+        // handler for Saudi Arabia over a point in the Atlantic. So the polygon
+        // is ignored and the spot itself is asked what country it's in — the
+        // same question the flat map asks, and the one the scoring will ask.
         onPolygonClick={(_polygon, _event, { lat, lng }) => {
-          if (!disabled) onGuess({ lat, lng });
+          if (disabled) return;
+          const c = { lat, lng };
+          if (countryAt(shapes, c)) onGuess(c);
         }}
         onPolygonHover={(polygon) => setOverLand(!!polygon)}
         polygonsData={polygons}
         // Kept as flat to the surface as the stroke allows: the polygons are
         // what you click, so the further they float the further a click at a
-        // shallow angle lands from the spot under the cursor.
-        polygonAltitude={(d) => (codeOf(d as CountryFeature) === lit ? 0.008 : 0.002)}
-        polygonCapColor={(d) =>
-          codeOf(d as CountryFeature) === lit ? "rgba(34,197,94,0.45)" : "rgba(0,0,0,0)"
-        }
-        polygonSideColor={() => "rgba(0,0,0,0)"}
+        // shallow angle lands from the spot under the cursor. One height for
+        // every country, including the revealed one — lifting it was a rebuild
+        // of its geometry at exactly the moment the camera starts moving, and
+        // the green wash marks it perfectly well without.
+        polygonAltitude={0.002}
+        polygonCapColor={polygonCap}
+        polygonSideColor={noSide}
         // An empty colour draws no outline at all, which is how the invisible
         // click targets stay invisible when borders are off.
-        polygonStrokeColor={(d) =>
-          codeOf(d as CountryFeature) === lit
-            ? "#22c55e"
-            : borders
-              ? night ? "#9aa3ae" : "#f8fafc"
-              : ""
-        }
+        polygonStrokeColor={polygonStroke}
         polygonsTransitionDuration={0}
         pointsData={points}
         pointLat="lat"
