@@ -55,7 +55,7 @@ function CurrencyGame({ onExit, night, onToggleNight, settings, pool, shapes }: 
       hint="Click a country that spends it."
       renderPrompt={(money) => (
         <div className="prompt-card">
-          <span className="prompt-label">Who spends this?</span>
+          <span className="prompt-label">Where is this currency from?</span>
           <span className="prompt-money">
             <span className="prompt-money-symbol">{money.symbol}</span>
             <span className="prompt-money-code">{money.code}</span>
