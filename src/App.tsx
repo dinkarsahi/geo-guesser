@@ -3,10 +3,11 @@ import CityLocator from "./modes/CityLocator";
 import CompanyGuesser from "./modes/CompanyGuesser";
 import CurrencyGuesser from "./modes/CurrencyGuesser";
 import FlagGuesser from "./modes/FlagGuesser";
+import PopulationGuesser from "./modes/PopulationGuesser";
 import TubeGuesser from "./modes/TubeGuesser";
 import type { GameSettings } from "./modes/ModeProps";
 
-type Mode = "city" | "flag" | "currency" | "company" | "tube";
+type Mode = "city" | "flag" | "currency" | "company" | "population" | "tube";
 
 const MODES: { id: Mode; title: string; blurb: string; emoji: string }[] = [
   {
@@ -34,6 +35,12 @@ const MODES: { id: Mode; title: string; blurb: string; emoji: string }[] = [
     emoji: "🏢",
   },
   {
+    id: "population",
+    title: "Population Guesser",
+    blurb: "See how many people live somewhere and work out where it is.",
+    emoji: "👥",
+  },
+  {
     id: "tube",
     title: "Tube Station Guesser",
     blurb: "Pinpoint a London Underground station on a zoomed-in map.",
@@ -43,12 +50,6 @@ const MODES: { id: Mode; title: string; blurb: string; emoji: string }[] = [
 
 /** Modes we've sketched out but haven't built — shown greyed out on the menu. */
 const UPCOMING: { id: string; title: string; blurb: string; emoji: string }[] = [
-  {
-    id: "population",
-    title: "Population Guesser",
-    blurb: "See how many people live somewhere and work out where it is.",
-    emoji: "👥",
-  },
   {
     id: "headsup",
     title: "Head to Head",
@@ -191,6 +192,7 @@ export default function App() {
     if (mode === "flag") return <FlagGuesser {...modeProps} />;
     if (mode === "currency") return <CurrencyGuesser {...modeProps} />;
     if (mode === "company") return <CompanyGuesser {...modeProps} />;
+    if (mode === "population") return <PopulationGuesser {...modeProps} />;
     return <TubeGuesser {...modeProps} />;
   }
 

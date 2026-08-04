@@ -62,7 +62,16 @@
       "Bash(npx esbuild *)",
       "Bash(echo \"TYPECHECK_EXIT=$?\")",
       "Bash(cp C:/Users/sahid/AppData/Local/Temp/claude/C--Users-sahid-geo-guesser/89eeae6b-7159-4e44-83f7-3363e146cf68/scratchpad/dup.mjs ./_dup.mjs)",
-      "Bash(rm -f ./_dup.mjs)"
+      "Bash(rm -f ./_dup.mjs)",
+      "Bash(awk '{printf \"%-4s %s\\\\n\", $2, $1}')",
+      "Bash(curl -sL -o si.json -w \"%{http_code} %{size_download}\\\\n\" \"https://cdn.jsdelivr.net/npm/simple-icons@latest/_data/simple-icons.json\")",
+      "Bash(grep -v '\t-$')",
+      "Bash(curl -s --max-time 30 \"https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?date=2024&format=json&per_page=400&page=1\" -o \"C:/Users/sahid/AppData/Local/Temp/claude/C--Users-sahid-geo-guesser/c1b4adb3-3a6c-4fc1-bf7c-dd72235b4f32/scratchpad/wb1.json\")",
+      "Bash(curl -s --max-time 120 \"https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_50m_admin_0_countries.geojson\" -o world.geojson)",
+      "Bash(curl -s --max-time 30 \"https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?date=2025&format=json&per_page=400\" -o wb2025.json)",
+      "Bash(curl -s --max-time 60 -H \"User-Agent: geo-guesser-dev/1.0\" \"https://en.wikipedia.org/w/api.php?action=parse&page=List_of_countries_and_dependencies_by_population&prop=wikitext&format=json&formatversion=2\" -o wikipop.json)",
+      "Bash(curl -s --max-time 30 -H \"User-Agent: geo-guesser-dev/1.0\" \"https://en.wikipedia.org/w/api.php?action=parse&page=%C3%85land&prop=wikitext&format=json&formatversion=2&section=0\" -o aland.json)",
+      "PowerShell(Get-Process *)"
     ]
   }
 }

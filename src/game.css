@@ -421,6 +421,87 @@ body:has(.game-play) {
   }
 }
 
+/* The whole question is one number, so it's set like one: tabular figures so
+   the digits line up rather than shuffle round as the rounds change, and the
+   year it was counted riding along beside it — a population means nothing
+   without the date it was true of. */
+.prompt-population {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.prompt-population-count {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+.prompt-population-note {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: help;
+}
+.game-topbar .prompt-population-count {
+  font-size: 26px;
+}
+@media (max-width: 700px) {
+  .game-topbar .prompt-population-count {
+    font-size: 21px;
+  }
+  .prompt-population-note {
+    font-size: 12px;
+  }
+}
+
+/* The reveal, which is two facts rather than one: the country that actually
+   has that population, and how many people live in the country picked instead.
+   The second is the whole point of the mode — a wrong answer is only wrong by
+   some amount, and you can't see how much without the number beside it. */
+.pop-result {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pop-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.pop-line-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  /* Both labels reserve the width of the longer one, so the two country names
+     start at the same place and the numbers below read as a comparison. */
+  flex: none;
+  min-width: 78px;
+}
+.pop-line-name {
+  font-weight: 600;
+  color: var(--text-h);
+}
+.pop-line-count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.pop-line-answer .pop-line-label,
+.pop-line-answer .pop-line-count {
+  color: var(--accent);
+}
+.pop-note {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 /* "City, Country" at one size, the city marked out by colour and weight. */
 .prompt-place {
   color: var(--text);
