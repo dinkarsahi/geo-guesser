@@ -3,13 +3,12 @@ import type { SharedResult } from "./match";
 const KEY = "spoton.results";
 
 /**
- * Every result this device has seen for a code, kept between visits.
+ * Every result this device has played for a code, kept between visits.
  *
  * With no server there is no such thing as "everyone who has played this
- * code": a player on another device is invisible until their score is handed
- * over. What this can do is remember every game finished here — pass a phone
- * round four people and the table fills itself — and hold on to any result
- * pasted in from elsewhere, so it only ever has to be pasted once.
+ * code": a player on another device is invisible. What this can do is remember
+ * every game finished here — pass a phone round four people and the table
+ * fills itself.
  */
 type Store = Record<string, SharedResult[]>;
 
@@ -33,7 +32,7 @@ function write(store: Store) {
 }
 
 /** Everything on file for a code, in no particular order. */
-export function loadResults(code: string): SharedResult[] {
+function loadResults(code: string): SharedResult[] {
   const kept = read()[code];
   return Array.isArray(kept) ? kept : [];
 }

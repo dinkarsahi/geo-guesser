@@ -150,16 +150,7 @@ export function formatDuration(ms: number): string {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
 
-/**
- * The line a player sends round when they've finished. It carries the code so
- * the other end can refuse to rank two different games, which is the one
- * mistake this design makes easy to make, and the name so the standings can
- * say who is leading rather than which line is.
- */
-export function resultLine(code: string, player: string, score: number, ms: number): string {
-  return `SpotOn ${code} — ${player}: ${score} pts in ${formatDuration(ms)}`;
-}
-
+/** One player's finished match, as the standings hold it. */
 export interface SharedResult {
   code: string;
   player: string;
@@ -167,33 +158,8 @@ export interface SharedResult {
   ms: number;
 }
 
-/**
- * Names are typed by people and then pasted into a parser, so they give up the
- * two characters that would break it and the length that would wreck a table.
- */
-export const cleanName = (input: string) => input.replace(/[:\n\r]/g, "").slice(0, 16);
-
-/** Reads back one result line, however it was pasted about. */
-export function parseResultLine(input: string): SharedResult | null {
-  const m = /SpotOn\s+([0-9A-Z]+)\s*[—–-]\s*([^:\n]+?)\s*:\s*(\d+)\s*pts\s*in\s*(\d+):(\d{2})/i.exec(
-    input,
-  );
-  if (!m) return null;
-  return {
-    code: m[1].toUpperCase(),
-    player: m[2].trim(),
-    score: Number(m[3]),
-    ms: (Number(m[4]) * 60 + Number(m[5])) * 1000,
-  };
-}
-
-/** Every result in a pasted block — people send these one to a line. */
-export function parseResults(input: string): SharedResult[] {
-  return input
-    .split(/[\n\r]+/)
-    .map(parseResultLine)
-    .filter((r): r is SharedResult => r !== null);
-}
+/** A name a standings table can hold: one line of it, and not too much. */
+export const cleanName = (input: string) => input.replace(/[\n\r]/g, "").slice(0, 16);
 
 /**
  * The standings: most points first, and level scores settled by whoever spent

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Match, SharedResult } from "../lib/match";
-import { formatDuration, parseResults, rankResults, resultLine } from "../lib/match";
+import { formatDuration, rankResults } from "../lib/match";
 import { saveResult } from "../lib/matchHistory";
 
 interface MatchResultProps {
@@ -10,49 +10,20 @@ interface MatchResultProps {
 }
 
 /**
- * The table a match ends on, and how it fills.
+ * The table a match ends on.
  *
- * Every game finished on this device is filed under its code, so the standings
- * are already there when the round ends: hand a phone round and each player's
- * score joins the table as they finish. A player on another device is the one
- * thing this can't see, so their line is pasted in once and then kept with the
- * rest.
+ * Every game finished here is filed under its code, so the standings are
+ * already there when the round ends: hand the device round and each player's
+ * score joins the table as they finish.
  */
 export default function MatchResult({ match, score, ms }: MatchResultProps) {
-  const line = resultLine(match.code, match.player, score, ms);
-  const [copied, setCopied] = useState(false);
-  const [pasted, setPasted] = useState("");
-  const [adding, setAdding] = useState(false);
   // Filed as the screen is first built, which is also the moment the score
   // becomes final — this panel only ever renders on a finished match. Saving
   // twice would be harmless anyway: the store keeps one row per player.
-  const [kept, setKept] = useState<SharedResult[]>(() =>
+  const [kept] = useState<SharedResult[]>(() =>
     saveResult({ code: match.code, player: match.player, score, ms }),
   );
 
-  const copy = () => {
-    navigator.clipboard?.writeText(line).then(
-      () => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      },
-      () => setCopied(false),
-    );
-  };
-
-  /** Takes in whatever was pasted, keeps what belongs to this code. */
-  const add = () => {
-    const incoming = parseResults(pasted).filter((r) => r.code === match.code);
-    let table = kept;
-    for (const r of incoming) table = saveResult(r);
-    setKept(table);
-    setPasted("");
-    setAdding(false);
-  };
-
-  const strays = pasted.trim()
-    ? parseResults(pasted).filter((r) => r.code !== match.code).length
-    : 0;
   const standings = rankResults(kept);
   const mine = standings.find((r) => r.player.toLowerCase() === match.player.toLowerCase());
   const contested = standings.length > 1;
@@ -93,53 +64,9 @@ export default function MatchResult({ match, score, ms }: MatchResultProps) {
         </>
       ) : (
         <p className="muted match-hint">
-          Nobody else has played {match.code} on this device yet. Hand it over and their
-          score joins the table, or send yours on.
+          Nobody else has played {match.code} here yet — hand it over and their score
+          joins the table.
         </p>
-      )}
-
-      <p className="match-share">{line}</p>
-      <div className="button-row">
-        <button className="btn btn-ghost" onClick={copy}>
-          {copied ? "Copied ✓" : "Copy result"}
-        </button>
-        <button className="btn btn-ghost" onClick={() => setAdding((a) => !a)}>
-          {adding ? "Cancel" : "Add someone's result"}
-        </button>
-      </div>
-
-      {/* For the players this device can't see: pasted once, then kept with
-          the rest so the table survives the next round. */}
-      {adding && (
-        <>
-          <textarea
-            className="match-input"
-            rows={3}
-            value={pasted}
-            onChange={(e) => setPasted(e.target.value)}
-            placeholder="Paste their results here — one to a line"
-            aria-label="Other players' results"
-            autoFocus
-          />
-          {pasted.trim() && !parseResults(pasted).length && (
-            <p className="muted match-verdict">Nothing in there looks like a result line.</p>
-          )}
-          {strays > 0 && (
-            <p className="muted match-verdict">
-              {strays === 1 ? "One result is" : `${strays} results are`} from a different
-              code and won't be added — those players answered different questions.
-            </p>
-          )}
-          <div className="button-row">
-            <button
-              className="btn btn-primary"
-              disabled={!parseResults(pasted).some((r) => r.code === match.code)}
-              onClick={add}
-            >
-              Add to the table
-            </button>
-          </div>
-        </>
       )}
     </div>
   );

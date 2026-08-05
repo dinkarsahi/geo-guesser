@@ -371,37 +371,6 @@
   font-size: 14px;
   line-height: 1.4;
 }
-/* The line itself, set apart as something to be copied rather than read. */
-.match-share {
-  margin: 0;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px dashed var(--border);
-  background: var(--code-bg);
-  font-family: var(--heading);
-  font-size: 15px;
-  color: var(--text-h);
-  word-break: break-word;
-}
-.match-input {
-  font: inherit;
-  font-size: 14px;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 2px solid var(--border);
-  background: var(--social-bg);
-  color: var(--text-h);
-  text-align: center;
-  resize: vertical;
-}
-.match-input:focus {
-  outline: none;
-  border-color: var(--accent);
-}
 .match-verdict {
   margin: 0;
   font-size: 15px;
