@@ -1,6 +1,12 @@
 import type { SharedResult } from "./match";
 
-const KEY = "spoton.results";
+/**
+ * The version is in the key because the marking has changed: a round used to
+ * pay up to 150 and now pays up to 100. Scores from before that can't share a
+ * table with scores from after it, and there's nothing to salvage in a handful
+ * of local games, so the old ones are simply left behind.
+ */
+const KEY = "spoton.results.v2";
 
 /**
  * Every result this device has played for a code, kept between visits.

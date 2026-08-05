@@ -35,15 +35,14 @@ export const MATCH_ROUNDS = 5;
 export const MATCH_ROUND_MS = 30_000;
 
 /**
- * How much of a round's score speed is worth: answering instantly is worth
- * half as much again as answering on the buzzer. It multiplies the accuracy
- * rather than adding to it, so a fast wrong answer still loses to a slow right
- * one — the question is who knows the map, with the clock as the tiebreaker.
+ * How much of a round the clock can take off you: answer on the buzzer and
+ * you keep 60% of what the guess was worth, answer instantly and you keep all
+ * of it. Taken off the accuracy rather than added to it, so a match is marked
+ * out of the same 100 a round as every other game here — and so a fast wrong
+ * answer still loses to a slow right one, which is the point: the question is
+ * who knows the map, with the clock deciding the near-run things.
  */
-const SPEED_BONUS = 0.5;
-
-/** The most one round can pay, once speed is counted. */
-export const MATCH_MAX_ROUND = 150;
+const SPEED_PENALTY = 0.4;
 
 /**
  * The alphabet codes are drawn from: no O/0, no I/1/L, nothing else that gets
@@ -115,8 +114,8 @@ export const spellCode = (code: string) => `${code.slice(0, 3)} ${code.slice(3)}
  * guess was and how long it took.
  */
 export function matchPoints(accuracy: number, elapsedMs: number): number {
-  const left = Math.max(0, MATCH_ROUND_MS - elapsedMs) / MATCH_ROUND_MS;
-  return Math.round(accuracy * (1 + SPEED_BONUS * left));
+  const spent = Math.min(1, Math.max(0, elapsedMs) / MATCH_ROUND_MS);
+  return Math.round(accuracy * (1 - SPEED_PENALTY * spent));
 }
 
 /** What a match changes about a round, ready to spread into `useGame`. */

@@ -38,6 +38,14 @@ export default function MatchResult({ match, score, ms }: MatchResultProps) {
       {contested ? (
         <>
           <p className="match-line-label">Game {match.code}</p>
+          {/* Headings on the same grid as the rows below, so the two figures
+              are named rather than left to be worked out from their shape. */}
+          <div className="standing standing-head" aria-hidden="true">
+            <span className="standing-place" />
+            <span className="standing-name">Player</span>
+            <span className="standing-time">Time</span>
+            <span className="standing-score">Score</span>
+          </div>
           <ol className="standings">
             {standings.map((r, i) => (
               <li

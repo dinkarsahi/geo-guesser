@@ -387,11 +387,33 @@
 .standings {
   list-style: none;
   width: 100%;
-  margin: 4px 0 0;
+  margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+/* Column names, set small and quiet: they say what the numbers are once, and
+   then get out of the way of them. */
+.standing-head {
+  width: 100%;
+  box-sizing: border-box;
+  padding-bottom: 2px;
+  font-family: var(--heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+}
+.standing-head .standing-name,
+.standing-head .standing-time,
+.standing-head .standing-score {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
 }
 .standing {
   display: grid;

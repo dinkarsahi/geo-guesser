@@ -26,7 +26,7 @@ const titleOf = (mode: ModeId) => MATCH_MODES.find((m) => m.id === mode)!.title;
 
 const RULES = `${MATCH_ROUNDS} rounds, ${Math.round(
   MATCH_ROUND_MS / 1000,
-)} seconds each. Points for how close you land, plus up to half as much again for how fast — so knowing it beats guessing it quickly.`;
+)} seconds each, marked out of 100 a round as usual. Sitting on a round costs you up to 40% of what it was worth — so knowing it still beats guessing it quickly.`;
 
 interface HeadToHeadProps {
   onBack: () => void;

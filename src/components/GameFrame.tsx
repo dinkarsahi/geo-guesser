@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { Coord } from "../lib/geo";
 import { formatDistance, MAX_ROUND_SCORE } from "../lib/geo";
 import type { Match } from "../lib/match";
-import { MATCH_MAX_ROUND, MATCH_ROUND_MS } from "../lib/match";
+import { MATCH_ROUND_MS } from "../lib/match";
 import type { Game, Phase } from "../lib/useGame";
 import MatchResult from "./MatchResult";
 import type { GuessMapProps } from "./mapTypes";
@@ -77,9 +77,7 @@ export default function GameFrame<T>({
   const freeRun = totalRounds === null;
 
   if (phase === "done") {
-    // A match pays up to half as much again for speed, so its ceiling is higher
-    // than the flat hundred a round is worth on its own.
-    const maxTotal = results.length * (match ? MATCH_MAX_ROUND : MAX_ROUND_SCORE);
+    const maxTotal = results.length * MAX_ROUND_SCORE;
     const shown = results.slice(-SUMMARY_LIMIT);
     const hidden = results.length - shown.length;
     return (
