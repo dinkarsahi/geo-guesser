@@ -1,12 +1,15 @@
 import { useState } from "react";
 import {
+  cleanName,
   createMatchCode,
   parseMatchCode,
   spellCode,
   MATCH_ROUNDS,
   MATCH_ROUND_MS,
   type Match,
+  type MatchCode,
 } from "../lib/match";
+import { loadName, saveName } from "../lib/playerName";
 import type { ModeId } from "./ModeProps";
 
 /** The modes a match can be played in, as they're named on the menu. */
@@ -41,14 +44,24 @@ interface HeadToHeadProps {
  */
 export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
   const [screen, setScreen] = useState<"pick" | "create" | "join">("pick");
-  const [made, setMade] = useState<Match | null>(null);
+  const [made, setMade] = useState<MatchCode | null>(null);
   const [typed, setTyped] = useState("");
   const [copied, setCopied] = useState(false);
+  const [name, setName] = useState(loadName);
 
   const create = (mode: ModeId) => {
     const code = createMatchCode(mode);
     setMade(parseMatchCode(code));
   };
+
+  /** Off to play, under the name that will appear in everyone's standings. */
+  const play = (code: MatchCode) => {
+    const player = name.trim();
+    saveName(player);
+    onStart({ ...code, player });
+  };
+
+  const named = name.trim().length > 0;
 
   const copy = (code: string) => {
     navigator.clipboard?.writeText(code).then(
@@ -79,20 +92,47 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
       <p className="muted menu-sub">{RULES}</p>
 
       {screen === "pick" && (
-        <div className="h2h-choices">
-          <button className="h2h-choice" onClick={() => setScreen("create")}>
-            <span className="h2h-choice-title">Create a game</span>
-            <span className="muted h2h-choice-hint">
-              Pick the mode and get a code to send out.
-            </span>
-          </button>
-          <button className="h2h-choice" onClick={() => setScreen("join")}>
-            <span className="h2h-choice-title">Join a game</span>
-            <span className="muted h2h-choice-hint">
-              Type the code you were given and play the same rounds.
-            </span>
-          </button>
-        </div>
+        <>
+          {/* Asked for before anything else, because the standings at the end
+              are a list of names and one of them has to be yours. */}
+          <div className="h2h-name">
+            <label className="setup-label" htmlFor="h2h-player">
+              Playing as
+            </label>
+            <input
+              id="h2h-player"
+              className="h2h-name-input"
+              value={name}
+              onChange={(e) => setName(cleanName(e.target.value))}
+              placeholder="Your name"
+              maxLength={16}
+              autoFocus={!name}
+            />
+          </div>
+          <div className="h2h-choices">
+            <button
+              className="h2h-choice"
+              disabled={!named}
+              onClick={() => setScreen("create")}
+            >
+              <span className="h2h-choice-title">Create a game</span>
+              <span className="muted h2h-choice-hint">
+                Pick the mode and get a code to send out.
+              </span>
+            </button>
+            <button
+              className="h2h-choice"
+              disabled={!named}
+              onClick={() => setScreen("join")}
+            >
+              <span className="h2h-choice-title">Join a game</span>
+              <span className="muted h2h-choice-hint">
+                Type the code you were given and play the same rounds.
+              </span>
+            </button>
+          </div>
+          {!named && <p className="muted h2h-code-hint">Put a name in first.</p>}
+        </>
       )}
 
       {screen === "create" && !made && (
@@ -124,7 +164,7 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
             <button className="btn btn-ghost" onClick={() => copy(made.code)}>
               {copied ? "Copied ✓" : "Copy code"}
             </button>
-            <button className="btn btn-primary" onClick={() => onStart(made)}>
+            <button className="btn btn-primary" onClick={() => play(made)}>
               Play it ▸
             </button>
           </div>
@@ -157,7 +197,7 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
             <button
               className="btn btn-primary"
               disabled={!joining}
-              onClick={() => joining && onStart(joining)}
+              onClick={() => joining && play(joining)}
             >
               Play it ▸
             </button>

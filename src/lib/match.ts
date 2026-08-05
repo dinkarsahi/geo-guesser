@@ -14,12 +14,18 @@ import type { ModeId } from "../modes/ModeProps";
  * it costs is that neither player can see the other play: the scores meet at
  * the end, by one player reading their result to the other.
  */
-export interface Match {
+export interface MatchCode {
   /** The code as typed and shown, e.g. "F4KQ7M". */
   code: string;
   mode: ModeId;
-  /** Everything after the mode letter, hashed — see `matchTargets`. */
+  /** Everything after the mode letter, hashed — see `pickTargets`. */
   seed: number;
+}
+
+/** A match being played, by someone. */
+export interface Match extends MatchCode {
+  /** Who's playing, so the standings can name a leader rather than a line. */
+  player: string;
 }
 
 /** Rounds in a match. Fixed, so that two players always play the same game. */
@@ -89,7 +95,7 @@ export function createMatchCode(mode: ModeId): string {
 }
 
 /** The match a code describes, or null if it isn't one. */
-export function parseMatchCode(input: string): Match | null {
+export function parseMatchCode(input: string): MatchCode | null {
   const code = tidy(input);
   if (code.length !== SEED_LENGTH + 1) return null;
   const mode = MODE_BY_LETTER[code[0]];
@@ -145,27 +151,60 @@ export function formatDuration(ms: number): string {
 }
 
 /**
- * The line a player reads out or pastes to their opponent. It carries the code
- * so the other end can refuse to compare two different games, which is the one
- * mistake this design makes easy to make.
+ * The line a player sends round when they've finished. It carries the code so
+ * the other end can refuse to rank two different games, which is the one
+ * mistake this design makes easy to make, and the name so the standings can
+ * say who is leading rather than which line is.
  */
-export function resultLine(code: string, score: number, ms: number): string {
-  return `SpotOn ${code}: ${score} pts in ${formatDuration(ms)}`;
+export function resultLine(code: string, player: string, score: number, ms: number): string {
+  return `SpotOn ${code} — ${player}: ${score} pts in ${formatDuration(ms)}`;
 }
 
 export interface SharedResult {
   code: string;
+  player: string;
   score: number;
   ms: number;
 }
 
-/** Reads back a result line, however much of it survived being pasted. */
+/**
+ * Names are typed by people and then pasted into a parser, so they give up the
+ * two characters that would break it and the length that would wreck a table.
+ */
+export const cleanName = (input: string) => input.replace(/[:\n\r]/g, "").slice(0, 16);
+
+/** Reads back one result line, however it was pasted about. */
 export function parseResultLine(input: string): SharedResult | null {
-  const m = /SpotOn\s+([0-9A-Z]+)\s*:\s*(\d+)\s*pts\s*in\s*(\d+):(\d{2})/i.exec(input);
+  const m = /SpotOn\s+([0-9A-Z]+)\s*[—–-]\s*([^:\n]+?)\s*:\s*(\d+)\s*pts\s*in\s*(\d+):(\d{2})/i.exec(
+    input,
+  );
   if (!m) return null;
   return {
     code: m[1].toUpperCase(),
-    score: Number(m[2]),
-    ms: (Number(m[3]) * 60 + Number(m[4])) * 1000,
+    player: m[2].trim(),
+    score: Number(m[3]),
+    ms: (Number(m[4]) * 60 + Number(m[5])) * 1000,
   };
+}
+
+/** Every result in a pasted block — people send these one to a line. */
+export function parseResults(input: string): SharedResult[] {
+  return input
+    .split(/[\n\r]+/)
+    .map(parseResultLine)
+    .filter((r): r is SharedResult => r !== null);
+}
+
+/**
+ * The standings: most points first, and level scores settled by whoever spent
+ * less time getting them. One entry per player — a name pasted twice is the
+ * same person's result arriving by two routes, not two players.
+ */
+export function rankResults(results: SharedResult[]): SharedResult[] {
+  const byName = new Map<string, SharedResult>();
+  for (const r of results) {
+    const key = r.player.toLowerCase();
+    if (!byName.has(key)) byName.set(key, r);
+  }
+  return [...byName.values()].sort((a, b) => b.score - a.score || a.ms - b.ms);
 }
