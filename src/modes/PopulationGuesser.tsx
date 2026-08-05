@@ -121,7 +121,7 @@ function PopulationGame({ onExit, night, onToggleNight, settings, pool, shapes }
               {target.population.toLocaleString()}
             </span>
             <span className="prompt-population-note" title={POPULATION_NOTE}>
-              as of {POPULATION_AS_OF}?*
+              as of {POPULATION_AS_OF}?
             </span>
           </span>
         </div>
