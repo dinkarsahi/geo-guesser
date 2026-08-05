@@ -129,20 +129,20 @@ function PopulationGame({ onExit, night, onToggleNight, settings, pool, shapes }
         const picked = pickedCountry(shapes, byCode, click);
         if (!picked) return null;
         return {
-          name: picked.name,
-          detail:
+          name:
             picked.population === null
-              ? "no figures on file"
-              : `${picked.population.toLocaleString()} people`,
+              ? `${picked.name}, which has no figures on file`
+              : `${picked.name}, which has a population of ${picked.population.toLocaleString()} people`,
         };
       }}
-      // Titled the way every other mode titles its answer: the thing itself in
-      // bold, and what there is to say about it underneath. Here that's the
-      // asterisk the figure has carried since the question was asked.
+      // The answer said the same way round as the guess above it, so the two
+      // read as one sentence apiece and the figures land under one another.
+      // Under it, the asterisk the number has carried since it was asked.
       renderResultExtra={(target) => (
         <div className="fact">
           <strong className="fact-title">
-            {target.name} — {target.population.toLocaleString()} people
+            The answer is {target.name}, which has a population of{" "}
+            {target.population.toLocaleString()} people.
           </strong>
           <p className="pop-note muted">* {POPULATION_NOTE}</p>
         </div>

@@ -70,9 +70,8 @@ function CurrencyGame({ onExit, night, onToggleNight, settings, pool, shapes }: 
         const spends = currencyOf(codeOf(feature));
         return {
           name: spends
-            ? `${nameOf(feature)}, which spends the ${spends.name}.`
+            ? `${nameOf(feature)}, which spends the ${spends.name}. (${spends.code}, ${spends.symbol})`
             : nameOf(feature),
-          detail: spends ? `(${spends.code}, ${spends.symbol})` : undefined,
         };
       }}
       hint="Click a country that spends it."
