@@ -61,29 +61,29 @@ function CurrencyGame({ onExit, night, onToggleNight, settings, pool, shapes }: 
       onExit={onExit}
       night={night}
       onToggleNight={onToggleNight}
-      hitLabel={(money) => money.name}
       // Naming the country isn't the lesson here — the money it spends is. A
       // round lost on the euro is worth something if it ends knowing that the
-      // country picked was Botswana and that Botswana pays in pula. Written
-      // the way the question itself is: the sign first, then the code.
+      // country picked was Botswana and that Botswana pays in pula.
       pickedLabel={(click) => {
         const feature = countryAt(shapes, click);
         if (!feature) return null;
         const spends = currencyOf(codeOf(feature));
         return {
           name: spends
-            ? `${nameOf(feature)}, which spends the ${spends.name}`
+            ? `${nameOf(feature)}, which spends the ${spends.name}.`
             : nameOf(feature),
-          detail: spends ? `${spends.symbol} ${spends.code}` : undefined,
+          detail: spends ? `(${spends.code}, ${spends.symbol})` : undefined,
         };
       }}
       hint="Click a country that spends it."
       renderPrompt={(money) => (
         <div className="prompt-card">
           <span className="prompt-label">Where is this currency from?</span>
+          {/* The code leads: it's the half of the question that names the
+              money, where a lone $ or £ could be any of a dozen currencies. */}
           <span className="prompt-money">
-            <span className="prompt-money-symbol">{money.symbol}</span>
             <span className="prompt-money-code">{money.code}</span>
+            <span className="prompt-money-symbol">({money.symbol})</span>
           </span>
         </div>
       )}

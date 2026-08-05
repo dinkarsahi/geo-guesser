@@ -347,29 +347,29 @@ body:has(.game-play) {
   align-items: baseline;
   gap: 10px;
 }
-.prompt-money-symbol {
+.prompt-money-code {
   font-size: 32px;
   font-weight: 700;
   line-height: 1;
+  letter-spacing: 0.04em;
   color: var(--accent);
 }
-.prompt-money-code {
+.prompt-money-symbol {
   font-size: 22px;
   font-weight: 600;
-  letter-spacing: 0.04em;
   color: var(--text-h);
 }
-.game-topbar .prompt-money-symbol {
+.game-topbar .prompt-money-code {
   font-size: 26px;
 }
-.game-topbar .prompt-money-code {
+.game-topbar .prompt-money-symbol {
   font-size: 19px;
 }
 @media (max-width: 700px) {
-  .game-topbar .prompt-money-symbol {
+  .game-topbar .prompt-money-code {
     font-size: 23px;
   }
-  .game-topbar .prompt-money-code {
+  .game-topbar .prompt-money-symbol {
     font-size: 17px;
   }
 }
@@ -456,48 +456,11 @@ body:has(.game-play) {
   }
 }
 
-/* The reveal, which is two facts rather than one: the country that actually
-   has that population, and how many people live in the country picked instead.
-   The second is the whole point of the mode — a wrong answer is only wrong by
-   some amount, and you can't see how much without the number beside it. */
-.pop-result {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.pop-line {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-  font-size: 15px;
-  line-height: 1.4;
-}
-.pop-line-label {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text);
-  /* Both labels reserve the width of the longer one, so the two country names
-     start at the same place and the numbers below read as a comparison. */
-  flex: none;
-  min-width: 78px;
-}
-.pop-line-name {
-  font-weight: 600;
-  color: var(--text-h);
-}
-.pop-line-count {
-  margin-left: auto;
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-}
-.pop-line-answer .pop-line-label,
-.pop-line-answer .pop-line-count {
-  color: var(--accent);
-}
+/* The asterisk the figure has carried since the question was asked, spelled
+   out under the answer. Small: it qualifies the number rather than adding to
+   it, and nobody needs to read it twice. */
 .pop-note {
+  margin-top: 4px;
   font-size: 12px;
   line-height: 1.4;
 }
@@ -767,24 +730,14 @@ body:has(.game-play) {
   color: #fff;
 }
 /* The panel is dark whatever the page is, so anything in it that would take a
-   near-black day-mode colour has to be told otherwise. Both country names in a
-   population reveal were exactly that, and by day they came out all but
-   invisible against it. */
-.result-panel.hud .picked-name,
-.result-panel.hud .pop-line-name {
+   near-black day-mode colour has to be told otherwise — by day the name of the
+   country picked came out all but invisible against it. */
+.result-panel.hud .picked-name {
   color: #fff;
 }
 .result-panel.hud .picked-label,
-.result-panel.hud .picked-detail,
-.result-panel.hud .pop-line-label,
-.result-panel.hud .pop-line-count {
+.result-panel.hud .picked-detail {
   color: #d1d5db;
-}
-/* Except the answer's own row, which keeps the accent that sets it apart —
-   the lighter of the two, the one meant for a dark background. */
-.result-panel.hud .pop-line-answer .pop-line-label,
-.result-panel.hud .pop-line-answer .pop-line-count {
-  color: #c084fc;
 }
 .result-headline {
   display: flex;
@@ -813,6 +766,12 @@ body:has(.game-play) {
   margin-left: auto;
   font-variant-numeric: tabular-nums;
   color: var(--text);
+}
+/* Full marks, and the whole of that row: bigger and heavier than the label it
+   stands in for, since it's a verdict rather than a heading for something. */
+.result-verdict {
+  font-size: 18px;
+  font-weight: 800;
 }
 .picked-label {
   font-size: 12px;

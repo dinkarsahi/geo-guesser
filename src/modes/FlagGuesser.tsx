@@ -36,7 +36,6 @@ function FlagGame({ onExit, night, onToggleNight, settings, pool, shapes }: Game
       onExit={onExit}
       night={night}
       onToggleNight={onToggleNight}
-      hitLabel={(country) => country.name}
       pickedLabel={(click) => {
         const name = countryNameAt(shapes, click);
         return name ? { name } : null;

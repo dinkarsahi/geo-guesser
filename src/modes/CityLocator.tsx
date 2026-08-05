@@ -3,22 +3,22 @@ import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
 import WorldMap from "../components/WorldMap";
 import { cities, type City } from "../data/cities";
-import { formatDistance, haversineKm, type Coord } from "../lib/geo";
+import { haversineKm, type Coord } from "../lib/geo";
 import { useGame } from "../lib/useGame";
 import type { ModeProps } from "./ModeProps";
 
-/** The city on the map nearest the click, and how far off the click was. */
-function cityNear(c: Coord): { city: City; km: number } {
-  let city = cities[0];
-  let km = Infinity;
-  for (const candidate of cities) {
-    const d = haversineKm(c, candidate);
-    if (d < km) {
-      km = d;
-      city = candidate;
+/** The city on the map nearest a click. */
+function cityNear(c: Coord): City {
+  let best = cities[0];
+  let bestKm = Infinity;
+  for (const city of cities) {
+    const km = haversineKm(c, city);
+    if (km < bestKm) {
+      bestKm = km;
+      best = city;
     }
   }
-  return { city, km };
+  return best;
 }
 
 export default function CityLocator({ onExit, night, onToggleNight, settings }: ModeProps) {
@@ -44,15 +44,10 @@ export default function CityLocator({ onExit, night, onToggleNight, settings }: 
         </div>
       )}
       // A click almost never lands on a city, so the nearest one on the map
-      // stands in for what was picked — with the distance to it alongside,
-      // which is what keeps that honest. Land on Barcelona and it reads as
-      // picking Barcelona; land in the Pyrenees and the figure says otherwise.
+      // stands in for what was picked.
       pickedLabel={(click) => {
-        const { city, km } = cityNear(click);
-        return {
-          name: `${city.name} in ${city.country}`,
-          detail: `${formatDistance(km)} from your click`,
-        };
+        const city = cityNear(click);
+        return { name: `${city.name} in ${city.country}` };
       }}
       renderResultExtra={(city) => (
         <FactCard title={`${city.name}, ${city.country}`} fact={city.fact} />

@@ -34,7 +34,6 @@ export default function TubeGuesser({ onExit, night, onToggleNight, settings }: 
       onExit={onExit}
       night={night}
       onToggleNight={onToggleNight}
-      hitLabel={(station) => station.name}
       // The station whose patch was clicked — the same one the round was
       // scored against, so "6 stops away" below finally says from where.
       pickedLabel={(click) => {

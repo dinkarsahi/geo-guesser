@@ -104,7 +104,6 @@ function PopulationGame({ onExit, night, onToggleNight, settings, pool, shapes }
       onExit={onExit}
       night={night}
       onToggleNight={onToggleNight}
-      hitLabel={(target) => target.name}
       hint={`Click the country you think it is — anywhere inside it counts. Figures are ${POPULATION_AS_OF} estimates.`}
       renderPrompt={(target) => (
         <div className="prompt-card">
@@ -137,15 +136,14 @@ function PopulationGame({ onExit, night, onToggleNight, settings, pool, shapes }
               : `${picked.population.toLocaleString()} people`,
         };
       }}
+      // Titled the way every other mode titles its answer: the thing itself in
+      // bold, and what there is to say about it underneath. Here that's the
+      // asterisk the figure has carried since the question was asked.
       renderResultExtra={(target) => (
-        <div className="pop-result">
-          <p className="pop-line pop-line-answer">
-            <span className="pop-line-label">Answer</span>
-            <span className="pop-line-name">{target.name}</span>
-            <span className="pop-line-count">
-              {target.population.toLocaleString()} people
-            </span>
-          </p>
+        <div className="fact">
+          <strong className="fact-title">
+            {target.name} — {target.population.toLocaleString()} people
+          </strong>
           <p className="pop-note muted">* {POPULATION_NOTE}</p>
         </div>
       )}

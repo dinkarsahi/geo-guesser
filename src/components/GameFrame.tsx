@@ -17,8 +17,6 @@ interface GameFrameProps<T> {
   renderMap: (props: Required<GuessMapProps>) => ReactNode;
   /** Optional extra content shown in the result panel (e.g. a country fact). */
   renderResultExtra?: (target: T) => ReactNode;
-  /** Names what a full-marks guess landed in, e.g. "Italy" or "Angel". */
-  hitLabel?: (target: T) => string;
   /**
    * Names what a missed guess landed on, for modes where that's worth knowing:
    * being told the answer was Peru teaches half as much as also being told you
@@ -50,7 +48,6 @@ export default function GameFrame<T>({
   renderPrompt,
   renderMap,
   renderResultExtra,
-  hitLabel,
   pickedLabel,
   hint = "Click the map to place your guess.",
 }: GameFrameProps<T>) {
@@ -178,11 +175,12 @@ export default function GameFrame<T>({
         // places it was measured between.
         <div className="result-panel hud">
           {/* Full marks and a miss take the same row, so the verdict is always
-              the first thing read and always in the same place. */}
+              the first thing read and always in the same place. Nothing needs
+              naming after "Spot on!" — the answer is named in full directly
+              below it, and on a hit that's the place just clicked. */}
           {lastResult.hit ? (
             <p className="picked-line">
-              <span className="picked-label result-hit">Spot on!</span>
-              {hitLabel && <span className="picked-name">{hitLabel(target)}</span>}
+              <span className="result-hit result-verdict">Spot on!</span>
             </p>
           ) : (
             picked && (

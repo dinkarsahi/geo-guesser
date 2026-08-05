@@ -38,7 +38,6 @@ function CompanyGame({ onExit, night, onToggleNight, settings, pool, shapes }: G
       onExit={onExit}
       night={night}
       onToggleNight={onToggleNight}
-      hitLabel={(company) => company.country}
       pickedLabel={(click) => {
         const name = countryNameAt(shapes, click);
         return name ? { name } : null;
