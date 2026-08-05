@@ -19,6 +19,13 @@ interface GameFrameProps<T> {
   renderResultExtra?: (target: T) => ReactNode;
   /** Names what a full-marks guess landed in, e.g. "Italy" or "Angel". */
   hitLabel?: (target: T) => string;
+  /**
+   * Names what a missed guess landed in, for modes where that's worth knowing:
+   * being told the answer was Peru teaches half as much as also being told you
+   * pointed at Bolivia. Given the raw click rather than the marker, which may
+   * have been moved to stand for the country as a whole.
+   */
+  pickedLabel?: (click: Coord) => string | null;
   /** What to click, for modes where it isn't just anywhere on the map. */
   hint?: string;
 }
@@ -36,6 +43,7 @@ export default function GameFrame<T>({
   renderMap,
   renderResultExtra,
   hitLabel,
+  pickedLabel,
   hint = "Click the map to place your guess.",
 }: GameFrameProps<T>) {
   const {
@@ -111,6 +119,10 @@ export default function GameFrame<T>({
 
   const isResult = phase === "result";
   const lastRound = !freeRun && totalRounds !== null && roundIndex + 1 >= totalRounds;
+  // Only after a miss: a round that scored full marks has already been told
+  // what it landed in, by name, in the headline above.
+  const picked =
+    isResult && lastResult && !lastResult.hit ? pickedLabel?.(lastResult.click) : null;
 
   // A solid bar across the top, and the map gets every pixel below it. The bar
   // holds what you need to see at all times, so nothing has to sit on the map
@@ -167,6 +179,12 @@ export default function GameFrame<T>({
               +{lastResult.score.toLocaleString()} pts
             </span>
           </div>
+          {picked && (
+            <p className="picked-line">
+              <span className="picked-label">You picked</span>
+              <span className="picked-name">{picked}</span>
+            </p>
+          )}
           {renderResultExtra && (
             <div className="fact-panel">{renderResultExtra(target)}</div>
           )}

@@ -766,10 +766,50 @@ body:has(.game-play) {
 .result-panel.hud .fact-title {
   color: #fff;
 }
+/* The panel is dark whatever the page is, so anything in it that would take a
+   near-black day-mode colour has to be told otherwise. Both country names in a
+   population reveal were exactly that, and by day they came out all but
+   invisible against it. */
+.result-panel.hud .picked-name,
+.result-panel.hud .pop-line-name {
+  color: #fff;
+}
+.result-panel.hud .picked-label,
+.result-panel.hud .pop-line-label,
+.result-panel.hud .pop-line-count {
+  color: #d1d5db;
+}
+/* Except the answer's own row, which keeps the accent that sets it apart —
+   the lighter of the two, the one meant for a dark background. */
+.result-panel.hud .pop-line-answer .pop-line-label,
+.result-panel.hud .pop-line-answer .pop-line-count {
+  color: #c084fc;
+}
 .result-headline {
   display: flex;
   align-items: baseline;
   gap: 16px;
+}
+/* The country the click actually landed in, under the score. A miss is worth
+   more when it names both ends of it — the answer, and what was pointed at
+   instead — and the second one only this line ever says out loud. */
+.picked-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.picked-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+.picked-name {
+  font-weight: 600;
+  color: var(--text-h);
 }
 .result-distance {
   font-size: 20px;

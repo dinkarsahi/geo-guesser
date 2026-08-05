@@ -5,7 +5,13 @@ import NightToggle from "../components/NightToggle";
 import WorldMap from "../components/WorldMap";
 import { countryPool, flagUrl, type Country } from "../data/countries";
 import { useGame } from "../lib/useGame";
-import { anchorAt, isInCountry, useWorldShapes, type WorldShapes } from "../lib/worldShapes";
+import {
+  anchorAt,
+  countryNameAt,
+  isInCountry,
+  useWorldShapes,
+  type WorldShapes,
+} from "../lib/worldShapes";
 import type { ModeProps } from "./ModeProps";
 
 interface GameProps extends ModeProps {
@@ -31,6 +37,7 @@ function FlagGame({ onExit, night, onToggleNight, settings, pool, shapes }: Game
       night={night}
       onToggleNight={onToggleNight}
       hitLabel={(country) => country.name}
+      pickedLabel={(click) => countryNameAt(shapes, click)}
       renderPrompt={(country) => (
         <div className="prompt-card">
           <span className="prompt-label">Where is this flag from?</span>

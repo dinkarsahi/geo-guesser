@@ -7,7 +7,13 @@ import { countryPool } from "../data/countries";
 import { currencyPool, type CurrencyTarget } from "../data/currencies";
 import { haversineKm, type Coord } from "../lib/geo";
 import { useGame } from "../lib/useGame";
-import { anchorAt, isInCountry, useWorldShapes, type WorldShapes } from "../lib/worldShapes";
+import {
+  anchorAt,
+  countryNameAt,
+  isInCountry,
+  useWorldShapes,
+  type WorldShapes,
+} from "../lib/worldShapes";
 import type { ModeProps } from "./ModeProps";
 
 interface GameProps extends ModeProps {
@@ -54,6 +60,7 @@ function CurrencyGame({ onExit, night, onToggleNight, settings, pool, shapes }: 
       night={night}
       onToggleNight={onToggleNight}
       hitLabel={(money) => money.name}
+      pickedLabel={(click) => countryNameAt(shapes, click)}
       hint="Click a country that spends it."
       renderPrompt={(money) => (
         <div className="prompt-card">

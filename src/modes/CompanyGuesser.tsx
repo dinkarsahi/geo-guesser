@@ -6,7 +6,13 @@ import WorldMap from "../components/WorldMap";
 import { companyPool, logoUrl, type CompanyTarget } from "../data/companies";
 import { countryPool } from "../data/countries";
 import { useGame } from "../lib/useGame";
-import { anchorAt, isInCountry, useWorldShapes, type WorldShapes } from "../lib/worldShapes";
+import {
+  anchorAt,
+  countryNameAt,
+  isInCountry,
+  useWorldShapes,
+  type WorldShapes,
+} from "../lib/worldShapes";
 import type { ModeProps } from "./ModeProps";
 
 interface GameProps extends ModeProps {
@@ -33,6 +39,7 @@ function CompanyGame({ onExit, night, onToggleNight, settings, pool, shapes }: G
       night={night}
       onToggleNight={onToggleNight}
       hitLabel={(company) => company.country}
+      pickedLabel={(click) => countryNameAt(shapes, click)}
       hint="Click the country it's headquartered in."
       renderPrompt={(company) => (
         <div className="prompt-card">

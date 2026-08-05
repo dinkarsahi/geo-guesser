@@ -299,6 +299,17 @@ export function anchorAt(shapes: WorldShapes | null, c: Coord): Coord {
   return feature ? aimPoint(feature) : c;
 }
 
+/**
+ * The map's own name for the country a point landed in, or null for open
+ * water. What a mode names the country it was asking about and what it calls
+ * the country you picked instead both come from here, so a country is called
+ * the same thing whichever of the two it turns out to be.
+ */
+export function countryNameAt(shapes: WorldShapes | null, c: Coord): string | null {
+  const p = countryAt(shapes, c)?.properties;
+  return p ? p.NAME_EN || p.NAME_LONG || p.NAME || null : null;
+}
+
 /** The country polygons once they've downloaded; null until then. */
 export function useWorldShapes(): WorldShapes | null {
   const [shapes, setShapes] = useState<WorldShapes | null>(null);
