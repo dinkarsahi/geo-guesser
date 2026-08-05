@@ -71,7 +71,8 @@
       "Bash(curl -s --max-time 30 \"https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?date=2025&format=json&per_page=400\" -o wb2025.json)",
       "Bash(curl -s --max-time 60 -H \"User-Agent: geo-guesser-dev/1.0\" \"https://en.wikipedia.org/w/api.php?action=parse&page=List_of_countries_and_dependencies_by_population&prop=wikitext&format=json&formatversion=2\" -o wikipop.json)",
       "Bash(curl -s --max-time 30 -H \"User-Agent: geo-guesser-dev/1.0\" \"https://en.wikipedia.org/w/api.php?action=parse&page=%C3%85land&prop=wikitext&format=json&formatversion=2&section=0\" -o aland.json)",
-      "PowerShell(Get-Process *)"
+      "PowerShell(Get-Process *)",
+      "PowerShell(npx tsc --noEmit)"
     ]
   }
 }

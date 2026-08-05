@@ -115,13 +115,13 @@ function PopulationGame({ onExit, night, onToggleNight, settings, pool, shapes }
       hint={`Click the country you think it is — anywhere inside it counts. Figures are ${POPULATION_AS_OF} estimates.`}
       renderPrompt={(target) => (
         <div className="prompt-card">
-          <span className="prompt-label">Which country has this population?</span>
+          <span className="prompt-label">Which country has a population of</span>
           <span className="prompt-population">
             <span className="prompt-population-count">
               {target.population.toLocaleString()}
             </span>
             <span className="prompt-population-note" title={POPULATION_NOTE}>
-              *{POPULATION_AS_OF}
+              as of {POPULATION_AS_OF}?*
             </span>
           </span>
         </div>
