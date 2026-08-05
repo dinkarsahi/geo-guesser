@@ -15,10 +15,10 @@ interface GameProps extends ModeProps {
 }
 
 function CompanyGame({ onExit, night, onToggleNight, settings, pool, shapes }: GameProps) {
-  // The country is the answer, so anywhere inside its borders is full marks.
-  // Miss it and the distance is measured to the head office itself rather than
-  // to the middle of the country — the reveal is worth more when it lands on
-  // Maranello or Wolfsburg than somewhere in the general vicinity.
+  // The country is the answer, so anywhere inside its borders is full marks,
+  // and a miss is measured to the country itself. The town the head office
+  // happens to sit in is never asked for, so marking it would only invite the
+  // player to aim finer than the question deserves.
   const game = useGame<CompanyTarget>(pool, (c) => c, 2000, {
     endless: settings.endless,
     hitTest: (guess, company) => isInCountry(shapes, company.code, guess),
@@ -48,7 +48,7 @@ function CompanyGame({ onExit, night, onToggleNight, settings, pool, shapes }: G
       )}
       renderResultExtra={(company) => (
         <FactCard
-          title={`${company.name} — ${company.city}, ${company.country}`}
+          title={`${company.name} — ${company.country}`}
           fact={company.fact}
         />
       )}
