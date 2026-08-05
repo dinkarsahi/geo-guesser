@@ -8,6 +8,7 @@ import {
   MATCH_ROUND_MS,
   type Match,
   type MatchCode,
+  type MatchSetup,
 } from "../lib/match";
 import { loadName, saveName } from "../lib/playerName";
 import type { ModeId } from "./ModeProps";
@@ -23,6 +24,22 @@ const MATCH_MODES: { id: ModeId; title: string; emoji: string }[] = [
 ];
 
 const titleOf = (mode: ModeId) => MATCH_MODES.find((m) => m.id === mode)!.title;
+
+/**
+ * What a code commits everyone to, in words. Read on the way in by the player
+ * who chose it and on the way out by the players who didn't — the second of
+ * those is the one that matters, since they have no other way of knowing what
+ * they're about to be handed.
+ */
+function describe(code: MatchCode): string {
+  const parts = [titleOf(code.mode), `${MATCH_ROUNDS} rounds`];
+  // The tube has its own map, and the world-map choices say nothing about it.
+  if (code.mode !== "tube") {
+    parts.push(code.flat ? "flat map" : "3D globe");
+    parts.push(code.borders ? "borders on" : "no borders");
+  }
+  return parts.join(" · ");
+}
 
 const RULES = `${MATCH_ROUNDS} rounds, ${Math.round(
   MATCH_ROUND_MS / 1000,
@@ -48,10 +65,11 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
   const [typed, setTyped] = useState("");
   const [copied, setCopied] = useState(false);
   const [name, setName] = useState(loadName);
+  // The maker's choices, which the code will carry to everyone else.
+  const [setup, setSetup] = useState<MatchSetup>({ flat: false, borders: true });
 
   const create = (mode: ModeId) => {
-    const code = createMatchCode(mode);
-    setMade(parseMatchCode(code));
+    setMade(parseMatchCode(createMatchCode(mode, setup)));
   };
 
   /** Off to play, under the name that will appear in everyone's standings. */
@@ -74,7 +92,7 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
   };
 
   const joining = parseMatchCode(typed);
-  const typedEnough = typed.replace(/[^0-9a-zA-Z]/g, "").length >= 6;
+  const typedEnough = typed.replace(/[^0-9a-zA-Z]/g, "").length >= 7;
 
   return (
     <div className="menu setup">
@@ -137,6 +155,52 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
 
       {screen === "create" && !made && (
         <div className="setup-panel">
+          {/* Chosen before the game rather than after, because picking the game
+              is what mints the code — and by then these are baked into it. */}
+          <div className="setup-row">
+            <span className="setup-label">Map</span>
+            <div className="setup-options">
+              <button
+                className={`setup-option${!setup.flat ? " is-active" : ""}`}
+                onClick={() => setSetup((s) => ({ ...s, flat: false }))}
+                aria-pressed={!setup.flat}
+              >
+                <span className="setup-option-title">3D globe</span>
+                <span className="muted setup-option-hint">Spin and zoom a real globe</span>
+              </button>
+              <button
+                className={`setup-option${setup.flat ? " is-active" : ""}`}
+                onClick={() => setSetup((s) => ({ ...s, flat: true }))}
+                aria-pressed={setup.flat}
+              >
+                <span className="setup-option-title">Flat map</span>
+                <span className="muted setup-option-hint">The whole world at once</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="setup-row">
+            <span className="setup-label">Borders</span>
+            <div className="setup-options">
+              <button
+                className={`setup-option${setup.borders ? " is-active" : ""}`}
+                onClick={() => setSetup((s) => ({ ...s, borders: true }))}
+                aria-pressed={setup.borders}
+              >
+                <span className="setup-option-title">Show borders</span>
+                <span className="muted setup-option-hint">Country outlines drawn on</span>
+              </button>
+              <button
+                className={`setup-option${!setup.borders ? " is-active" : ""}`}
+                onClick={() => setSetup((s) => ({ ...s, borders: false }))}
+                aria-pressed={!setup.borders}
+              >
+                <span className="setup-option-title">Hide borders</span>
+                <span className="muted setup-option-hint">Coastlines only — harder</span>
+              </button>
+            </div>
+          </div>
+
           <div className="setup-row">
             <span className="setup-label">Game</span>
             <div className="h2h-modes">
@@ -148,6 +212,10 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
               ))}
             </div>
           </div>
+          <p className="muted h2h-code-hint">
+            Picking the game makes the code — everything above is set into it, and
+            everyone who plays it gets the same.
+          </p>
         </div>
       )}
 
@@ -155,10 +223,11 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
         <div className="setup-panel h2h-code-panel">
           <p className="muted h2h-code-label">Your code</p>
           <p className="h2h-code">{spellCode(made.code)}</p>
+          <p className="h2h-setup">{describe(made)}</p>
           <p className="muted h2h-code-hint">
-            {titleOf(made.mode)} — anyone who types this code gets the same{" "}
-            {MATCH_ROUNDS} rounds, in the same order. Play it yourself whenever you like:
-            the code doesn't expire and nobody has to be online at the same time.
+            Anyone who types this code gets exactly that — the same rounds, in the same
+            order, on the same map. Play it yourself whenever you like: the code doesn't
+            expire and nobody has to be online at the same time.
           </p>
           <div className="button-row">
             <button className="btn btn-ghost" onClick={() => copy(made.code)}>
@@ -178,19 +247,24 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
             className="h2h-code-input"
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
-            placeholder="F4K Q7M"
+            placeholder="FA4 KQ7M"
             autoFocus
-            maxLength={9}
+            maxLength={10}
             aria-label="Match code"
           />
+          {/* What the code commits you to, before you commit to it. */}
           {joining ? (
-            <p className="muted h2h-code-hint">
-              {titleOf(joining.mode)} — {MATCH_ROUNDS} rounds, the same ones your opponent
-              gets.
-            </p>
+            <>
+              <p className="h2h-setup">{describe(joining)}</p>
+              <p className="muted h2h-code-hint">
+                The same rounds on the same map as everyone else playing this code.
+              </p>
+            </>
           ) : (
             <p className="muted h2h-code-hint">
-              {typedEnough ? "That isn't a code we recognise." : "Six characters, in any case."}
+              {typedEnough
+                ? "That isn't a code we recognise."
+                : "Seven characters, in any case."}
             </p>
           )}
           <div className="button-row">

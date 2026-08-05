@@ -15,10 +15,14 @@ import type { ModeId } from "../modes/ModeProps";
  * the end, by one player reading their result to the other.
  */
 export interface MatchCode {
-  /** The code as typed and shown, e.g. "F4KQ7M". */
+  /** The code as typed and shown, e.g. "FA4KQ7M". */
   code: string;
   mode: ModeId;
-  /** Everything after the mode letter, hashed — see `pickTargets`. */
+  /** The flat map rather than the globe — the maker's choice, everyone's game. */
+  flat: boolean;
+  /** Country outlines drawn on. */
+  borders: boolean;
+  /** The code, hashed — see `pickTargets`. */
   seed: number;
 }
 
@@ -67,6 +71,30 @@ const MODE_BY_LETTER = Object.fromEntries(
   Object.entries(MODE_LETTERS).map(([mode, letter]) => [letter, mode as ModeId]),
 ) as Record<string, ModeId>;
 
+/** What the maker chose to play on, which the code has to carry to everyone else. */
+export interface MatchSetup {
+  flat: boolean;
+  borders: boolean;
+}
+
+/**
+ * The second letter of a code: which map, and whether it's drawn with borders.
+ * Both players have to be looking at the same world for the same five rounds
+ * to be the same test, so it travels with the code rather than being each
+ * player's own setting.
+ */
+const SETUP_LETTERS: [string, MatchSetup][] = [
+  ["A", { flat: false, borders: true }],
+  ["B", { flat: false, borders: false }],
+  ["C", { flat: true, borders: true }],
+  ["D", { flat: true, borders: false }],
+];
+
+const letterFor = (setup: MatchSetup) =>
+  SETUP_LETTERS.find(([, s]) => s.flat === setup.flat && s.borders === setup.borders)![0];
+
+const setupFor = (letter: string) => SETUP_LETTERS.find(([l]) => l === letter)?.[1];
+
 /** Strips the punctuation people add when writing a code down. */
 const tidy = (input: string) => input.toUpperCase().replace(/[^0-9A-Z]/g, "");
 
@@ -84,9 +112,9 @@ function hash(text: string): number {
   return h >>> 0;
 }
 
-/** A fresh code for a mode, e.g. "F4KQ7M". */
-export function createMatchCode(mode: ModeId): string {
-  let code = MODE_LETTERS[mode];
+/** A fresh code for a mode played a particular way, e.g. "FA4KQ7M". */
+export function createMatchCode(mode: ModeId, setup: MatchSetup): string {
+  let code = MODE_LETTERS[mode] + letterFor(setup);
   const bytes = new Uint32Array(SEED_LENGTH);
   crypto.getRandomValues(bytes);
   for (const b of bytes) code += ALPHABET[b % ALPHABET.length];
@@ -96,16 +124,17 @@ export function createMatchCode(mode: ModeId): string {
 /** The match a code describes, or null if it isn't one. */
 export function parseMatchCode(input: string): MatchCode | null {
   const code = tidy(input);
-  if (code.length !== SEED_LENGTH + 1) return null;
+  if (code.length !== SEED_LENGTH + 2) return null;
   const mode = MODE_BY_LETTER[code[0]];
-  if (!mode) return null;
+  const setup = setupFor(code[1]);
+  if (!mode || !setup) return null;
   // Every character has to be one we'd have dealt, or the code is a typo of
   // some other game and would quietly deal a different five rounds.
-  for (const c of code.slice(1)) if (!ALPHABET.includes(c)) return null;
-  return { code, mode, seed: hash(code) };
+  for (const c of code.slice(2)) if (!ALPHABET.includes(c)) return null;
+  return { code, mode, ...setup, seed: hash(code) };
 }
 
-/** Formatted for reading out: "F4K Q7M". */
+/** Formatted for reading out: "FA4 KQ7M". */
 export const spellCode = (code: string) => `${code.slice(0, 3)} ${code.slice(3)}`;
 
 /**

@@ -272,6 +272,14 @@
   line-height: 1.45;
   margin: 0;
 }
+/* What the code commits everyone to, spelled out under it. */
+.h2h-setup {
+  margin: 0;
+  font-family: var(--heading);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-h);
+}
 .h2h-code-input {
   font-family: var(--heading);
   font-size: 32px;

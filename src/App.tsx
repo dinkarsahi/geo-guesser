@@ -194,10 +194,20 @@ export default function App() {
     return () => document.body.classList.remove("playing");
   }, [playing]);
 
-  // A match names its own mode, so it skips the setup screen entirely: both
-  // players have to be asked the same five questions, and nothing on that
-  // screen is theirs to choose.
-  if (match) return <PlayMode {...modeProps} mode={match.mode} match={match} />;
+  // A match names its own mode and the map it's played on, so it skips the
+  // setup screen entirely: everyone playing a code has to be asked the same
+  // five questions of the same world, and none of that is the joiner's to
+  // change. Only the day/night look stays personal — it changes how the map is
+  // lit, not what it can tell you.
+  if (match)
+    return (
+      <PlayMode
+        {...modeProps}
+        settings={{ ...settings, flat: match.flat, borders: match.borders }}
+        mode={match.mode}
+        match={match}
+      />
+    );
 
   if (duel) {
     return <HeadToHead onBack={toMenu} onStart={setMatch} />;
