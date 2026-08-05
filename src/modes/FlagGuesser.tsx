@@ -5,7 +5,7 @@ import NightToggle from "../components/NightToggle";
 import WorldMap from "../components/WorldMap";
 import { countryPool, flagUrl, type Country } from "../data/countries";
 import { useGame } from "../lib/useGame";
-import { isInCountry, useWorldShapes, type WorldShapes } from "../lib/worldShapes";
+import { anchorAt, isInCountry, useWorldShapes, type WorldShapes } from "../lib/worldShapes";
 import type { ModeProps } from "./ModeProps";
 
 interface GameProps extends ModeProps {
@@ -16,10 +16,11 @@ interface GameProps extends ModeProps {
 
 function FlagGame({ onExit, night, onToggleNight, settings, pool, shapes }: GameProps) {
   // The whole country is the target: click anywhere inside its borders for full
-  // marks, and fall back to distance from its centre if you miss.
+  // marks, and miss by however far the country picked is from the right one.
   const game = useGame<Country>(pool, (c) => c, 2000, {
     endless: settings.endless,
     hitTest: (guess, country) => isInCountry(shapes, country.code, guess),
+    guessAt: (guess) => anchorAt(shapes, guess),
   });
 
   return (

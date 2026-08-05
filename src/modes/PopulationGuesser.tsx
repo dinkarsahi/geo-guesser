@@ -14,6 +14,7 @@ import {
 import { MAX_ROUND_SCORE, type Coord } from "../lib/geo";
 import { useGame } from "../lib/useGame";
 import {
+  anchorAt,
   countryAt,
   isInCountry,
   useWorldShapes,
@@ -100,6 +101,7 @@ function PopulationGame({ onExit, night, onToggleNight, settings, pool, shapes }
       isInCountry(shapes, target.code, guess)
         ? { score: MAX_ROUND_SCORE, label: "" }
         : scoreFor(guess, target),
+    guessAt: (guess) => anchorAt(shapes, guess),
   });
 
   const { lastResult } = game;
@@ -131,9 +133,12 @@ function PopulationGame({ onExit, night, onToggleNight, settings, pool, shapes }
         // other mode can give you: the country you actually picked has a
         // population too, and seeing it next to the one you were asked for is
         // what turns a wrong answer into something learned.
+        // Off the click rather than where the marker ended up: the marker sits
+        // on the country's anchor, and a handful of those are out at sea or
+        // inside a neighbour, which would name the wrong country or none.
         const picked =
           lastResult && !lastResult.hit
-            ? pickedCountry(shapes, byCode, lastResult.guess)
+            ? pickedCountry(shapes, byCode, lastResult.click)
             : null;
         return (
           <div className="pop-result">

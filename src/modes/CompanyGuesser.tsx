@@ -6,7 +6,7 @@ import WorldMap from "../components/WorldMap";
 import { companyPool, logoUrl, type CompanyTarget } from "../data/companies";
 import { countryPool } from "../data/countries";
 import { useGame } from "../lib/useGame";
-import { isInCountry, useWorldShapes, type WorldShapes } from "../lib/worldShapes";
+import { anchorAt, isInCountry, useWorldShapes, type WorldShapes } from "../lib/worldShapes";
 import type { ModeProps } from "./ModeProps";
 
 interface GameProps extends ModeProps {
@@ -22,6 +22,7 @@ function CompanyGame({ onExit, night, onToggleNight, settings, pool, shapes }: G
   const game = useGame<CompanyTarget>(pool, (c) => c, 2000, {
     endless: settings.endless,
     hitTest: (guess, company) => isInCountry(shapes, company.code, guess),
+    guessAt: (guess) => anchorAt(shapes, guess),
   });
 
   return (

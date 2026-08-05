@@ -4,7 +4,15 @@ import { haversineKm, scoreFromDistance, MAX_ROUND_SCORE, type Coord } from "./g
 export type Phase = "guessing" | "result" | "done";
 
 export interface RoundResult {
+  /** Where the guess counts as having been made — see `guessAt`. */
   guess: Coord;
+  /**
+   * Where the player actually pressed. The same as `guess` unless the mode
+   * moves it, and then still the only thing that says which country was picked
+   * — an anchor can sit in open water (New Zealand's is in Cook Strait) or in
+   * a neighbour (the Vatican's is inside Rome).
+   */
+  click: Coord;
   answer: Coord;
   distanceKm: number;
   score: number;
@@ -37,6 +45,18 @@ export interface GameOptions<T> {
    * whichever was nearest the guess — both to score against and to fly to.
    */
   answerFor?: (guess: Coord, target: T) => Coord;
+  /**
+   * Where a click counts as having been made. Modes that ask for a country
+   * rather than a place put every guess on that country's anchor, so the round
+   * is marked on which country was picked and not on where in it the cursor
+   * landed. The marker moves there too: the pin belongs on the country the
+   * player chose, not on the pixel they chose it with.
+   *
+   * Only distance uses it. `hitTest` and `scoreGuess` still see the raw click,
+   * which is what the player actually pointed at and the only thing that can
+   * tell a click on Malaysia apart from one on the Singapore marker beside it.
+   */
+  guessAt?: (guess: Coord) => Coord;
 }
 
 export interface Game<T> {
@@ -112,7 +132,7 @@ export function useGame<T>(
   scaleKm: number,
   options: GameOptions<T> = {},
 ): Game<T> {
-  const { rounds = 5, endless = false, hitTest, scoreGuess, answerFor } = options;
+  const { rounds = 5, endless = false, hitTest, scoreGuess, answerFor, guessAt } = options;
   // A free run deals the whole pool, reshuffled again whenever it runs dry.
   const dealt = endless ? pool.length : rounds;
 
@@ -125,22 +145,23 @@ export function useGame<T>(
   const target = targets[roundIndex];
 
   const submitGuess = useCallback(
-    (guess: Coord) => {
+    (click: Coord) => {
       if (phase !== "guessing") return;
+      const guess = guessAt?.(click) ?? click;
       const answer = answerFor?.(guess, target) ?? getCoord(target);
       const distanceKm = haversineKm(guess, answer);
-      const hit = hitTest?.(guess, target) ?? false;
-      const scored = scoreGuess?.(guess, target);
+      const hit = hitTest?.(click, target) ?? false;
+      const scored = scoreGuess?.(click, target);
       const score =
         scored?.score ?? (hit ? MAX_ROUND_SCORE : scoreFromDistance(distanceKm, scaleKm));
       setCurrentGuess(guess);
       setResults((r) => [
         ...r,
-        { guess, answer, distanceKm, score, hit, label: scored?.label },
+        { guess, click, answer, distanceKm, score, hit, label: scored?.label },
       ]);
       setPhase("result");
     },
-    [phase, target, getCoord, scaleKm, hitTest, scoreGuess, answerFor],
+    [phase, target, getCoord, scaleKm, hitTest, scoreGuess, answerFor, guessAt],
   );
 
   const next = useCallback(() => {

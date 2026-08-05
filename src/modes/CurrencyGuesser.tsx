@@ -7,7 +7,7 @@ import { countryPool } from "../data/countries";
 import { currencyPool, type CurrencyTarget } from "../data/currencies";
 import { haversineKm, type Coord } from "../lib/geo";
 import { useGame } from "../lib/useGame";
-import { isInCountry, useWorldShapes, type WorldShapes } from "../lib/worldShapes";
+import { anchorAt, isInCountry, useWorldShapes, type WorldShapes } from "../lib/worldShapes";
 import type { ModeProps } from "./ModeProps";
 
 interface GameProps extends ModeProps {
@@ -32,14 +32,16 @@ function nearestSpender(guess: Coord, money: CurrencyTarget): Coord {
 function CurrencyGame({ onExit, night, onToggleNight, settings, pool, shapes }: GameProps) {
   // Anywhere the money is spent is the right answer, so every country using it
   // is full marks — click Portugal or Finland for the euro and both are home.
-  // Miss, and the distance that counts is to the nearest of them rather than to
-  // some average of a currency zone, which for the euro would be a field in
-  // Austria and for the US dollar the middle of the Pacific.
+  // Miss, and the distance that counts is from the country picked to the
+  // nearest country that does spend it, rather than to some average of a
+  // currency zone, which for the euro would be a field in Austria and for the
+  // US dollar the middle of the Pacific.
   const game = useGame<CurrencyTarget>(pool, (m) => m, 2000, {
     endless: settings.endless,
     hitTest: (guess, money) =>
       money.countries.some((c) => isInCountry(shapes, c.code, guess)),
     answerFor: nearestSpender,
+    guessAt: (guess) => anchorAt(shapes, guess),
   });
 
   const spenders = game.target.countries.map((c) => c.code);

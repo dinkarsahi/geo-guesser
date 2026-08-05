@@ -72,7 +72,12 @@
       "Bash(curl -s --max-time 60 -H \"User-Agent: geo-guesser-dev/1.0\" \"https://en.wikipedia.org/w/api.php?action=parse&page=List_of_countries_and_dependencies_by_population&prop=wikitext&format=json&formatversion=2\" -o wikipop.json)",
       "Bash(curl -s --max-time 30 -H \"User-Agent: geo-guesser-dev/1.0\" \"https://en.wikipedia.org/w/api.php?action=parse&page=%C3%85land&prop=wikitext&format=json&formatversion=2&section=0\" -o aland.json)",
       "PowerShell(Get-Process *)",
-      "PowerShell(npx tsc --noEmit)"
+      "PowerShell(npx tsc --noEmit)",
+      "PowerShell($u='https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_50m_admin_0_countries.geojson'; $f='C:\\\\Users\\\\sahid\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-sahid-geo-guesser\\\\f30831d9-681e-421f-a02f-2b3871ce08b9\\\\scratchpad\\\\ne50.geojson'; Invoke-WebRequest -Uri $u -OutFile $f -UseBasicParsing; \\(Get-Item $f\\).Length)",
+      "PowerShell($f='C:\\\\Users\\\\sahid\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-sahid-geo-guesser\\\\f30831d9-681e-421f-a02f-2b3871ce08b9\\\\scratchpad\\\\ne50.geojson'; $j=Get-Content $f -Raw | ConvertFrom-Json; foreach\\($n in @\\('China','India'\\)\\){ $p=\\($j.features | Where-Object { $_.properties.NAME_EN -eq $n }\\).properties; \"$n LABEL_X=$\\($p.LABEL_X\\) LABEL_Y=$\\($p.LABEL_Y\\)\" })",
+      "PowerShell(Test-Path *)",
+      "PowerShell(node \"C:\\\\Users\\\\sahid\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-sahid-geo-guesser\\\\f30831d9-681e-421f-a02f-2b3871ce08b9\\\\scratchpad\\\\anchors.mjs\")",
+      "PowerShell(node \"C:\\\\Users\\\\sahid\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-sahid-geo-guesser\\\\f30831d9-681e-421f-a02f-2b3871ce08b9\\\\scratchpad\\\\check-anchors.mjs\")"
     ]
   }
 }

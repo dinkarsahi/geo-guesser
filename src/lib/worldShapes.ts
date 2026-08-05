@@ -283,6 +283,22 @@ export function countryAt(
   return null;
 }
 
+/**
+ * The point that stands in for wherever a click landed: the anchor of the
+ * country it fell in. Modes whose answer is a country score a guess from here
+ * rather than from the click itself, so that picking a country means the same
+ * thing wherever inside it you happened to press — the question was never which
+ * part of India, and two clicks 3,000 km apart in the same country shouldn't
+ * score differently.
+ *
+ * A click that found no country keeps its own position. Both maps turn those
+ * away before they ever become a guess, so this is only the honest fallback.
+ */
+export function anchorAt(shapes: WorldShapes | null, c: Coord): Coord {
+  const feature = countryAt(shapes, c);
+  return feature ? aimPoint(feature) : c;
+}
+
 /** The country polygons once they've downloaded; null until then. */
 export function useWorldShapes(): WorldShapes | null {
   const [shapes, setShapes] = useState<WorldShapes | null>(null);
