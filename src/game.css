@@ -848,6 +848,12 @@ body:has(.game-play) {
     color: #4ade80;
   }
 }
+/* On the panel it's always the dark-background green, and it has to outrank
+   the label colour set for everything else in that row. */
+.result-panel.hud .result-hit,
+.result-panel.hud .picked-label.result-hit {
+  color: #4ade80;
+}
 .result-extra {
   max-width: 520px;
 }

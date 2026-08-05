@@ -64,14 +64,17 @@ function CurrencyGame({ onExit, night, onToggleNight, settings, pool, shapes }: 
       hitLabel={(money) => money.name}
       // Naming the country isn't the lesson here — the money it spends is. A
       // round lost on the euro is worth something if it ends knowing that the
-      // country picked was Poland and that Poland pays in złoty.
+      // country picked was Botswana and that Botswana pays in pula. Written
+      // the way the question itself is: the sign first, then the code.
       pickedLabel={(click) => {
         const feature = countryAt(shapes, click);
         if (!feature) return null;
         const spends = currencyOf(codeOf(feature));
         return {
-          name: nameOf(feature),
-          detail: spends ? `spends the ${spends.name}` : undefined,
+          name: spends
+            ? `${nameOf(feature)}, which spends the ${spends.name}`
+            : nameOf(feature),
+          detail: spends ? `${spends.symbol} ${spends.code}` : undefined,
         };
       }}
       hint="Click a country that spends it."

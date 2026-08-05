@@ -177,22 +177,29 @@ export default function GameFrame<T>({
         // number last, because it means nothing until you've read the two
         // places it was measured between.
         <div className="result-panel hud">
-          {picked && (
+          {/* Full marks and a miss take the same row, so the verdict is always
+              the first thing read and always in the same place. */}
+          {lastResult.hit ? (
             <p className="picked-line">
-              <span className="picked-label">You picked</span>
-              <span className="picked-name">{picked.name}</span>
-              {picked.detail && <span className="picked-detail">{picked.detail}</span>}
+              <span className="picked-label result-hit">Spot on!</span>
+              {hitLabel && <span className="picked-name">{hitLabel(target)}</span>}
             </p>
+          ) : (
+            picked && (
+              <p className="picked-line">
+                <span className="picked-label">You picked</span>
+                <span className="picked-name">{picked.name}</span>
+                {picked.detail && <span className="picked-detail">{picked.detail}</span>}
+              </p>
+            )
           )}
           {renderResultExtra && (
             <div className="fact-panel">{renderResultExtra(target)}</div>
           )}
           <div className="result-headline">
-            {lastResult.hit ? (
-              <span className="result-distance result-hit">
-                Spot on{hitLabel ? ` — ${hitLabel(target)}` : ""}
-              </span>
-            ) : (
+            {/* The verdict has been given at the top; all this line owes is how
+                far out the guess was, and what it scored. */}
+            {!lastResult.hit && (
               <span className="result-distance">
                 {lastResult.label ?? `${formatDistance(lastResult.distanceKm)} away`}
               </span>
