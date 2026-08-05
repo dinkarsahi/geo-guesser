@@ -12,6 +12,7 @@ import {
   type PopulationTarget,
 } from "../data/populations";
 import { MAX_ROUND_SCORE, type Coord } from "../lib/geo";
+import { matchOptions } from "../lib/match";
 import { useGame } from "../lib/useGame";
 import {
   anchorAt,
@@ -60,7 +61,15 @@ function pickedCountry(
   };
 }
 
-function PopulationGame({ onExit, night, onToggleNight, settings, pool, shapes }: GameProps) {
+function PopulationGame({
+  onExit,
+  night,
+  onToggleNight,
+  settings,
+  match,
+  pool,
+  shapes,
+}: GameProps) {
   // The map's own name for whatever the click landed in, so the reveal calls a
   // country the same thing whether it was the answer or the mistake.
   const byCode = useMemo(
@@ -95,6 +104,7 @@ function PopulationGame({ onExit, night, onToggleNight, settings, pool, shapes }
         ? { score: MAX_ROUND_SCORE, label: "" }
         : scoreFor(guess, target),
     guessAt: (guess) => anchorAt(shapes, guess),
+    ...matchOptions(match),
   });
 
   return (
@@ -104,6 +114,7 @@ function PopulationGame({ onExit, night, onToggleNight, settings, pool, shapes }
       onExit={onExit}
       night={night}
       onToggleNight={onToggleNight}
+      match={match}
       hint={`Click the country you think it is — anywhere inside it counts. Figures are ${POPULATION_AS_OF} estimates.`}
       renderPrompt={(target) => (
         <div className="prompt-card">

@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 import type { Coord } from "../lib/geo";
 import { formatDistance, MAX_ROUND_SCORE } from "../lib/geo";
+import type { Match } from "../lib/match";
+import { MATCH_MAX_ROUND, MATCH_ROUND_MS } from "../lib/match";
 import type { Game, Phase } from "../lib/useGame";
+import MatchResult from "./MatchResult";
 import type { GuessMapProps } from "./mapTypes";
 import NightToggle from "./NightToggle";
 
@@ -26,6 +29,8 @@ interface GameFrameProps<T> {
   pickedLabel?: (click: Coord) => PickedGuess | null;
   /** What to click, for modes where it isn't just anywhere on the map. */
   hint?: string;
+  /** Set when this is a head-to-head match: adds the clock and the code. */
+  match?: Match;
 }
 
 /** What a missed guess landed on, named for the player. */
@@ -50,6 +55,7 @@ export default function GameFrame<T>({
   renderResultExtra,
   pickedLabel,
   hint = "Click the map to place your guess.",
+  match,
 }: GameFrameProps<T>) {
   const {
     target,
@@ -64,12 +70,16 @@ export default function GameFrame<T>({
     next,
     endRun,
     restart,
+    timeLeftMs,
+    totalMs,
   } = game;
 
   const freeRun = totalRounds === null;
 
   if (phase === "done") {
-    const maxTotal = results.length * MAX_ROUND_SCORE;
+    // A match pays up to half as much again for speed, so its ceiling is higher
+    // than the flat hundred a round is worth on its own.
+    const maxTotal = results.length * (match ? MATCH_MAX_ROUND : MAX_ROUND_SCORE);
     const shown = results.slice(-SUMMARY_LIMIT);
     const hidden = results.length - shown.length;
     return (
@@ -90,6 +100,7 @@ export default function GameFrame<T>({
             {totalScore.toLocaleString()}
             <span className="summary-max"> / {maxTotal.toLocaleString()}</span>
           </p>
+          {match && <MatchResult match={match} score={totalScore} ms={totalMs} />}
           {freeRun && (
             <p className="muted">
               {results.length} {results.length === 1 ? "round" : "rounds"} played
@@ -124,10 +135,13 @@ export default function GameFrame<T>({
 
   const isResult = phase === "result";
   const lastRound = !freeRun && totalRounds !== null && roundIndex + 1 >= totalRounds;
-  // Only after a miss: a round that scored full marks has already been told
-  // what it landed in, by name, in the headline above.
+  // Only after a miss, and only when there was a click to speak of: a round
+  // that scored full marks has already been told what it landed in, and one
+  // that ran out of time never landed anywhere.
   const picked =
-    isResult && lastResult && !lastResult.hit ? pickedLabel?.(lastResult.click) : null;
+    isResult && lastResult && !lastResult.hit && lastResult.click
+      ? pickedLabel?.(lastResult.click)
+      : null;
 
   // A solid bar across the top, and the map gets every pixel below it. The bar
   // holds what you need to see at all times, so nothing has to sit on the map
@@ -148,7 +162,25 @@ export default function GameFrame<T>({
             {freeRun ? `Round ${roundIndex + 1}` : `Round ${roundIndex + 1}/${totalRounds}`}
           </span>
           <span className="round-score">{totalScore.toLocaleString()} pts</span>
+          {/* The seconds sit with the score rather than over the clock itself,
+              where on a narrow window they'd be printed across the code. */}
+          {timeLeftMs !== null && (
+            <span className={`round-clock-count${timeLeftMs <= 10_000 ? " is-urgent" : ""}`}>
+              {Math.ceil(timeLeftMs / 1000)}s
+            </span>
+          )}
+          {match && <span className="match-code-tag">{match.code}</span>}
         </div>
+        {/* The clock itself, drawn along the foot of the bar: something to read
+            without looking at it, straight under whatever you were looking at. */}
+        {timeLeftMs !== null && (
+          <div className={`round-clock${timeLeftMs <= 10_000 ? " is-urgent" : ""}`}>
+            <div
+              className="round-clock-bar"
+              style={{ width: `${(timeLeftMs / MATCH_ROUND_MS) * 100}%` }}
+            />
+          </div>
+        )}
       </header>
 
       <div className="map-layer">

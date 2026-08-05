@@ -1,3 +1,8 @@
+import type { Match } from "../lib/match";
+
+/** The games on the menu. */
+export type ModeId = "city" | "flag" | "currency" | "company" | "population" | "tube";
+
 /** How the player chose to play, picked on the setup screen. */
 export interface GameSettings {
   /** Free run: unlimited rounds instead of a scored five. */
@@ -14,4 +19,10 @@ export interface ModeProps {
   night: boolean;
   onToggleNight: () => void;
   settings: GameSettings;
+  /**
+   * Set when the mode is being played as a head-to-head match: five rounds
+   * dealt from the code's seed, a clock on each of them, and a score that pays
+   * for speed. Absent for an ordinary solo game.
+   */
+  match?: Match;
 }

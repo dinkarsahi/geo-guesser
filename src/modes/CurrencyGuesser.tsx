@@ -6,6 +6,7 @@ import WorldMap from "../components/WorldMap";
 import { countryPool } from "../data/countries";
 import { currencyOf, currencyPool, type CurrencyTarget } from "../data/currencies";
 import { haversineKm, type Coord } from "../lib/geo";
+import { matchOptions } from "../lib/match";
 import { useGame } from "../lib/useGame";
 import {
   anchorAt,
@@ -37,7 +38,15 @@ function nearestSpender(guess: Coord, money: CurrencyTarget): Coord {
   return { lat: best.lat, lng: best.lng };
 }
 
-function CurrencyGame({ onExit, night, onToggleNight, settings, pool, shapes }: GameProps) {
+function CurrencyGame({
+  onExit,
+  night,
+  onToggleNight,
+  settings,
+  match,
+  pool,
+  shapes,
+}: GameProps) {
   // Anywhere the money is spent is the right answer, so every country using it
   // is full marks — click Portugal or Finland for the euro and both are home.
   // Miss, and the distance that counts is from the country picked to the
@@ -50,6 +59,7 @@ function CurrencyGame({ onExit, night, onToggleNight, settings, pool, shapes }: 
       money.countries.some((c) => isInCountry(shapes, c.code, guess)),
     answerFor: nearestSpender,
     guessAt: (guess) => anchorAt(shapes, guess),
+    ...matchOptions(match),
   });
 
   const spenders = game.target.countries.map((c) => c.code);
@@ -61,6 +71,7 @@ function CurrencyGame({ onExit, night, onToggleNight, settings, pool, shapes }: 
       onExit={onExit}
       night={night}
       onToggleNight={onToggleNight}
+      match={match}
       // Naming the country isn't the lesson here — the money it spends is. A
       // round lost on the euro is worth something if it ends knowing that the
       // country picked was Botswana and that Botswana pays in pula.

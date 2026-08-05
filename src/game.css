@@ -75,29 +75,6 @@
   box-shadow: var(--shadow);
   transform: translateY(-2px);
 }
-/* Modes that aren't built yet: on the board so people can see what's coming,
-   but faded, unclickable and badged so they don't read as broken buttons. */
-.mode-card.is-soon {
-  position: relative;
-  cursor: not-allowed;
-  opacity: 0.55;
-  border-style: dashed;
-  background: transparent;
-}
-.mode-tag {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  font-family: var(--heading);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--social-bg);
-  color: var(--text);
-}
 .mode-emoji {
   font-size: 44px;
   line-height: 1;
@@ -179,6 +156,233 @@
   font-size: 15px;
 }
 
+/* ---- Head to head --------------------------------------------------- */
+/* Two doors, make or join, and nothing else on the screen to weigh up. */
+.h2h-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  max-width: 620px;
+  margin: 0 auto;
+}
+.h2h-choice {
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  padding: 20px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--social-bg);
+  color: var(--text-h);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.h2h-choice:hover {
+  border-color: var(--accent-border);
+  box-shadow: var(--shadow);
+}
+.h2h-choice-title {
+  font-size: 19px;
+  font-weight: 700;
+}
+.h2h-choice-hint {
+  font-size: 14px;
+  line-height: 1.35;
+}
+.h2h-modes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.h2h-mode {
+  font: inherit;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--social-bg);
+  color: var(--text-h);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.h2h-mode:hover {
+  border-color: var(--accent-border);
+}
+.h2h-mode .mode-emoji {
+  font-size: 24px;
+}
+.h2h-code-panel {
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+.h2h-code-label {
+  font-family: var(--heading);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0;
+}
+/* The code is the game, so it's set like something meant to be read out over
+   a phone: wide letter spacing, and a fixed advance so it can't jitter. */
+.h2h-code {
+  margin: 0;
+  font-family: var(--heading);
+  font-size: clamp(36px, 9vw, 56px);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+.h2h-code-hint {
+  max-width: 460px;
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 0;
+}
+.h2h-code-input {
+  font-family: var(--heading);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-align: center;
+  text-transform: uppercase;
+  width: min(320px, 90%);
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--social-bg);
+  color: var(--text-h);
+}
+.h2h-code-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* The code, kept in the corner of the bar all game: it's what the round you
+   are playing is called, and the thing you'll be comparing scores against. */
+.match-code-tag {
+  font-family: var(--heading);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+/* The clock, along the foot of the top bar. A bar to read at a glance and the
+   seconds for when it's tight — it runs the full width so it's visible from
+   wherever on the map you were looking. */
+.round-clock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  display: flex;
+  align-items: center;
+  background: rgba(127, 127, 127, 0.18);
+}
+.round-clock-bar {
+  height: 100%;
+  background: var(--accent);
+  /* Steps with the tick rather than easing between them, so the bar never
+     shows more time left than there is. */
+  transition: width 0.1s linear;
+}
+.round-clock-count {
+  font-family: var(--heading);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-h);
+}
+/* The last ten seconds, where the colour is doing the telling. */
+.round-clock.is-urgent .round-clock-bar {
+  background: #ef4444;
+}
+.round-clock-count.is-urgent {
+  color: #ef4444;
+}
+
+/* ---- Match result --------------------------------------------------- */
+/* How a match ends when the two devices have never met: your line goes out,
+   theirs comes back, and the verdict is worked out here. */
+.match-result {
+  max-width: 460px;
+  margin: 0 auto 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.match-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+}
+.match-line-label {
+  font-family: var(--heading);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.match-line-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-h);
+}
+.match-hint {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+/* The line itself, set apart as something to be copied rather than read. */
+.match-share {
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--border);
+  background: var(--code-bg);
+  font-family: var(--heading);
+  font-size: 15px;
+  color: var(--text-h);
+  word-break: break-word;
+}
+.match-input {
+  font: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: var(--social-bg);
+  color: var(--text-h);
+  text-align: center;
+}
+.match-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.match-verdict {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.match-verdict-result {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
 /* ---- Game shell ----------------------------------------------------- */
 /* While a game is on, the app shell drops its column width and side rules so
    the map can use the whole window rather than being boxed into the middle. */
@@ -234,6 +438,8 @@ body:has(.game-play) {
    top, so the map never has to be read through a floating card. */
 .game-topbar {
   flex: none;
+  /* The match clock is drawn along the foot of this bar and nowhere else. */
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;

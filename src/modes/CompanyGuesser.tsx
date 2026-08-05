@@ -5,6 +5,7 @@ import NightToggle from "../components/NightToggle";
 import WorldMap from "../components/WorldMap";
 import { companyPool, logoUrl, type CompanyTarget } from "../data/companies";
 import { countryPool } from "../data/countries";
+import { matchOptions } from "../lib/match";
 import { useGame } from "../lib/useGame";
 import {
   anchorAt,
@@ -20,7 +21,15 @@ interface GameProps extends ModeProps {
   shapes: WorldShapes;
 }
 
-function CompanyGame({ onExit, night, onToggleNight, settings, pool, shapes }: GameProps) {
+function CompanyGame({
+  onExit,
+  night,
+  onToggleNight,
+  settings,
+  match,
+  pool,
+  shapes,
+}: GameProps) {
   // The country is the answer, so anywhere inside its borders is full marks,
   // and a miss is measured to the country itself. The town the head office
   // happens to sit in is never asked for, so marking it would only invite the
@@ -29,6 +38,7 @@ function CompanyGame({ onExit, night, onToggleNight, settings, pool, shapes }: G
     endless: settings.endless,
     hitTest: (guess, company) => isInCountry(shapes, company.code, guess),
     guessAt: (guess) => anchorAt(shapes, guess),
+    ...matchOptions(match),
   });
 
   return (
@@ -38,6 +48,7 @@ function CompanyGame({ onExit, night, onToggleNight, settings, pool, shapes }: G
       onExit={onExit}
       night={night}
       onToggleNight={onToggleNight}
+      match={match}
       pickedLabel={(click) => {
         const name = countryNameAt(shapes, click);
         return name ? { name } : null;

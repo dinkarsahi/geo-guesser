@@ -10,10 +10,17 @@ import {
   zoneLabel,
   type TubeStation,
 } from "../data/tube";
+import { matchOptions } from "../lib/match";
 import { useGame } from "../lib/useGame";
 import type { ModeProps } from "./ModeProps";
 
-export default function TubeGuesser({ onExit, night, onToggleNight, settings }: ModeProps) {
+export default function TubeGuesser({
+  onExit,
+  night,
+  onToggleNight,
+  settings,
+  match,
+}: ModeProps) {
   // Scored in stops, not metres: distance on the London map is a poor guide to
   // whether you knew where a station was. Whichever station's patch of the map
   // you clicked counts as your answer, and the ride from there to the right one
@@ -25,6 +32,7 @@ export default function TubeGuesser({ onExit, night, onToggleNight, settings }: 
       const stops = stopsBetween(nearestStation(guess).name, station.name);
       return { score: scoreFromStops(stops), label: formatStops(stops) };
     },
+    ...matchOptions(match),
   });
 
   return (
@@ -34,6 +42,7 @@ export default function TubeGuesser({ onExit, night, onToggleNight, settings }: 
       onExit={onExit}
       night={night}
       onToggleNight={onToggleNight}
+      match={match}
       // The station whose patch was clicked — the same one the round was
       // scored against, so "6 stops away" below finally says from where.
       pickedLabel={(click) => {

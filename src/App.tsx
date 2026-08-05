@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
+import type { Match } from "./lib/match";
 import CityLocator from "./modes/CityLocator";
 import CompanyGuesser from "./modes/CompanyGuesser";
 import CurrencyGuesser from "./modes/CurrencyGuesser";
 import FlagGuesser from "./modes/FlagGuesser";
+import HeadToHead from "./modes/HeadToHead";
 import PopulationGuesser from "./modes/PopulationGuesser";
 import TubeGuesser from "./modes/TubeGuesser";
-import type { GameSettings } from "./modes/ModeProps";
+import type { GameSettings, ModeId, ModeProps } from "./modes/ModeProps";
 
-type Mode = "city" | "flag" | "currency" | "company" | "population" | "tube";
+type Mode = ModeId;
 
 const MODES: { id: Mode; title: string; blurb: string; emoji: string }[] = [
   {
@@ -45,16 +47,6 @@ const MODES: { id: Mode; title: string; blurb: string; emoji: string }[] = [
     title: "Tube Station Guesser",
     blurb: "Pinpoint a London Underground station on a zoomed-in map.",
     emoji: "🚇",
-  },
-];
-
-/** Modes we've sketched out but haven't built — shown greyed out on the menu. */
-const UPCOMING: { id: string; title: string; blurb: string; emoji: string }[] = [
-  {
-    id: "headsup",
-    title: "Head to Head",
-    blurb: "Race a friend through the same rounds against the clock.",
-    emoji: "⚔️",
   },
 ];
 
@@ -165,35 +157,54 @@ function ModeSetup({
   );
 }
 
+/** The mode itself, whichever it is, wired to the props they all share. */
+function PlayMode({ mode, ...props }: ModeProps & { mode: Mode }) {
+  if (mode === "city") return <CityLocator {...props} />;
+  if (mode === "flag") return <FlagGuesser {...props} />;
+  if (mode === "currency") return <CurrencyGuesser {...props} />;
+  if (mode === "company") return <CompanyGuesser {...props} />;
+  if (mode === "population") return <PopulationGuesser {...props} />;
+  return <TubeGuesser {...props} />;
+}
+
 export default function App() {
   const [mode, setMode] = useState<Mode | null>(null);
   const [started, setStarted] = useState(false);
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
   // Day (colourful) by default; the toggle switches to the grey night look.
   const [night, setNight] = useState(false);
+  // Set while a head-to-head code is being made, typed, or played out.
+  const [duel, setDuel] = useState(false);
+  const [match, setMatch] = useState<Match | null>(null);
 
   const toMenu = () => {
     setMode(null);
     setStarted(false);
+    setDuel(false);
+    setMatch(null);
   };
   const toggleNight = () => setNight((n) => !n);
   const modeProps = { onExit: toMenu, night, onToggleNight: toggleNight, settings };
 
   // A running game gets the whole window: the menu's fixed-width shell and its
   // side rules would otherwise pen the map in well short of the screen edges.
-  const playing = mode !== null && started;
+  const playing = (mode !== null && started) || match !== null;
   useEffect(() => {
     document.body.classList.toggle("playing", playing);
     return () => document.body.classList.remove("playing");
   }, [playing]);
 
+  // A match names its own mode, so it skips the setup screen entirely: both
+  // players have to be asked the same five questions, and nothing on that
+  // screen is theirs to choose.
+  if (match) return <PlayMode {...modeProps} mode={match.mode} match={match} />;
+
+  if (duel) {
+    return <HeadToHead onBack={toMenu} onStart={setMatch} />;
+  }
+
   if (mode && started) {
-    if (mode === "city") return <CityLocator {...modeProps} />;
-    if (mode === "flag") return <FlagGuesser {...modeProps} />;
-    if (mode === "currency") return <CurrencyGuesser {...modeProps} />;
-    if (mode === "company") return <CompanyGuesser {...modeProps} />;
-    if (mode === "population") return <PopulationGuesser {...modeProps} />;
-    return <TubeGuesser {...modeProps} />;
+    return <PlayMode {...modeProps} mode={mode} />;
   }
 
   if (mode) {
@@ -222,14 +233,13 @@ export default function App() {
             <span className="muted mode-blurb">{m.blurb}</span>
           </button>
         ))}
-        {UPCOMING.map((m) => (
-          <button key={m.id} className="mode-card is-soon" disabled aria-disabled="true">
-            <span className="mode-tag">Coming soon</span>
-            <span className="mode-emoji">{m.emoji}</span>
-            <span className="mode-title">{m.title}</span>
-            <span className="muted mode-blurb">{m.blurb}</span>
-          </button>
-        ))}
+        <button className="mode-card" onClick={() => setDuel(true)}>
+          <span className="mode-emoji">⚔️</span>
+          <span className="mode-title">Head to Head</span>
+          <span className="muted mode-blurb">
+            Race a friend through the same rounds against the clock.
+          </span>
+        </button>
       </div>
     </div>
   );

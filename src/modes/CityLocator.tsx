@@ -4,6 +4,7 @@ import GlobeMap from "../components/GlobeMap";
 import WorldMap from "../components/WorldMap";
 import { cities, type City } from "../data/cities";
 import { haversineKm, type Coord } from "../lib/geo";
+import { matchOptions } from "../lib/match";
 import { useGame } from "../lib/useGame";
 import type { ModeProps } from "./ModeProps";
 
@@ -21,10 +22,19 @@ function cityNear(c: Coord): City {
   return best;
 }
 
-export default function CityLocator({ onExit, night, onToggleNight, settings }: ModeProps) {
+export default function CityLocator({
+  onExit,
+  night,
+  onToggleNight,
+  settings,
+  match,
+}: ModeProps) {
   // Cities already carry lat/lng, so the target is its own coordinate. A city is
   // a point, not an area, so this mode scores purely on how close the click is.
-  const game = useGame<City>(cities, (c) => c, 2000, { endless: settings.endless });
+  const game = useGame<City>(cities, (c) => c, 2000, {
+    endless: settings.endless,
+    ...matchOptions(match),
+  });
 
   return (
     <GameFrame
@@ -33,6 +43,7 @@ export default function CityLocator({ onExit, night, onToggleNight, settings }: 
       onExit={onExit}
       night={night}
       onToggleNight={onToggleNight}
+      match={match}
       renderPrompt={(city) => (
         <div className="prompt-card">
           <span className="prompt-label">Locate this city:</span>
