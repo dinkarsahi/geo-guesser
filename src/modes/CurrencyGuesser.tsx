@@ -4,13 +4,15 @@ import GlobeMap from "../components/GlobeMap";
 import NightToggle from "../components/NightToggle";
 import WorldMap from "../components/WorldMap";
 import { countryPool } from "../data/countries";
-import { currencyPool, type CurrencyTarget } from "../data/currencies";
+import { currencyOf, currencyPool, type CurrencyTarget } from "../data/currencies";
 import { haversineKm, type Coord } from "../lib/geo";
 import { useGame } from "../lib/useGame";
 import {
   anchorAt,
-  countryNameAt,
+  codeOf,
+  countryAt,
   isInCountry,
+  nameOf,
   useWorldShapes,
   type WorldShapes,
 } from "../lib/worldShapes";
@@ -60,7 +62,18 @@ function CurrencyGame({ onExit, night, onToggleNight, settings, pool, shapes }: 
       night={night}
       onToggleNight={onToggleNight}
       hitLabel={(money) => money.name}
-      pickedLabel={(click) => countryNameAt(shapes, click)}
+      // Naming the country isn't the lesson here — the money it spends is. A
+      // round lost on the euro is worth something if it ends knowing that the
+      // country picked was Poland and that Poland pays in złoty.
+      pickedLabel={(click) => {
+        const feature = countryAt(shapes, click);
+        if (!feature) return null;
+        const spends = currencyOf(codeOf(feature));
+        return {
+          name: nameOf(feature),
+          detail: spends ? `spends the ${spends.name}` : undefined,
+        };
+      }}
       hint="Click a country that spends it."
       renderPrompt={(money) => (
         <div className="prompt-card">

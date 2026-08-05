@@ -37,7 +37,10 @@ function FlagGame({ onExit, night, onToggleNight, settings, pool, shapes }: Game
       night={night}
       onToggleNight={onToggleNight}
       hitLabel={(country) => country.name}
-      pickedLabel={(click) => countryNameAt(shapes, click)}
+      pickedLabel={(click) => {
+        const name = countryNameAt(shapes, click);
+        return name ? { name } : null;
+      }}
       renderPrompt={(country) => (
         <div className="prompt-card">
           <span className="prompt-label">Where is this flag from?</span>

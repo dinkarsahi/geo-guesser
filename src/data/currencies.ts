@@ -440,6 +440,17 @@ let cachedFor: Country[] | null = null;
 let cached: CurrencyTarget[] = [];
 
 /**
+ * What one country spends, by ISO alpha-2 — null where nothing is on file for
+ * it. The pool answers the opposite question (who spends this currency), which
+ * is no help to a reveal that has a country in hand and wants to name its money.
+ */
+export function currencyOf(code: string): Currency | null {
+  const iso = SPENDS[code.toLowerCase()];
+  const money = iso ? MONEY[iso] : undefined;
+  return money ? { code: iso, ...money } : null;
+}
+
+/**
  * Every currency on the map, each carrying the countries that spend it. Built
  * from the same country pool the flag round uses, so a currency can never be
  * asked about unless there's somewhere on the map to click for it. Cached by

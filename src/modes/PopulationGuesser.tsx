@@ -15,10 +15,11 @@ import { MAX_ROUND_SCORE, type Coord } from "../lib/geo";
 import { useGame } from "../lib/useGame";
 import {
   anchorAt,
+  codeOf,
   countryAt,
   isInCountry,
+  nameOf,
   useWorldShapes,
-  type CountryFeature,
   type WorldShapes,
 } from "../lib/worldShapes";
 import type { ModeProps } from "./ModeProps";
@@ -40,10 +41,6 @@ interface GameProps extends ModeProps {
  */
 const RATIO_SCALE = 1.5;
 
-/** ISO alpha-2 of the country a map feature is, lowercased. */
-const codeOf = (f: CountryFeature) =>
-  (f.properties?.ISO_A2_EH || f.properties?.ISO_A2 || "").toLowerCase();
-
 /** "2.4", "17" — a multiplier, at a precision worth reading. */
 const times = (ratio: number) =>
   ratio < 10 ? ratio.toFixed(1) : Math.round(ratio).toLocaleString();
@@ -57,14 +54,10 @@ function pickedCountry(
   const feature = countryAt(shapes, guess);
   if (!feature) return null;
   const code = codeOf(feature);
-  const known = byCode.get(code);
-  const name =
-    known?.name ||
-    feature.properties?.NAME_EN ||
-    feature.properties?.NAME_LONG ||
-    feature.properties?.NAME ||
-    "there";
-  return { name, population: populationOf(code) };
+  return {
+    name: byCode.get(code)?.name || nameOf(feature) || "there",
+    population: populationOf(code),
+  };
 }
 
 function PopulationGame({ onExit, night, onToggleNight, settings, pool, shapes }: GameProps) {
@@ -104,8 +97,6 @@ function PopulationGame({ onExit, night, onToggleNight, settings, pool, shapes }
     guessAt: (guess) => anchorAt(shapes, guess),
   });
 
-  const { lastResult } = game;
-
   return (
     <GameFrame
       title="Population Guesser"
@@ -128,42 +119,36 @@ function PopulationGame({ onExit, night, onToggleNight, settings, pool, shapes }
           </span>
         </div>
       )}
-      renderResultExtra={(target) => {
-        // Two things worth knowing after a miss, and the second is the one no
-        // other mode can give you: the country you actually picked has a
-        // population too, and seeing it next to the one you were asked for is
-        // what turns a wrong answer into something learned.
-        // Off the click rather than where the marker ended up: the marker sits
-        // on the country's anchor, and a handful of those are out at sea or
-        // inside a neighbour, which would name the wrong country or none.
-        const picked =
-          lastResult && !lastResult.hit
-            ? pickedCountry(shapes, byCode, lastResult.click)
-            : null;
-        return (
-          <div className="pop-result">
-            <p className="pop-line pop-line-answer">
-              <span className="pop-line-label">Answer</span>
-              <span className="pop-line-name">{target.name}</span>
-              <span className="pop-line-count">
-                {target.population.toLocaleString()} people
-              </span>
-            </p>
-            {picked && (
-              <p className="pop-line">
-                <span className="pop-line-label">You picked</span>
-                <span className="pop-line-name">{picked.name}</span>
-                <span className="pop-line-count">
-                  {picked.population === null
-                    ? "no figures on file"
-                    : `${picked.population.toLocaleString()} people`}
-                </span>
-              </p>
-            )}
-            <p className="pop-note muted">* {POPULATION_NOTE}</p>
-          </div>
-        );
+      // The country picked carries a population of its own, and reading it
+      // directly above the one that was asked for is what turns a wrong answer
+      // into something learned — which is the whole of this mode.
+      //
+      // Off the click rather than where the marker ended up: the marker sits on
+      // the country's anchor, and a handful of those are out at sea or inside a
+      // neighbour, which would name the wrong country or none.
+      pickedLabel={(click) => {
+        const picked = pickedCountry(shapes, byCode, click);
+        if (!picked) return null;
+        return {
+          name: picked.name,
+          detail:
+            picked.population === null
+              ? "no figures on file"
+              : `${picked.population.toLocaleString()} people`,
+        };
       }}
+      renderResultExtra={(target) => (
+        <div className="pop-result">
+          <p className="pop-line pop-line-answer">
+            <span className="pop-line-label">Answer</span>
+            <span className="pop-line-name">{target.name}</span>
+            <span className="pop-line-count">
+              {target.population.toLocaleString()} people
+            </span>
+          </p>
+          <p className="pop-note muted">* {POPULATION_NOTE}</p>
+        </div>
+      )}
       renderMap={(props) =>
         settings.flat ? (
           <WorldMap

@@ -7,6 +7,7 @@ import {
   scoreFromStops,
   stopsBetween,
   tubeStations,
+  zoneLabel,
   type TubeStation,
 } from "../data/tube";
 import { useGame } from "../lib/useGame";
@@ -34,6 +35,12 @@ export default function TubeGuesser({ onExit, night, onToggleNight, settings }: 
       night={night}
       onToggleNight={onToggleNight}
       hitLabel={(station) => station.name}
+      // The station whose patch was clicked — the same one the round was
+      // scored against, so "6 stops away" below finally says from where.
+      pickedLabel={(click) => {
+        const station = nearestStation(click);
+        return { name: station.name, detail: zoneLabel(station.zone) };
+      }}
       hint="Click a station to place your guess."
       renderPrompt={(station) => (
         <div className="prompt-card">

@@ -39,7 +39,10 @@ function CompanyGame({ onExit, night, onToggleNight, settings, pool, shapes }: G
       night={night}
       onToggleNight={onToggleNight}
       hitLabel={(company) => company.country}
-      pickedLabel={(click) => countryNameAt(shapes, click)}
+      pickedLabel={(click) => {
+        const name = countryNameAt(shapes, click);
+        return name ? { name } : null;
+      }}
       hint="Click the country it's headquartered in."
       renderPrompt={(company) => (
         <div className="prompt-card">

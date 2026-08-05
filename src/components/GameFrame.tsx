@@ -20,14 +20,22 @@ interface GameFrameProps<T> {
   /** Names what a full-marks guess landed in, e.g. "Italy" or "Angel". */
   hitLabel?: (target: T) => string;
   /**
-   * Names what a missed guess landed in, for modes where that's worth knowing:
+   * Names what a missed guess landed on, for modes where that's worth knowing:
    * being told the answer was Peru teaches half as much as also being told you
    * pointed at Bolivia. Given the raw click rather than the marker, which may
    * have been moved to stand for the country as a whole.
    */
-  pickedLabel?: (click: Coord) => string | null;
+  pickedLabel?: (click: Coord) => PickedGuess | null;
   /** What to click, for modes where it isn't just anywhere on the map. */
   hint?: string;
+}
+
+/** What a missed guess landed on, named for the player. */
+export interface PickedGuess {
+  /** The place itself: a country, a station. */
+  name: string;
+  /** Whatever the mode can add about it — its population, its money. */
+  detail?: string;
 }
 
 /** Only the tail of a long free run is worth listing. */
@@ -164,7 +172,21 @@ export default function GameFrame<T>({
       )}
 
       {isResult && lastResult && (
+        // Read top to bottom it's the round in the order it happened: what you
+        // picked, what it actually was, and only then how that scored. The
+        // number last, because it means nothing until you've read the two
+        // places it was measured between.
         <div className="result-panel hud">
+          {picked && (
+            <p className="picked-line">
+              <span className="picked-label">You picked</span>
+              <span className="picked-name">{picked.name}</span>
+              {picked.detail && <span className="picked-detail">{picked.detail}</span>}
+            </p>
+          )}
+          {renderResultExtra && (
+            <div className="fact-panel">{renderResultExtra(target)}</div>
+          )}
           <div className="result-headline">
             {lastResult.hit ? (
               <span className="result-distance result-hit">
@@ -179,15 +201,6 @@ export default function GameFrame<T>({
               +{lastResult.score.toLocaleString()} pts
             </span>
           </div>
-          {picked && (
-            <p className="picked-line">
-              <span className="picked-label">You picked</span>
-              <span className="picked-name">{picked}</span>
-            </p>
-          )}
-          {renderResultExtra && (
-            <div className="fact-panel">{renderResultExtra(target)}</div>
-          )}
           <div className="button-row">
             <button className="btn btn-primary" onClick={next}>
               {lastRound ? "See results" : "Next round →"}

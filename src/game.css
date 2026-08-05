@@ -775,6 +775,7 @@ body:has(.game-play) {
   color: #fff;
 }
 .result-panel.hud .picked-label,
+.result-panel.hud .picked-detail,
 .result-panel.hud .pop-line-label,
 .result-panel.hud .pop-line-count {
   color: #d1d5db;
@@ -790,15 +791,28 @@ body:has(.game-play) {
   align-items: baseline;
   gap: 16px;
 }
-/* The country the click actually landed in, under the score. A miss is worth
-   more when it names both ends of it — the answer, and what was pointed at
-   instead — and the second one only this line ever says out loud. */
+/* What the click actually landed on, above the answer. A miss is worth more
+   when it names both ends of it — the answer, and what was pointed at instead
+   — and the second one only this line ever says out loud.
+
+   Set to the width of the answer box below and padded to its inner edge, so
+   the two read as one block: what you picked, then what it was, each name at
+   the same indent and each figure hard right, one above the other. */
 .picked-line {
   display: flex;
   align-items: baseline;
   gap: 10px;
+  width: 100%;
+  max-width: 640px;
+  box-sizing: border-box;
+  padding: 0 18px;
   font-size: 15px;
   line-height: 1.4;
+}
+.picked-detail {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
 }
 .picked-label {
   font-size: 12px;
@@ -806,6 +820,10 @@ body:has(.game-play) {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text);
+  /* The same width the answer's own label reserves below it, so the two names
+     start at one place however long the labels are. */
+  flex: none;
+  min-width: 78px;
 }
 .picked-name {
   font-weight: 600;

@@ -51,7 +51,7 @@ const stationAliases: Record<string, string> = {
 const canonical = (name: string) => stationAliases[name] ?? name;
 
 /** "Zone 3", or "Zone 2/3" for a boundary station. */
-function zoneLabel(zone: number): string {
+export function zoneLabel(zone: number): string {
   if (Number.isInteger(zone)) return `Zone ${zone}`;
   return `Zone ${Math.floor(zone)}/${Math.ceil(zone)}`;
 }

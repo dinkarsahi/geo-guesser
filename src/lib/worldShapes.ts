@@ -299,6 +299,14 @@ export function anchorAt(shapes: WorldShapes | null, c: Coord): Coord {
   return feature ? aimPoint(feature) : c;
 }
 
+/** ISO alpha-2 of a country on the map, lowercased. */
+export const codeOf = (f: CountryFeature) =>
+  (f.properties?.ISO_A2_EH || f.properties?.ISO_A2 || "").toLowerCase();
+
+/** The map's own name for a country, unabbreviated where it has one. */
+export const nameOf = (f: CountryFeature) =>
+  f.properties?.NAME_EN || f.properties?.NAME_LONG || f.properties?.NAME || "";
+
 /**
  * The map's own name for the country a point landed in, or null for open
  * water. What a mode names the country it was asking about and what it calls
@@ -306,8 +314,8 @@ export function anchorAt(shapes: WorldShapes | null, c: Coord): Coord {
  * the same thing whichever of the two it turns out to be.
  */
 export function countryNameAt(shapes: WorldShapes | null, c: Coord): string | null {
-  const p = countryAt(shapes, c)?.properties;
-  return p ? p.NAME_EN || p.NAME_LONG || p.NAME || null : null;
+  const feature = countryAt(shapes, c);
+  return feature ? nameOf(feature) || null : null;
 }
 
 /** The country polygons once they've downloaded; null until then. */
