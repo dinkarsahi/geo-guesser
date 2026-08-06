@@ -77,7 +77,8 @@
       "PowerShell($f='C:\\\\Users\\\\sahid\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-sahid-geo-guesser\\\\f30831d9-681e-421f-a02f-2b3871ce08b9\\\\scratchpad\\\\ne50.geojson'; $j=Get-Content $f -Raw | ConvertFrom-Json; foreach\\($n in @\\('China','India'\\)\\){ $p=\\($j.features | Where-Object { $_.properties.NAME_EN -eq $n }\\).properties; \"$n LABEL_X=$\\($p.LABEL_X\\) LABEL_Y=$\\($p.LABEL_Y\\)\" })",
       "PowerShell(Test-Path *)",
       "PowerShell(node \"C:\\\\Users\\\\sahid\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-sahid-geo-guesser\\\\f30831d9-681e-421f-a02f-2b3871ce08b9\\\\scratchpad\\\\anchors.mjs\")",
-      "PowerShell(node \"C:\\\\Users\\\\sahid\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-sahid-geo-guesser\\\\f30831d9-681e-421f-a02f-2b3871ce08b9\\\\scratchpad\\\\check-anchors.mjs\")"
+      "PowerShell(node \"C:\\\\Users\\\\sahid\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-sahid-geo-guesser\\\\f30831d9-681e-421f-a02f-2b3871ce08b9\\\\scratchpad\\\\check-anchors.mjs\")",
+      "PowerShell(npx tsc -b --pretty false)"
     ]
   }
 }

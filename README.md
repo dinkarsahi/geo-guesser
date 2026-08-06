@@ -1,3 +1,29 @@
+# SpotOn
+
+A geography guessing game. `npm install --legacy-peer-deps`, then `npm run dev`.
+
+## The head-to-head leaderboard
+
+Head to Head works without any of this — codes are self-contained, and standings
+fall back to games finished on the device. Setting up Supabase is what makes the
+standings shared, so two people racing on two phones see each other, and what
+makes a code one go each.
+
+1. Create a project at [supabase.com](https://supabase.com) (the free tier is
+   ample — a result is four small columns).
+2. In the project's SQL Editor, run [`supabase/schema.sql`](supabase/schema.sql).
+   It creates the table, the policies, and the unique index that makes a code
+   one attempt per player.
+3. Copy `.env.example` to `.env` and fill in the project URL and anon key from
+   Settings → API. Both are public values; the policies are what protect the
+   table. Whatever hosts the built site needs those two variables set at build
+   time too.
+
+Without them the app builds and runs exactly as before, and the Leaderboard tab
+says so.
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

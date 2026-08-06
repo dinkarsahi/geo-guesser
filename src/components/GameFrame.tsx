@@ -119,10 +119,15 @@ export default function GameFrame<T>({
             <p className="muted">…and {hidden} earlier {hidden === 1 ? "round" : "rounds"}.</p>
           )}
           <div className="button-row">
-            <button className="btn btn-primary" onClick={restart}>
-              Play again
-            </button>
-            <button className="btn btn-ghost" onClick={onExit}>
+            {/* Not offered in a match: a code is one go each, and playing it
+                again would deal the same five rounds — now known — for a score
+                the leaderboard has already refused to take. */}
+            {!match && (
+              <button className="btn btn-primary" onClick={restart}>
+                Play again
+              </button>
+            )}
+            <button className={`btn ${match ? "btn-primary" : "btn-ghost"}`} onClick={onExit}>
               Back to menu
             </button>
           </div>

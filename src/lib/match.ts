@@ -137,6 +137,34 @@ export function parseMatchCode(input: string): MatchCode | null {
 /** Formatted for reading out: "FA4 KQ7M". */
 export const spellCode = (code: string) => `${code.slice(0, 3)} ${code.slice(3)}`;
 
+/** The modes a match can be played in, as they're named on the menu. */
+export const MATCH_MODES: { id: ModeId; title: string; emoji: string }[] = [
+  { id: "city", title: "City Locator", emoji: "🏙️" },
+  { id: "flag", title: "Flag Guesser", emoji: "🚩" },
+  { id: "currency", title: "Currency Guesser", emoji: "💱" },
+  { id: "company", title: "Company HQ", emoji: "🏢" },
+  { id: "population", title: "Population Guesser", emoji: "👥" },
+  { id: "tube", title: "Tube Station Guesser", emoji: "🚇" },
+];
+
+const titleOf = (mode: ModeId) => MATCH_MODES.find((m) => m.id === mode)!.title;
+
+/**
+ * What a code commits everyone to, in words. Read on the way in by the player
+ * who chose it, on the way out by the players who didn't, and again over the
+ * leaderboard — where it says which of the six games these scores were got at,
+ * which the numbers alone can't.
+ */
+export function describeCode(code: MatchCode): string {
+  const parts = [titleOf(code.mode), `${MATCH_ROUNDS} rounds`];
+  // The tube has its own map, and the world-map choices say nothing about it.
+  if (code.mode !== "tube") {
+    parts.push(code.flat ? "flat map" : "3D globe");
+    parts.push(code.borders ? "borders on" : "no borders");
+  }
+  return parts.join(" · ");
+}
+
 /**
  * A round's score once the clock is counted. Both players answer the same
  * question with the same time, so this needs no state — only how good the

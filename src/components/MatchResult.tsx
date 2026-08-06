@@ -1,7 +1,9 @@
-import { useState } from "react";
-import type { Match, SharedResult } from "../lib/match";
-import { formatDuration, rankResults } from "../lib/match";
-import { saveResult } from "../lib/matchHistory";
+import { useCallback, useEffect, useState } from "react";
+import type { Match } from "../lib/match";
+import { formatDuration } from "../lib/match";
+import { publishResult, type Board } from "../lib/leaderboard";
+import { hasRemote } from "../lib/supabase";
+import Standings from "./Standings";
 
 interface MatchResultProps {
   match: Match;
@@ -12,19 +14,38 @@ interface MatchResultProps {
 /**
  * The table a match ends on.
  *
- * Every game finished here is filed under its code, so the standings are
- * already there when the round ends: hand the device round and each player's
- * score joins the table as they finish.
+ * The score goes up as the screen is built and the whole table comes back, so
+ * two people finishing within a second of each other both see the other — the
+ * thing that couldn't happen while the standings were only ever this device's.
+ * Whoever loads last still sees everyone; whoever loads first can ask again.
  */
 export default function MatchResult({ match, score, ms }: MatchResultProps) {
-  // Filed as the screen is first built, which is also the moment the score
-  // becomes final — this panel only ever renders on a finished match. Saving
-  // twice would be harmless anyway: the store keeps one row per player.
-  const [kept] = useState<SharedResult[]>(() =>
-    saveResult({ code: match.code, player: match.player, score, ms }),
-  );
+  const [board, setBoard] = useState<Board | null>(null);
+  // Distinct from `board === null`: that is the first send, this is a reload
+  // over a table already on screen, which shouldn't blank it out. True from
+  // the start, because the first send is under way before the first paint.
+  const [checking, setChecking] = useState(true);
 
-  const standings = rankResults(kept);
+  const send = useCallback(() => {
+    publishResult({ code: match.code, player: match.player, score, ms })
+      .then(setBoard)
+      .finally(() => setChecking(false));
+  }, [match.code, match.player, score, ms]);
+
+  // Filed the moment this renders, which is also the moment the score becomes
+  // final — this panel only ever draws on a finished match. Posting the same
+  // result twice is harmless: the table takes one row per player and refuses
+  // the rest, so a second call reads as a refresh.
+  useEffect(() => {
+    send();
+  }, [send]);
+
+  const refresh = () => {
+    setChecking(true);
+    send();
+  };
+
+  const standings = board?.standings ?? [];
   const mine = standings.find((r) => r.player.toLowerCase() === match.player.toLowerCase());
   const contested = standings.length > 1;
 
@@ -35,46 +56,38 @@ export default function MatchResult({ match, score, ms }: MatchResultProps) {
         <span className="match-line-value">{formatDuration(ms)}</span>
       </p>
 
-      {contested ? (
-        <>
-          <p className="match-line-label">Game {match.code}</p>
-          {/* Headings on the same grid as the rows below, so the two figures
-              are named rather than left to be worked out from their shape. */}
-          <div className="standing standing-head" aria-hidden="true">
-            <span className="standing-place" />
-            <span className="standing-name">Player</span>
-            <span className="standing-time">Time</span>
-            <span className="standing-score">Score</span>
-          </div>
-          <ol className="standings">
-            {standings.map((r, i) => (
-              <li
-                key={`${r.player}-${i}`}
-                className={`standing${r === mine ? " is-you" : ""}${
-                  i === 0 ? " is-leading" : ""
-                }`}
-              >
-                <span className="standing-place">{i + 1}</span>
-                <span className="standing-name">
-                  {r.player}
-                  {r === mine && <span className="standing-you"> (you)</span>}
-                </span>
-                <span className="standing-time">{formatDuration(r.ms)}</span>
-                <span className="standing-score">{r.score.toLocaleString()}</span>
-              </li>
-            ))}
-          </ol>
-          <p className="match-verdict match-verdict-result">
-            {standings[0] === mine
-              ? `You're leading on ${standings[0].score.toLocaleString()}`
-              : `${standings[0].player} leads on ${standings[0].score.toLocaleString()}`}
-          </p>
-        </>
-      ) : (
-        <p className="muted match-hint">
-          Nobody else has played {match.code} here yet — hand it over and their score
-          joins the table.
+      <p className="match-line-label">Game {match.code}</p>
+
+      {contested && <Standings results={standings} you={match.player} />}
+
+      {contested && (
+        <p className="match-verdict match-verdict-result">
+          {standings[0] === mine
+            ? `You're leading on ${standings[0].score.toLocaleString()}`
+            : `${standings[0].player} leads on ${standings[0].score.toLocaleString()}`}
         </p>
+      )}
+
+      {!contested && board !== null && (
+        <p className="muted match-hint">
+          {board.source === "offline"
+            ? "Your score is saved but the leaderboard is out of reach — it'll go up next time you're online."
+            : hasRemote
+              ? `Nobody else has finished ${match.code} yet. Check back when they have.`
+              : `Nobody else has played ${match.code} here yet — hand it over and their score joins the table.`}
+        </p>
+      )}
+
+      {board === null && <p className="muted match-hint">Sending your score up…</p>}
+
+      {/* The one button worth having on this screen: two players who finish
+          together each want to know what the other got, and the answer is a
+          second or two away rather than a page reload away — which used to
+          hand back a fresh game instead of an answer. */}
+      {board !== null && (
+        <button className="btn btn-ghost" onClick={refresh} disabled={checking}>
+          {checking ? "Checking…" : "Refresh standings"}
+        </button>
       )}
     </div>
   );

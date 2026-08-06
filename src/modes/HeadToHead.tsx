@@ -2,48 +2,24 @@ import { useState } from "react";
 import {
   cleanName,
   createMatchCode,
+  describeCode,
   parseMatchCode,
   spellCode,
+  MATCH_MODES,
   MATCH_ROUNDS,
   MATCH_ROUND_MS,
   type Match,
   type MatchCode,
   type MatchSetup,
 } from "../lib/match";
+import { hasPlayed } from "../lib/leaderboard";
 import { loadName, saveName } from "../lib/playerName";
+import Leaderboard from "../components/Leaderboard";
 import type { ModeId } from "./ModeProps";
-
-/** The modes a match can be played in, as they're named on the menu. */
-const MATCH_MODES: { id: ModeId; title: string; emoji: string }[] = [
-  { id: "city", title: "City Locator", emoji: "🏙️" },
-  { id: "flag", title: "Flag Guesser", emoji: "🚩" },
-  { id: "currency", title: "Currency Guesser", emoji: "💱" },
-  { id: "company", title: "Company HQ", emoji: "🏢" },
-  { id: "population", title: "Population Guesser", emoji: "👥" },
-  { id: "tube", title: "Tube Station Guesser", emoji: "🚇" },
-];
-
-const titleOf = (mode: ModeId) => MATCH_MODES.find((m) => m.id === mode)!.title;
-
-/**
- * What a code commits everyone to, in words. Read on the way in by the player
- * who chose it and on the way out by the players who didn't — the second of
- * those is the one that matters, since they have no other way of knowing what
- * they're about to be handed.
- */
-function describe(code: MatchCode): string {
-  const parts = [titleOf(code.mode), `${MATCH_ROUNDS} rounds`];
-  // The tube has its own map, and the world-map choices say nothing about it.
-  if (code.mode !== "tube") {
-    parts.push(code.flat ? "flat map" : "3D globe");
-    parts.push(code.borders ? "borders on" : "no borders");
-  }
-  return parts.join(" · ");
-}
 
 const RULES = `${MATCH_ROUNDS} rounds, ${Math.round(
   MATCH_ROUND_MS / 1000,
-)} seconds each, marked out of 100 a round as usual. Sitting on a round costs you up to 40% of what it was worth — so knowing it still beats guessing it quickly.`;
+)} seconds each, marked out of 100 a round as usual. Sitting on a round costs you up to 40% of what it was worth — so knowing it still beats guessing it quickly. One go per code.`;
 
 interface HeadToHeadProps {
   onBack: () => void;
@@ -52,30 +28,49 @@ interface HeadToHeadProps {
 }
 
 /**
- * The front of the head-to-head game: make a code, or type one in.
+ * The front of the head-to-head game: make a code, type one in, or look one up.
  *
- * There is no lobby to wait in, because there is no server to wait on. The
- * code carries the mode and the seed, so "joining" is nothing more than typing
- * it: both players' devices then deal the same five rounds from it. Whoever
- * makes the code chooses the game, which is the part of a lobby worth keeping.
+ * There is still no lobby to wait in. The code carries the mode and the seed,
+ * so "joining" is nothing more than typing it: both players' devices then deal
+ * the same five rounds from it. What the leaderboard adds is the other half —
+ * the scores, which used to be stuck on whichever device made them and now
+ * meet in one table that anyone holding the code can read, mid-match or long
+ * after. Which is also what lets a code be one attempt: the table remembers
+ * you played it, so a reload hands back your score rather than a fresh game.
  */
 export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
-  const [screen, setScreen] = useState<"pick" | "create" | "join">("pick");
+  const [screen, setScreen] = useState<"pick" | "create" | "join" | "board">("pick");
   const [made, setMade] = useState<MatchCode | null>(null);
   const [typed, setTyped] = useState("");
   const [copied, setCopied] = useState(false);
   const [name, setName] = useState(loadName);
   // The maker's choices, which the code will carry to everyone else.
   const [setup, setSetup] = useState<MatchSetup>({ flat: false, borders: true });
+  // Set when a player is sent to the standings because their code is spent,
+  // rather than having asked to see them.
+  const [spent, setSpent] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
 
   const create = (mode: ModeId) => {
     setMade(parseMatchCode(createMatchCode(mode, setup)));
   };
 
-  /** Off to play, under the name that will appear in everyone's standings. */
-  const play = (code: MatchCode) => {
+  /**
+   * Off to play, under the name that will appear in everyone's standings —
+   * unless that name has already had its go at this code, in which case the
+   * standings are what they get instead of a second attempt.
+   */
+  const play = async (code: MatchCode) => {
     const player = name.trim();
     saveName(player);
+    setChecking(true);
+    const already = await hasPlayed(code.code, player);
+    setChecking(false);
+    if (already) {
+      setSpent(code.code);
+      setScreen("board");
+      return;
+    }
     onStart({ ...code, player });
   };
 
@@ -94,13 +89,17 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
   const joining = parseMatchCode(typed);
   const typedEnough = typed.replace(/[^0-9a-zA-Z]/g, "").length >= 7;
 
+  const back = () => {
+    if (screen === "pick") return onBack();
+    setScreen("pick");
+    setMade(null);
+    setSpent(null);
+  };
+
   return (
     <div className="menu setup">
       <div className="menu-bar">
-        <button
-          className="btn btn-ghost"
-          onClick={() => (screen === "pick" ? onBack() : (setScreen("pick"), setMade(null)))}
-        >
+        <button className="btn btn-ghost" onClick={back}>
           ← {screen === "pick" ? "Menu" : "Back"}
         </button>
       </div>
@@ -148,8 +147,18 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
                 Type the code you were given and play the same rounds.
               </span>
             </button>
+            {/* Open to anyone holding a code, name or not: reading a table is
+                not playing, and a spectator shouldn't have to invent a name. */}
+            <button className="h2h-choice" onClick={() => setScreen("board")}>
+              <span className="h2h-choice-title">Leaderboard</span>
+              <span className="muted h2h-choice-hint">
+                Look up a code and see everyone who has played it.
+              </span>
+            </button>
           </div>
-          {!named && <p className="muted h2h-code-hint">Put a name in first.</p>}
+          {!named && (
+            <p className="muted h2h-code-hint">Put a name in to create or join a game.</p>
+          )}
         </>
       )}
 
@@ -223,18 +232,23 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
         <div className="setup-panel h2h-code-panel">
           <p className="muted h2h-code-label">Your code</p>
           <p className="h2h-code">{spellCode(made.code)}</p>
-          <p className="h2h-setup">{describe(made)}</p>
+          <p className="h2h-setup">{describeCode(made)}</p>
           <p className="muted h2h-code-hint">
             Anyone who types this code gets exactly that — the same rounds, in the same
             order, on the same map. Play it yourself whenever you like: the code doesn't
-            expire and nobody has to be online at the same time.
+            expire and nobody has to be online at the same time. Everyone's score lands
+            on the one leaderboard, and everyone gets one go.
           </p>
           <div className="button-row">
             <button className="btn btn-ghost" onClick={() => copy(made.code)}>
               {copied ? "Copied ✓" : "Copy code"}
             </button>
-            <button className="btn btn-primary" onClick={() => play(made)}>
-              Play it ▸
+            <button
+              className="btn btn-primary"
+              disabled={checking}
+              onClick={() => play(made)}
+            >
+              {checking ? "Checking…" : "Play it ▸"}
             </button>
           </div>
         </div>
@@ -255,7 +269,7 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
           {/* What the code commits you to, before you commit to it. */}
           {joining ? (
             <>
-              <p className="h2h-setup">{describe(joining)}</p>
+              <p className="h2h-setup">{describeCode(joining)}</p>
               <p className="muted h2h-code-hint">
                 The same rounds on the same map as everyone else playing this code.
               </p>
@@ -270,13 +284,21 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
           <div className="button-row">
             <button
               className="btn btn-primary"
-              disabled={!joining}
+              disabled={!joining || checking}
               onClick={() => joining && play(joining)}
             >
-              Play it ▸
+              {checking ? "Checking…" : "Play it ▸"}
             </button>
           </div>
         </div>
+      )}
+
+      {screen === "board" && (
+        <Leaderboard
+          code={spent ?? undefined}
+          player={named ? name.trim() : undefined}
+          locked={spent !== null}
+        />
       )}
     </div>
   );

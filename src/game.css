@@ -157,12 +157,14 @@
 }
 
 /* ---- Head to head --------------------------------------------------- */
-/* Two doors, make or join, and nothing else on the screen to weigh up. */
+/* Three doors — make, join, or just read the table — and nothing else on the
+   screen to weigh up. Wide enough that all three sit in one row on a desktop
+   and stack rather than splitting 2-and-1 on anything narrower. */
 .h2h-choices {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 16px;
-  max-width: 620px;
+  max-width: 940px;
   margin: 0 auto;
 }
 .h2h-choice {
@@ -297,6 +299,18 @@
 .h2h-code-input:focus {
   outline: none;
   border-color: var(--accent);
+}
+/* Why you're looking at a table instead of a game. Said plainly and near the
+   top, because being handed the standings when you asked to play reads as a
+   fault until something says it isn't one. */
+.h2h-locked {
+  margin: 0;
+  max-width: 460px;
+  font-family: var(--heading);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--text-h);
 }
 
 /* The code, kept in the corner of the bar all game: it's what the round you
