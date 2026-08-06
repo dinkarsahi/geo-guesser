@@ -66,7 +66,7 @@ function CurrencyGame({
 
   return (
     <GameFrame
-      title="Currency Guesser"
+      title="Currency Spotter"
       game={game}
       onExit={onExit}
       night={night}
@@ -137,7 +137,7 @@ export default function CurrencyGuesser(props: ModeProps) {
             </button>
             <NightToggle night={props.night} onToggle={props.onToggleNight} />
           </div>
-          <h2>Currency Guesser</h2>
+          <h2>Currency Spotter</h2>
           <span />
         </header>
         <p className="muted hint">Loading the world…</p>

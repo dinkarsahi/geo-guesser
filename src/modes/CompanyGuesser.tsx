@@ -43,7 +43,7 @@ function CompanyGame({
 
   return (
     <GameFrame
-      title="Company HQ"
+      title="Corporate HQ Spotter"
       game={game}
       onExit={onExit}
       night={night}
@@ -110,7 +110,7 @@ export default function CompanyGuesser(props: ModeProps) {
             </button>
             <NightToggle night={props.night} onToggle={props.onToggleNight} />
           </div>
-          <h2>Company HQ</h2>
+          <h2>Corporate HQ Spotter</h2>
           <span />
         </header>
         <p className="muted hint">Loading the world…</p>

@@ -139,12 +139,12 @@ export const spellCode = (code: string) => `${code.slice(0, 3)} ${code.slice(3)}
 
 /** The modes a match can be played in, as they're named on the menu. */
 export const MATCH_MODES: { id: ModeId; title: string; emoji: string }[] = [
-  { id: "city", title: "City Locator", emoji: "🏙️" },
-  { id: "flag", title: "Flag Guesser", emoji: "🚩" },
-  { id: "currency", title: "Currency Guesser", emoji: "💱" },
-  { id: "company", title: "Company HQ", emoji: "🏢" },
-  { id: "population", title: "Population Guesser", emoji: "👥" },
-  { id: "tube", title: "Tube Station Guesser", emoji: "🚇" },
+  { id: "city", title: "City Spotter", emoji: "🏙️" },
+  { id: "flag", title: "Flag Spotter", emoji: "🚩" },
+  { id: "currency", title: "Currency Spotter", emoji: "💱" },
+  { id: "company", title: "Corporate HQ Spotter", emoji: "🏢" },
+  { id: "population", title: "Population Spotter", emoji: "👥" },
+  { id: "tube", title: "Tube Station Spotter", emoji: "🚇" },
 ];
 
 const titleOf = (mode: ModeId) => MATCH_MODES.find((m) => m.id === mode)!.title;

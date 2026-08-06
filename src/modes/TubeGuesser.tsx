@@ -37,7 +37,7 @@ export default function TubeGuesser({
 
   return (
     <GameFrame
-      title="Tube Station Guesser"
+      title="Tube Station Spotter"
       game={game}
       onExit={onExit}
       night={night}

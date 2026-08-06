@@ -38,7 +38,7 @@ export default function CityLocator({
 
   return (
     <GameFrame
-      title="City Locator"
+      title="City Spotter"
       game={game}
       onExit={onExit}
       night={night}

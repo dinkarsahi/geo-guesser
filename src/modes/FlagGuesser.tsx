@@ -33,7 +33,7 @@ function FlagGame({ onExit, night, onToggleNight, settings, match, pool, shapes 
 
   return (
     <GameFrame
-      title="Flag Guesser"
+      title="Flag Spotter"
       game={game}
       onExit={onExit}
       night={night}
@@ -94,7 +94,7 @@ export default function FlagGuesser(props: ModeProps) {
             </button>
             <NightToggle night={props.night} onToggle={props.onToggleNight} />
           </div>
-          <h2>Flag Guesser</h2>
+          <h2>Flag Spotter</h2>
           <span />
         </header>
         <p className="muted hint">Loading the world…</p>

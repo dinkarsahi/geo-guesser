@@ -109,7 +109,7 @@ function PopulationGame({
 
   return (
     <GameFrame
-      title="Population Guesser"
+      title="Population Spotter"
       game={game}
       onExit={onExit}
       night={night}
@@ -195,7 +195,7 @@ export default function PopulationGuesser(props: ModeProps) {
             </button>
             <NightToggle night={props.night} onToggle={props.onToggleNight} />
           </div>
-          <h2>Population Guesser</h2>
+          <h2>Population Spotter</h2>
           <span />
         </header>
         <p className="muted hint">Loading the world…</p>

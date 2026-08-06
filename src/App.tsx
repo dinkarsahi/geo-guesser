@@ -14,37 +14,37 @@ type Mode = ModeId;
 const MODES: { id: Mode; title: string; blurb: string; emoji: string }[] = [
   {
     id: "city",
-    title: "City Locator",
+    title: "City Spotter",
     blurb: "See a city name, spin the globe and click where it is.",
     emoji: "🏙️",
   },
   {
     id: "flag",
-    title: "Flag Guesser",
+    title: "Flag Spotter",
     blurb: "Identify a country from its flag, then learn a fact about it.",
     emoji: "🚩",
   },
   {
     id: "currency",
-    title: "Currency Guesser",
+    title: "Currency Spotter",
     blurb: "See a currency and its symbol, then find somewhere that spends it.",
     emoji: "💱",
   },
   {
     id: "company",
-    title: "Company HQ",
+    title: "Corporate HQ Spotter",
     blurb: "Spot a company from its logo, then guess where it's headquartered.",
     emoji: "🏢",
   },
   {
     id: "population",
-    title: "Population Guesser",
+    title: "Population Spotter",
     blurb: "See how many people live somewhere and work out where it is.",
     emoji: "👥",
   },
   {
     id: "tube",
-    title: "Tube Station Guesser",
+    title: "Tube Station Spotter",
     blurb: "Pinpoint a London Underground station on a zoomed-in map.",
     emoji: "🚇",
   },
