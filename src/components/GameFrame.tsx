@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { Coord } from "../lib/geo";
-import { formatDistance, MAX_ROUND_SCORE } from "../lib/geo";
+import { finalScore, formatDistance, MAX_ROUND_SCORE } from "../lib/geo";
 import type { Match } from "../lib/match";
 import { MATCH_ROUND_MS } from "../lib/match";
 import type { Game, Phase } from "../lib/useGame";
@@ -78,7 +78,10 @@ export default function GameFrame<T>({
   } = game;
 
   if (phase === "done") {
-    const maxTotal = results.length * MAX_ROUND_SCORE;
+    // The mark for the whole game, on the same scale as each round in the list
+    // below it — so the big number and the small ones can be read against one
+    // another rather than being two different measures stacked up.
+    const mark = finalScore(totalScore, results.length);
     const shown = results.slice(-SUMMARY_LIMIT);
     const hidden = results.length - shown.length;
     return (
@@ -96,10 +99,12 @@ export default function GameFrame<T>({
 
         <div className="summary">
           <p className="summary-score">
-            {totalScore.toLocaleString()}
-            <span className="summary-max"> / {maxTotal.toLocaleString()}</span>
+            {mark}
+            <span className="summary-max"> / {MAX_ROUND_SCORE}</span>
           </p>
-          {match && <MatchResult match={match} score={totalScore} ms={totalMs} />}
+          {/* The leaderboard is handed the same mark that's printed above it,
+              so a player's row reads as the number they were just given. */}
+          {match && <MatchResult match={match} score={mark} ms={totalMs} />}
           <ol className="summary-list" start={hidden + 1}>
             {shown.map((r, i) => (
               <li key={hidden + i}>

@@ -30,6 +30,18 @@ export function haversineKm(a: Coord, b: Coord): number {
 export const MAX_ROUND_SCORE = 100;
 
 /**
+ * What a finished game is marked: the average round, to the nearest whole
+ * number, out of the same 100 a single round is marked out of.
+ *
+ * An average rather than a total so that the mark means one thing regardless
+ * of how long the game was — 78 is 78 whether it took five rounds or ten, and
+ * reads directly as how well the rounds went. A total can only be read against
+ * a denominator you have to be told.
+ */
+export const finalScore = (total: number, rounds: number): number =>
+  rounds === 0 ? 0 : Math.round(total / rounds);
+
+/**
  * Convert a guess distance into a 0..MAX_ROUND_SCORE score.
  * Score decays exponentially with distance; `scaleKm` sets how forgiving
  * the mode is (large for the world, tiny for the tube map).

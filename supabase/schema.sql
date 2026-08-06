@@ -13,8 +13,9 @@ create table if not exists public.match_results (
   -- The match code as it's read out: mode letter, setup letter, five of seed.
   code       text not null check (code ~ '^[0-9A-Z]{7}$'),
   player     text not null check (char_length(btrim(player)) between 1 and 16),
-  -- Five rounds marked out of 100 each.
-  score      integer not null check (score between 0 and 500),
+  -- A match's mark: the average of its rounds, out of the same 100 each round
+  -- is marked out of.
+  score      integer not null check (score between 0 and 100),
   ms         integer not null check (ms >= 0),
   created_at timestamptz not null default now()
 );

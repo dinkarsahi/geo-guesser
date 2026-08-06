@@ -119,8 +119,8 @@ function ModeSetup({
           value={settings.rounds}
           onChange={(rounds) => onChange({ ...settings, rounds })}
           options={[
-            { value: 5, title: "5 rounds", hint: "Scored game with a final total" },
-            { value: 10, title: "10 rounds", hint: "Twice the game, marked out of 1,000" },
+            { value: 5, title: "5 rounds", hint: "A quick game, marked out of 100" },
+            { value: 10, title: "10 rounds", hint: "Twice the game, marked the same way" },
           ]}
         />
 

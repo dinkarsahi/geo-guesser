@@ -19,7 +19,7 @@ import type { ModeId } from "./ModeProps";
 
 const RULES = `${MATCH_ROUNDS} rounds, ${Math.round(
   MATCH_ROUND_MS / 1000,
-)} seconds each, marked out of 100 a round as usual. Sitting on a round costs you up to 40% of what it was worth — so knowing it still beats guessing it quickly. One go per code.`;
+)} seconds each, marked out of 100 a round as usual and averaged into one mark out of 100. Sitting on a round costs you up to 40% of what it was worth — so knowing it still beats guessing it quickly. One go per code.`;
 
 interface HeadToHeadProps {
   onBack: () => void;
