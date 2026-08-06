@@ -78,7 +78,17 @@
       "PowerShell(Test-Path *)",
       "PowerShell(node \"C:\\\\Users\\\\sahid\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-sahid-geo-guesser\\\\f30831d9-681e-421f-a02f-2b3871ce08b9\\\\scratchpad\\\\anchors.mjs\")",
       "PowerShell(node \"C:\\\\Users\\\\sahid\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-sahid-geo-guesser\\\\f30831d9-681e-421f-a02f-2b3871ce08b9\\\\scratchpad\\\\check-anchors.mjs\")",
-      "PowerShell(npx tsc -b --pretty false)"
+      "PowerShell(npx tsc -b --pretty false)",
+      "mcp__claude_ai_Supabase__list_organizations",
+      "mcp__claude_ai_Supabase__list_projects",
+      "mcp__claude_ai_Supabase__list_tables",
+      "mcp__claude_ai_Supabase__apply_migration",
+      "mcp__claude_ai_Supabase__get_project_url",
+      "mcp__claude_ai_Supabase__get_publishable_keys",
+      "mcp__claude_ai_Supabase__execute_sql",
+      "mcp__claude_ai_Supabase__get_advisors",
+      "Bash(git add *)",
+      "Bash(git commit -q -m 'Allow the tools this session leaned on *)"
     ]
   }
 }
