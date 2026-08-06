@@ -97,7 +97,7 @@ function PopulationGame({
   // the coordinates only decide where the reveal flies to. Everything else in
   // the round — the score, and the wording of a miss — comes off the numbers.
   const game = useGame<PopulationTarget>(pool, (c) => c, 2000, {
-    endless: settings.endless,
+    rounds: settings.rounds,
     hitTest: (guess, target) => isInCountry(shapes, target.code, guess),
     scoreGuess: (guess, target) =>
       isInCountry(shapes, target.code, guess)

@@ -32,7 +32,7 @@ export default function CityLocator({
   // Cities already carry lat/lng, so the target is its own coordinate. A city is
   // a point, not an area, so this mode scores purely on how close the click is.
   const game = useGame<City>(cities, (c) => c, 2000, {
-    endless: settings.endless,
+    rounds: settings.rounds,
     ...matchOptions(match),
   });
 

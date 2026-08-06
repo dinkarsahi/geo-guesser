@@ -26,7 +26,7 @@ export default function TubeGuesser({
   // you clicked counts as your answer, and the ride from there to the right one
   // is what costs you. The right station is full marks.
   const game = useGame<TubeStation>(tubeStations, (s) => s, 1.2, {
-    endless: settings.endless,
+    rounds: settings.rounds,
     hitTest: (guess, station) => nearestStation(guess).name === station.name,
     scoreGuess: (guess, station) => {
       const stops = stopsBetween(nearestStation(guess).name, station.name);

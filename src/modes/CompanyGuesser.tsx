@@ -35,7 +35,7 @@ function CompanyGame({
   // happens to sit in is never asked for, so marking it would only invite the
   // player to aim finer than the question deserves.
   const game = useGame<CompanyTarget>(pool, (c) => c, 2000, {
-    endless: settings.endless,
+    rounds: settings.rounds,
     hitTest: (guess, company) => isInCountry(shapes, company.code, guess),
     guessAt: (guess) => anchorAt(shapes, guess),
     ...matchOptions(match),

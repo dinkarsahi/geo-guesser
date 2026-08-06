@@ -50,10 +50,10 @@ const MODES: { id: Mode; title: string; blurb: string; emoji: string }[] = [
   },
 ];
 
-const DEFAULT_SETTINGS: GameSettings = { endless: false, flat: false, borders: true };
+const DEFAULT_SETTINGS: GameSettings = { rounds: 5, flat: false, borders: true };
 
 /** A two-option toggle rendered as a pair of buttons. */
-function Choice<T extends string | boolean>({
+function Choice<T extends string | number | boolean>({
   label,
   value,
   options,
@@ -114,13 +114,13 @@ function ModeSetup({
       <p className="muted menu-sub">{mode.blurb}</p>
 
       <div className="setup-panel">
-        <Choice<boolean>
+        <Choice<number>
           label="Length"
-          value={settings.endless}
-          onChange={(endless) => onChange({ ...settings, endless })}
+          value={settings.rounds}
+          onChange={(rounds) => onChange({ ...settings, rounds })}
           options={[
-            { value: false, title: "5 rounds", hint: "Scored game with a final total" },
-            { value: true, title: "Free run", hint: "Unlimited rounds — stop whenever" },
+            { value: 5, title: "5 rounds", hint: "Scored game with a final total" },
+            { value: 10, title: "10 rounds", hint: "Twice the game, marked out of 1,000" },
           ]}
         />
 

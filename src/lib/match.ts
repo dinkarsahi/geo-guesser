@@ -177,7 +177,6 @@ export function matchPoints(accuracy: number, elapsedMs: number): number {
 
 /** What a match changes about a round, ready to spread into `useGame`. */
 export interface MatchGameOptions {
-  endless: false;
   rounds: number;
   seed: number;
   roundLimitMs: number;
@@ -192,7 +191,6 @@ export interface MatchGameOptions {
 export function matchOptions(match?: Match): MatchGameOptions | undefined {
   if (!match) return undefined;
   return {
-    endless: false,
     rounds: MATCH_ROUNDS,
     seed: match.seed,
     roundLimitMs: MATCH_ROUND_MS,

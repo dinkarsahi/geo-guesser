@@ -41,7 +41,11 @@ export interface PickedGuess {
   detail?: string;
 }
 
-/** Only the tail of a long free run is worth listing. */
+/**
+ * How many rounds the summary will list before it starts hiding the early
+ * ones. The longest game is ten, so nothing reaches this today — it's here so
+ * that a longer game added later prints a summary rather than a scroll.
+ */
 const SUMMARY_LIMIT = 10;
 
 export default function GameFrame<T>({
@@ -68,13 +72,10 @@ export default function GameFrame<T>({
     totalScore,
     submitGuess,
     next,
-    endRun,
     restart,
     timeLeftMs,
     totalMs,
   } = game;
-
-  const freeRun = totalRounds === null;
 
   if (phase === "done") {
     const maxTotal = results.length * MAX_ROUND_SCORE;
@@ -99,11 +100,6 @@ export default function GameFrame<T>({
             <span className="summary-max"> / {maxTotal.toLocaleString()}</span>
           </p>
           {match && <MatchResult match={match} score={totalScore} ms={totalMs} />}
-          {freeRun && (
-            <p className="muted">
-              {results.length} {results.length === 1 ? "round" : "rounds"} played
-            </p>
-          )}
           <ol className="summary-list" start={hidden + 1}>
             {shown.map((r, i) => (
               <li key={hidden + i}>
@@ -137,7 +133,7 @@ export default function GameFrame<T>({
   }
 
   const isResult = phase === "result";
-  const lastRound = !freeRun && totalRounds !== null && roundIndex + 1 >= totalRounds;
+  const lastRound = roundIndex + 1 >= totalRounds;
   // Only after a miss, and only when there was a click to speak of: a round
   // that scored full marks has already been told what it landed in, and one
   // that ran out of time never landed anywhere.
@@ -161,9 +157,7 @@ export default function GameFrame<T>({
         </div>
         <div className="prompt">{renderPrompt(target, phase)}</div>
         <div className="game-stats">
-          <span>
-            {freeRun ? `Round ${roundIndex + 1}` : `Round ${roundIndex + 1}/${totalRounds}`}
-          </span>
+          <span>Round {roundIndex + 1}/{totalRounds}</span>
           <span className="round-score">{totalScore.toLocaleString()} pts</span>
           {/* The seconds sit with the score rather than over the clock itself,
               where on a narrow window they'd be printed across the code. */}
@@ -245,11 +239,6 @@ export default function GameFrame<T>({
             <button className="btn btn-primary" onClick={next}>
               {lastRound ? "See results" : "Next round →"}
             </button>
-            {freeRun && (
-              <button className="btn btn-ghost" onClick={endRun}>
-                End run
-              </button>
-            )}
           </div>
         </div>
       )}

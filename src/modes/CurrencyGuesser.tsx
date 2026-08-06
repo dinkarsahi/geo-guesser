@@ -54,7 +54,7 @@ function CurrencyGame({
   // currency zone, which for the euro would be a field in Austria and for the
   // US dollar the middle of the Pacific.
   const game = useGame<CurrencyTarget>(pool, (m) => m, 2000, {
-    endless: settings.endless,
+    rounds: settings.rounds,
     hitTest: (guess, money) =>
       money.countries.some((c) => isInCountry(shapes, c.code, guess)),
     answerFor: nearestSpender,

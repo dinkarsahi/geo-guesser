@@ -25,7 +25,7 @@ function FlagGame({ onExit, night, onToggleNight, settings, match, pool, shapes 
   // The whole country is the target: click anywhere inside its borders for full
   // marks, and miss by however far the country picked is from the right one.
   const game = useGame<Country>(pool, (c) => c, 2000, {
-    endless: settings.endless,
+    rounds: settings.rounds,
     hitTest: (guess, country) => isInCountry(shapes, country.code, guess),
     guessAt: (guess) => anchorAt(shapes, guess),
     ...matchOptions(match),

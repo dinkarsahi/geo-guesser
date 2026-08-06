@@ -27,10 +27,8 @@ export interface RoundResult {
 }
 
 export interface GameOptions<T> {
-  /** Rounds in a scored game. Ignored when `endless` is set. */
+  /** Rounds the game runs to. */
   rounds?: number;
-  /** Free run: keep dealing targets until the player calls it a day. */
-  endless?: boolean;
   /**
    * Full marks when the guess lands inside the target's own area — anywhere in
    * the right country, anywhere in the right station's patch. Modes without one
@@ -79,8 +77,8 @@ export interface Game<T> {
   /** The target the player is currently trying to locate. */
   target: T;
   roundIndex: number;
-  /** Rounds in this game, or null in a free run. */
-  totalRounds: number | null;
+  /** Rounds in this game. */
+  totalRounds: number;
   phase: Phase;
   /** The player's guess for the current round (shown as a marker). */
   currentGuess: Coord | null;
@@ -90,8 +88,6 @@ export interface Game<T> {
   totalScore: number;
   submitGuess: (c: Coord) => void;
   next: () => void;
-  /** Ends a free run and shows the summary. */
-  endRun: () => void;
   restart: () => void;
   /** Milliseconds left in this round, or null when nothing is timing it. */
   timeLeftMs: number | null;
@@ -150,7 +146,7 @@ function pickTargets<T>(pool: T[], n: number, seed?: number): T[] {
 
   let candidates = pool.filter((t) => !recent.has(t));
   // Asked for more than the pool has left to offer: everything's fair game
-  // again, which is also how a free run gets to deal the whole pool.
+  // again, rather than a game cut short for want of an unseen target.
   if (candidates.length < n) {
     candidates = [...pool];
     history.length = 0;
@@ -162,8 +158,8 @@ function pickTargets<T>(pool: T[], n: number, seed?: number): T[] {
 }
 
 /**
- * Drives a round-based game shared by every mode — either a fixed number of
- * scored rounds or an open-ended free run.
+ * Drives the round-based game shared by every mode: a fixed number of scored
+ * rounds, dealt up front, ending on a total.
  *
  * @param pool     every possible target
  * @param getCoord maps a target to its true location
@@ -177,7 +173,6 @@ export function useGame<T>(
 ): Game<T> {
   const {
     rounds = 5,
-    endless = false,
     hitTest,
     scoreGuess,
     answerFor,
@@ -186,10 +181,8 @@ export function useGame<T>(
     roundLimitMs,
     adjustScore,
   } = options;
-  // A free run deals the whole pool, reshuffled again whenever it runs dry.
-  const dealt = endless ? pool.length : rounds;
 
-  const [targets, setTargets] = useState(() => pickTargets(pool, dealt, seed));
+  const [targets, setTargets] = useState(() => pickTargets(pool, rounds, seed));
   const [roundIndex, setRoundIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("guessing");
   const [currentGuess, setCurrentGuess] = useState<Coord | null>(null);
@@ -294,36 +287,30 @@ export function useGame<T>(
     if (phase !== "result") return;
     const upcoming = roundIndex + 1;
     if (upcoming >= targets.length) {
-      if (!endless) {
-        setPhase("done");
-        return;
-      }
-      // Free run: deal another shuffled pass through the pool.
-      setTargets((t) => [...t, ...pickTargets(pool, pool.length)]);
+      setPhase("done");
+      return;
     }
     setRoundIndex(upcoming);
     setCurrentGuess(null);
     setTimeLeftMs(roundLimitMs ?? null);
     setPhase("guessing");
-  }, [phase, roundIndex, targets.length, endless, pool, roundLimitMs]);
-
-  const endRun = useCallback(() => setPhase("done"), []);
+  }, [phase, roundIndex, targets.length, roundLimitMs]);
 
   const restart = useCallback(() => {
     // A seeded game replays the same five rounds, which is the point of it:
     // the code names one game, not one sitting of it.
-    setTargets(pickTargets(pool, dealt, seed));
+    setTargets(pickTargets(pool, rounds, seed));
     setRoundIndex(0);
     setCurrentGuess(null);
     setResults([]);
     setTimeLeftMs(roundLimitMs ?? null);
     setPhase("guessing");
-  }, [pool, dealt, seed, roundLimitMs]);
+  }, [pool, rounds, seed, roundLimitMs]);
 
   return {
     target,
     roundIndex,
-    totalRounds: endless ? null : targets.length,
+    totalRounds: targets.length,
     phase,
     currentGuess,
     lastResult: results.length ? results[results.length - 1] : null,
@@ -331,7 +318,6 @@ export function useGame<T>(
     totalScore: results.reduce((sum, r) => sum + r.score, 0),
     submitGuess,
     next,
-    endRun,
     restart,
     timeLeftMs: phase === "guessing" ? timeLeftMs : null,
     totalMs: results.reduce((sum, r) => sum + r.elapsedMs, 0),
