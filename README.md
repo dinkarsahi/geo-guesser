@@ -22,6 +22,32 @@ makes a code one go each.
 Without them the app builds and runs exactly as before, and the Leaderboard tab
 says so.
 
+### On the host, not just here
+
+`.env` is gitignored, so a host that builds from the repo — Vercel, in our case
+— never sees it. Setting it up locally is not setting it up for the people you
+send a code to: their bundle is built on the host, and if the variables aren't
+there, every score they play is filed to their own browser and nobody can see
+anybody. The game looks like it works right up until the standings are empty.
+
+So the two variables have to be set on the host as well, for Production *and*
+Preview (a preview build with no leaderboard is a preview of a different game):
+
+```
+vercel env add VITE_SUPABASE_URL production
+vercel env add VITE_SUPABASE_ANON_KEY production
+```
+
+Adding them doesn't rebuild anything — they're baked in at build time, so an
+existing deployment carries on without them until you `vercel redeploy`.
+
+To check a live build rather than trust it, look for the project ref in the
+served bundle; if it isn't there, neither is the leaderboard:
+
+```
+curl -s https://spot0n.vercel.app/assets/index-*.js | grep -c supabase.co
+```
+
 ---
 
 # React + TypeScript + Vite

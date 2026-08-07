@@ -88,7 +88,15 @@
       "mcp__claude_ai_Supabase__execute_sql",
       "mcp__claude_ai_Supabase__get_advisors",
       "Bash(git add *)",
-      "Bash(git commit -q -m 'Allow the tools this session leaned on *)"
+      "Bash(git commit -q -m 'Allow the tools this session leaned on *)",
+      "Bash(gh repo *)",
+      "Bash(gh api *)",
+      "mcp__claude_ai_Supabase__get_logs",
+      "Bash(curl -s https://spot0n.vercel.app/ -o live-index.html)",
+      "Bash(npx vercel *)",
+      "Bash(curl -s https://spot0n.vercel.app/ -o live2.html)",
+      "Bash(curl -s https://spot0n.vercel.app/__TRACKED_VAR__ -o live2.js)",
+      "Bash(git commit -q -m ' *)"
     ]
   }
 }
