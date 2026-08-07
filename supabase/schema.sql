@@ -52,3 +52,26 @@ create policy "file a result"
   on public.match_results for insert
   to anon, authenticated
   with check (true);
+
+-- Clearing out finished days.
+--
+-- A code lasts until the player's own midnight, so one day's code is live
+-- somewhere in the world across a 26-hour spread — from the first midnight in
+-- Kiribati to the last in Baker Island. A sweep at any particular hour would
+-- therefore catch a table somebody is still playing. Waiting 48 hours from the
+-- row rather than firing at a wall-clock time clears the gap with room over,
+-- and needs no notion of whose day it was.
+--
+-- Note this deletes through the policies above rather than around them: cron
+-- runs as the table's owner, which is also why there's still no delete policy
+-- for the anon key to reach.
+create extension if not exists pg_cron;
+
+select cron.unschedule('sweep-old-match-results')
+where exists (select 1 from cron.job where jobname = 'sweep-old-match-results');
+
+select cron.schedule(
+  'sweep-old-match-results',
+  '17 * * * *',
+  $$delete from public.match_results where created_at < now() - interval '48 hours'$$
+);

@@ -64,56 +64,91 @@ export async function fetchBoard(code: string): Promise<Board> {
 }
 
 /**
+ * What became of a finished match offered to the table.
+ *
+ * A name that's already up there used to mean one thing — you, arriving twice —
+ * because a code was private and the four people on it knew each other. On a
+ * daily code everyone in the world shares a table, so it now means one of two
+ * quite different things, and telling a player the wrong one either locks them
+ * out of a game they never played or shows them a stranger's score as theirs.
+ */
+export type Filing =
+  | { status: "filed"; board: Board }
+  | { status: "name-taken" };
+
+const localBoard = (code: string, source: BoardSource): Filing => ({
+  status: "filed",
+  board: { standings: rankResults(loadResults(code)), source },
+});
+
+/**
  * Files a finished match and hands back the table it joined.
  *
  * The unique index on (code, player) is what makes a code one attempt: a
  * second result for a name is refused by Postgres rather than by us, so it
- * holds however the player got there. That refusal isn't an error to report —
- * it means the score already up there is the one that counts, and the right
- * thing to show is the table with it in.
+ * holds however the player got there.
  */
-export async function publishResult(result: SharedResult): Promise<Board> {
+export async function publishResult(result: SharedResult): Promise<Filing> {
   const row: Row = { ...result, code: key(result.code) };
-  // Kept here first, so the lock survives a network that doesn't answer.
-  saveResult(row);
-  if (!hasRemote) return { standings: rankResults(loadResults(row.code)), source: "local" };
+  if (!hasRemote) {
+    saveResult(row);
+    return localBoard(row.code, "local");
+  }
+
+  // Read before filing, since filing is what would make it true.
+  const mine = playedHere(row.code, row.player);
 
   try {
     await rest(TABLE, { method: "POST", body: JSON.stringify(row) });
   } catch (e) {
-    if (!(e instanceof RemoteError)) return { standings: rankResults(loadResults(row.code)), source: "offline" };
-    // Anything other than "you've already played this" is worth stopping for —
-    // but not at the cost of the screen, which still has a table to draw.
-    if (e.code !== UNIQUE_VIOLATION) {
-      return { standings: rankResults(loadResults(row.code)), source: "offline" };
+    if (e instanceof RemoteError && e.code === UNIQUE_VIOLATION) {
+      // Ours, if this device filed it: a re-render or the refresh button, and
+      // the score already up is the one that counts. Somebody else's otherwise
+      // — claimed while this match was being played — and the player needs
+      // another name rather than a stranger's result handed to them.
+      //
+      // Asked again as well as before the write, because the row that refused
+      // this one may be one of ours filed in the meantime. Getting this wrong
+      // means telling a player their own name was stolen from them.
+      if (!mine && !playedHere(row.code, row.player)) return { status: "name-taken" };
+      saveResult(row);
+      return { status: "filed", board: await fetchBoard(row.code) };
     }
+    // Refused for some other reason, or never arrived. Kept here either way, so
+    // the lock survives a network that doesn't answer.
+    saveResult(row);
+    return localBoard(row.code, "offline");
   }
 
-  return fetchBoard(row.code);
+  saveResult(row);
+  return { status: "filed", board: await fetchBoard(row.code) };
 }
 
+/** Whether a player can start this code, and if not, which of the two reasons. */
+export type Entry = "ok" | "played" | "name-taken";
+
 /**
- * Whether this player has already had their go at this code.
+ * Whether this player may have a go at this code.
  *
- * Answered from this device first — instantly, and without a network to lean
- * on — then from the table, which is what catches the same name coming back on
- * a different phone or after clearing the browser. A server that can't be
- * reached doesn't hand out a second attempt on its own: it can only fail to
- * take one away, and the local answer has already been given.
+ * Two separate questions, asked in the order that keeps them honest. Has *this
+ * device* finished it under this name — answered instantly and without a
+ * network, so that pulling the plug can't buy a second attempt. Then: is the
+ * name spoken for on today's table, which on a shared daily code is usually
+ * somebody else entirely and wants saying so, since the answer is "pick another
+ * name", not "you've already played".
  */
-export async function hasPlayed(code: string, player: string): Promise<boolean> {
-  if (playedHere(key(code), player)) return true;
-  if (!hasRemote) return false;
+export async function checkEntry(code: string, player: string): Promise<Entry> {
+  if (playedHere(key(code), player)) return "played";
+  if (!hasRemote) return "ok";
 
   // The whole board rather than a query for the one name: a name is free text
   // and `ilike` would read a % or an _ in it as a wildcard, matching someone
-  // else. It's the same single request, and it leaves the board cached — so a
-  // player who is on it stays locked out even if the network goes afterwards.
+  // else. It's the same single request, and it leaves the board cached.
   const board = await fetchBoard(code);
   // Unreachable, so unanswerable. Let them play rather than shutting out
   // someone who has never played; the insert at the end is refused if they had.
-  if (board.source !== "remote") return false;
+  if (board.source !== "remote") return "ok";
 
   const name = player.trim().toLowerCase();
-  return board.standings.some((r) => r.player.toLowerCase() === name);
+  return board.standings.some((r) => r.player.toLowerCase() === name) ? "name-taken" : "ok";
 }

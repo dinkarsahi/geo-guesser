@@ -247,7 +247,7 @@ export default function App() {
           <span className="mode-emoji">⚔️</span>
           <span className="mode-title">Head to Head</span>
           <span className="muted mode-blurb">
-            Race a friend through the same rounds against the clock.
+            Today's rounds against the clock, the same for everyone. One go.
           </span>
         </button>
       </div>

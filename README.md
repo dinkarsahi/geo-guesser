@@ -2,6 +2,35 @@
 
 A geography guessing game. `npm install --legacy-peer-deps`, then `npm run dev`.
 
+## One round a day
+
+Head-to-head codes aren't drawn any more, they're worked out: the game, the map
+settings and the date go in, and a code comes out. Everyone in the world who
+picks City Spotter on the globe with borders today is holding the same code and
+landing on the same table, without anyone having sent it to them. There are 21 a
+day — five games across four map settings, plus the tube, which ignores the map
+and so gets one.
+
+The day turns over at each player's own midnight, taken from their device's
+calendar date. That means a given day's code is live somewhere across a 26-hour
+spread rather than switching for everyone at once — Auckland finishes today's
+round before London starts it, and both are on the same code. It's how Wordle
+does it, and it's what makes the reset land at midnight for everybody instead of
+at midnight for one timezone and teatime for another.
+
+The five characters after the mode and map letters are a scramble of the day
+number, not a hash of it — multiplication by a constant sharing no factor with
+the code space, which is one-to-one over that space. So no two days can collide,
+rather than merely being unlikely to: `src/lib/match.ts` has the arithmetic. The
+seed the rounds are dealt from is still a hash of the finished code, and 32 bits
+across 21 codes a day works out at about one same-pool repeat a decade.
+
+Because a code is derived rather than issued, it's also the thing that makes one
+go a day stick: there is no second code with the same settings to mint and play
+again. And because the algorithm ships in the bundle, anyone can work out next
+week's codes and practise — the game is client-side and self-scored, so this is
+a leaderboard for people who want to play, not a contest to defend.
+
 ## The head-to-head leaderboard
 
 Head to Head works without any of this — codes are self-contained, and standings

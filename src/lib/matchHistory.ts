@@ -9,6 +9,22 @@ import type { SharedResult } from "./match";
 const KEY = "spoton.results.v2";
 
 /**
+ * The codes this device has actually finished, and under which names.
+ *
+ * Kept apart from the tables above, which are the server's word for a code and
+ * hold everyone. That distinction didn't matter while a code was private and
+ * shared with four friends — anyone on the table who shared your name was you,
+ * on another device. On a daily code the whole world is on one table, and a
+ * stranger called Sam would otherwise mark every other Sam as having played.
+ * This is the record of what happened *here*, which is the only thing that can
+ * honestly answer "have you had your go?".
+ */
+const PLAYED_KEY = "spoton.played.v1";
+
+/** Names this device has finished each code under. */
+type Played = Record<string, string[]>;
+
+/**
  * What this device has seen of each code, kept between visits.
  *
  * The standings proper live in Supabase now, so this is no longer where the
@@ -44,15 +60,39 @@ export function loadResults(code: string): SharedResult[] {
   return Array.isArray(kept) ? kept : [];
 }
 
+function readPlayed(): Played {
+  try {
+    const raw = localStorage.getItem(PLAYED_KEY);
+    return raw ? (JSON.parse(raw) as Played) : {};
+  } catch {
+    return {};
+  }
+}
+
 /**
  * Whether this device has a finished result for a code under a name.
  *
  * Asked before a match starts, and answered without a network so that being
- * offline can't be a way of getting a second attempt.
+ * offline can't be a way of getting a second attempt. Scoped to the name rather
+ * than the device, so that two people sharing a laptop each get their go.
  */
 export function playedHere(code: string, player: string): boolean {
   const key = player.trim().toLowerCase();
-  return loadResults(code).some((r) => r.player.toLowerCase() === key);
+  const names = readPlayed()[code];
+  return Array.isArray(names) && names.includes(key);
+}
+
+/** Notes that this device finished a code under a name, and won't do so again. */
+export function markPlayed(code: string, player: string) {
+  const store = readPlayed();
+  const key = player.trim().toLowerCase();
+  const names = store[code] ?? [];
+  if (!names.includes(key)) store[code] = [...names, key];
+  try {
+    localStorage.setItem(PLAYED_KEY, JSON.stringify(store));
+  } catch {
+    /* storage off — the server's unique index is still there to refuse a second row */
+  }
 }
 
 /**
@@ -69,6 +109,7 @@ export function saveResult(result: SharedResult): SharedResult[] {
   const next = kept.some((r) => r.player.toLowerCase() === key) ? kept : [...kept, result];
   store[result.code] = next;
   write(store);
+  markPlayed(result.code, result.player);
   return next;
 }
 

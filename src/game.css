@@ -213,6 +213,14 @@
   outline: none;
   border-color: var(--accent);
 }
+/* The name is taken — said next to the field that fixes it, not as an error. */
+.h2h-taken {
+  margin: 0;
+  max-width: 460px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--accent);
+}
 .h2h-choice-title {
   font-size: 19px;
   font-weight: 700;
@@ -392,6 +400,21 @@
   margin: 0;
   font-size: 14px;
   line-height: 1.4;
+}
+/* Putting another name to a finished score. Boxed, because it's the one thing
+   on this screen that's asking rather than telling. */
+.match-rename {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  max-width: 380px;
+  padding: 14px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  border: 2px solid var(--accent);
+  background: var(--social-bg);
 }
 .match-verdict {
   margin: 0;
