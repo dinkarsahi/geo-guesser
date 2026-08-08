@@ -149,6 +149,8 @@ function PopulationGame({
       // The answer said the same way round as the guess above it, so the two
       // read as one sentence apiece and the figures land under one another.
       // Under it, the asterisk the number has carried since it was asked.
+      // The question was a number, so the country is the whole of the answer.
+      answerLabel={(target) => target.name}
       renderResultExtra={(target) => (
         <div className="fact">
           <strong className="fact-title">

@@ -67,6 +67,9 @@ function CompanyGame({
           </span>
         </div>
       )}
+      // The company names the round and the country is the answer to it, so
+      // the line carries both — "Nintendo" alone doesn't say what was missed.
+      answerLabel={(company) => `${company.name} — ${company.country}`}
       renderResultExtra={(company) => (
         <FactCard
           title={`${company.name} — ${company.country}`}

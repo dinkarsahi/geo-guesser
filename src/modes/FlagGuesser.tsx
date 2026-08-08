@@ -54,6 +54,7 @@ function FlagGame({ onExit, night, onToggleNight, settings, match, pool, shapes 
           />
         </div>
       )}
+      answerLabel={(country) => country.name}
       renderResultExtra={(country) => (
         <FactCard title={country.name} fact={country.fact} />
       )}

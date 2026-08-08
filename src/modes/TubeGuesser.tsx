@@ -56,6 +56,7 @@ export default function TubeGuesser({
           <span className="prompt-title">{station.name}</span>
         </div>
       )}
+      answerLabel={(station) => station.name}
       renderResultExtra={(station) => (
         <FactCard title={station.name} fact={station.fact} />
       )}

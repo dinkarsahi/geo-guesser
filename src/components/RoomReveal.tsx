@@ -1,13 +1,11 @@
-import { ROUND_PERIOD_MS } from "../lib/duel";
 import type { RoomStanding } from "../lib/duel";
+import { MATCH_ROUNDS } from "../lib/match";
 import { useCountdown } from "../lib/useRoom";
 
 interface RoomRevealProps {
-  /** When round one opened, on the room's clock. */
-  startAt: number;
-  /** The round just played, counted from zero. */
-  roundIndex: number;
-  /** Whether that was the last of them. */
+  /** When the next round opens, on the room's clock. */
+  closesAt: number;
+  /** Whether the round just played was the last of them. */
   lastRound: boolean;
   /** Everyone in the room as they stand, or null if it hasn't come back yet. */
   board: RoomStanding[] | null;
@@ -23,14 +21,8 @@ interface RoomRevealProps {
  * it because this is the moment they're worth reading: everyone has just
  * answered the same question, and the table is about to change again.
  */
-export default function RoomReveal({
-  startAt,
-  roundIndex,
-  lastRound,
-  board,
-  you,
-}: RoomRevealProps) {
-  const left = useCountdown(startAt + (roundIndex + 1) * ROUND_PERIOD_MS);
+export default function RoomReveal({ closesAt, lastRound, board, you }: RoomRevealProps) {
+  const left = useCountdown(closesAt);
   const seconds = Math.ceil(left / 1000);
   const mine = you.trim().toLowerCase();
 
@@ -42,10 +34,14 @@ export default function RoomReveal({
       </p>
       {board && board.length > 1 && (
         <>
-          {/* Said out loud, because a number on its own here reads as points
-              and isn't: it's the mark the game is decided on, which is an
-              average and therefore moves both ways. */}
-          <p className="muted room-live-cap">Marks so far, out of 100</p>
+          {/* Named columns, because neither number explains itself: one is a
+              count of rounds and the other is a mark that moves both ways, and
+              side by side they otherwise read as points and more points. */}
+          <div className="room-live-row room-live-head" aria-hidden="true">
+            <span className="room-live-name">Player</span>
+            <span className="room-live-rounds">Rounds played</span>
+            <span className="room-live-score">Average</span>
+          </div>
           <ol className="room-live">
             {board.map((s) => (
               <li
@@ -53,11 +49,11 @@ export default function RoomReveal({
                 className={`room-live-row${s.player.toLowerCase() === mine ? " is-you" : ""}`}
               >
                 <span className="room-live-name">{s.player}</span>
-                {/* How far through they are, which mid-game is as much of the
-                    story as the score: a blank round is a player who stepped
-                    away, not a player who guessed badly. */}
+                {/* How far through they are, out of the game rather than out of
+                    the round we're on — "3/5" is a position in the game, where
+                    "3/3" only ever says everyone is keeping up. */}
                 <span className="muted room-live-rounds">
-                  {s.rounds}/{roundIndex + 1}
+                  {s.rounds}/{MATCH_ROUNDS}
                 </span>
                 <span className="room-live-score">{s.score}</span>
               </li>

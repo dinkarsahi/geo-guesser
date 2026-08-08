@@ -106,6 +106,34 @@
   /* Lifts the blades off a globe of much the same brightness. */
   filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.85));
 }
+/* Two gloves thrown at each other. The second is flipped to face the first and
+   hue-turned to blue, so the pair reads as two people rather than one person's
+   kit, and they overlap by a third — gloves with air between them are gloves in
+   a cupboard. Sized to sit in the same box as every other icon on the grid. */
+.duel-mark {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+.duel-mark-red,
+.duel-mark-blue {
+  font-size: 0.82em;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}
+/* Thrown rather than held: each leans into the other, and they overlap where
+   they meet. */
+.duel-mark-red {
+  transform: rotate(-14deg);
+}
+.duel-mark-blue {
+  /* Mirrored so the two face each other, then turned from crimson to blue —
+     the glove is drawn red, so the rotation is measured from there. */
+  transform: scaleX(-1) rotate(-14deg);
+  filter: hue-rotate(230deg) saturate(1.25) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+  margin-left: -0.46em;
+}
+
 /* Two cards where the menu has seven: given a little more room each, since
    they're a choice being made rather than a list being scanned, but still held
    to the middle rather than stretched into a pair of banners. */
@@ -634,13 +662,26 @@
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
-/* What the column of numbers is, said once so it isn't guessed at. */
-.room-live-cap {
-  margin: 0;
+/* What the columns are, said once so they aren't guessed at. */
+.room-live-head {
+  width: 100%;
+  max-width: 380px;
   font-family: var(--heading);
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding-bottom: 3px;
+}
+.room-live-head .room-live-name,
+.room-live-head .room-live-rounds,
+.room-live-head .room-live-score {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
 }
 /* A tighter standings than the one at the end: this is read in a few seconds,
    over a map, between two questions. */
@@ -649,14 +690,14 @@
   margin: 0;
   padding: 0;
   width: 100%;
-  max-width: 320px;
+  max-width: 380px;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 .room-live-row {
   display: grid;
-  grid-template-columns: 1fr auto 44px;
+  grid-template-columns: 1fr auto 52px;
   align-items: baseline;
   gap: 10px;
   padding: 4px 8px;
@@ -1351,15 +1392,43 @@ body:has(.game-play) {
 .summary-list {
   list-style: none;
   padding: 0;
-  margin: 24px 0;
+  margin: 0 0 24px;
   text-align: left;
 }
-.summary-list li {
+/* The round, what it was, how close you got, what that paid. The answer takes
+   the room that's going, since it's the column with words in it. */
+.summary-list li,
+.summary-head {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: auto 1fr auto 4.5em;
+  align-items: baseline;
   gap: 16px;
   padding: 10px 4px;
   border-bottom: 1px solid var(--border);
+}
+.summary-head {
+  margin-top: 24px;
+  padding-bottom: 4px;
+  font-family: var(--heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--text);
+}
+.summary-head-score {
+  text-align: right;
+}
+/* What the round was asking about — the one thing on the line worth reading
+   twice, so it's set like the answer it is rather than like a note. */
+.summary-answer {
+  font-weight: 600;
+  color: var(--text-h);
+  overflow-wrap: anywhere;
+}
+.summary-list .round-score {
+  text-align: right;
 }
 .button-row {
   display: flex;

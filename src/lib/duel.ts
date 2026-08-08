@@ -6,6 +6,7 @@ import {
   roomCode,
   type SharedResult,
 } from "./match";
+import { setRoundClosings } from "./roomClock";
 import { hasRemote, rest, RemoteError, serverNow, UNIQUE_VIOLATION } from "./supabase";
 
 /**
@@ -64,7 +65,12 @@ export const LOBBY_LEAD_MS = 15_000;
 /** One round and the pause on its answer — the distance between round openings. */
 export const ROUND_PERIOD_MS = MATCH_ROUND_MS + MATCH_REVEAL_MS;
 
-/** When the last round's reveal ends, and with it the room. */
+/**
+ * The latest a room can still be running — every round taken to its full thirty
+ * seconds. Most end well before it, since a round is over as soon as its last
+ * player answers, but this is the bound that can be worked out from the start
+ * alone, which is all a player typing the code in has to go on.
+ */
 export const roomEndsAt = (startAt: number) => startAt + MATCH_ROUNDS * ROUND_PERIOD_MS;
 
 const toRoom = (row: RoomRow): Room => ({
@@ -252,6 +258,7 @@ export interface RoomStanding extends SharedResult {
   rounds: number;
 }
 
+
 /**
  * Where the room stands: every player, marked on the same average-of-100 as
  * every other game here.
@@ -262,11 +269,30 @@ export interface RoomStanding extends SharedResult {
  */
 export async function fetchRoomBoard(code: string): Promise<RoomStanding[]> {
   const [rows, players] = await Promise.all([
-    rest<{ player: string; score: number; ms: number }[]>(
-      `${SCORES}?code=eq.${encodeURIComponent(code)}&select=player,score,ms&limit=500`,
+    rest<{ player: string; round: number; score: number; ms: number; created_at: string }[]>(
+      `${SCORES}?code=eq.${encodeURIComponent(code)}` +
+        `&select=player,round,score,ms,created_at&limit=500`,
     ),
     fetchPlayers(code),
   ]);
+
+  // A round is closed once everyone in the room has filed it, and it closed
+  // when the last of them did. Read off the rows rather than tracked, so it's
+  // the same answer on every device however many polls it took to see them.
+  const filedAt: number[][] = [];
+  for (const r of rows) {
+    const i = r.round - 1;
+    (filedAt[i] ??= []).push(Date.parse(r.created_at));
+  }
+  setRoundClosings(
+    code,
+    Array.from({ length: MATCH_ROUNDS }, (_, i) => {
+      const times = filedAt[i] ?? [];
+      return times.length >= players.length && players.length > 0
+        ? Math.max(...times)
+        : null;
+    }),
+  );
 
   const byName = new Map<string, RoomStanding>();
   const line = (player: string) => {

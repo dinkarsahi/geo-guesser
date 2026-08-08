@@ -92,17 +92,19 @@ export function useRoom(match: Match | undefined, results: RoundResult[], phase:
   const settled =
     board !== null && board.length > 0 && board.every((s) => s.rounds >= MATCH_ROUNDS);
 
-  // Kept asking for while the answer is up, and after the last one.
+  // Kept asking for, all the way through the game.
   //
   // Filing a round fetches the table straight after it, which is enough for
   // whoever answers last — everyone else's round is already in by then. It is
   // no good at all for whoever answers first, whose fetch goes out before the
   // others have even clicked, leaving them looking at a table that says they're
-  // alone. The reveal is the moment the room is compared, so it's the moment
-  // worth asking again through.
+  // alone.
+  //
+  // It runs during the round as well as over the answer, because the round
+  // ending is itself something to be told: a round is over the moment its last
+  // player answers, and nobody's screen can act on that until it has asked.
   useEffect(() => {
     if (!code) return;
-    if (phase === "guessing") return;
     if (phase === "done" && settled) return;
     const id = setInterval(read, POLL_MS);
     return () => clearInterval(id);

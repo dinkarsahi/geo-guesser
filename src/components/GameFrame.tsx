@@ -30,6 +30,16 @@ interface GameFrameProps<T> {
    * have been moved to stand for the country as a whole.
    */
   pickedLabel?: (click: Coord) => PickedGuess | null;
+  /**
+   * What a round was, in a few words, for the list at the end: "Argentina",
+   * "Baker Street", "Buenos Aires, Argentina".
+   *
+   * Without it the summary is five distances against five numbered rounds, and
+   * a player who wants to know which one they threw away has nothing to go on
+   * — least of all in a mode where the question was a flag or a number, and the
+   * answer is the only part of it worth remembering.
+   */
+  answerLabel?: (target: T) => string;
   /** What to click, for modes where it isn't just anywhere on the map. */
   hint?: string;
   /** Set when this is a head-to-head match: adds the clock and the code. */
@@ -61,11 +71,13 @@ export default function GameFrame<T>({
   renderMap,
   renderResultExtra,
   pickedLabel,
+  answerLabel,
   hint = "Click the map to place your guess.",
   match,
 }: GameFrameProps<T>) {
   const {
     target,
+    targets,
     roundIndex,
     totalRounds,
     phase,
@@ -77,6 +89,7 @@ export default function GameFrame<T>({
     next,
     restart,
     timeLeftMs,
+    roundClosesAt,
     totalMs,
   } = game;
 
@@ -119,10 +132,23 @@ export default function GameFrame<T>({
               rounds, filed as they were played, and it ends where it ends. */}
           {match && timetabled && <RoomResult match={match} room={room} />}
           {match && !timetabled && <MatchResult match={match} score={mark} ms={totalMs} />}
+          {/* Named columns, because the middle one is a distance in one mode, a
+              count of stops in another and "out of time" in any of them, and a
+              bare figure alongside a bare score invites the two to be read as
+              the same kind of thing. */}
+          <div className="summary-head" aria-hidden="true">
+            <span>Round</span>
+            <span>Answer</span>
+            <span>Your guess</span>
+            <span className="summary-head-score">Score</span>
+          </div>
           <ol className="summary-list" start={hidden + 1}>
             {shown.map((r, i) => (
               <li key={hidden + i}>
                 <span>Round {hidden + i + 1}</span>
+                <span className="summary-answer">
+                  {answerLabel?.(targets[hidden + i]) ?? "—"}
+                </span>
                 <span className="muted">
                   {r.hit ? "spot on" : r.label ?? formatDistance(r.distanceKm)}
                 </span>
@@ -264,10 +290,9 @@ export default function GameFrame<T>({
           {/* In a room there is nothing to press: the round turns over for
               everybody at once, so what goes here is how long that is and
               where the room stands after the question just answered. */}
-          {timetabled && match ? (
+          {timetabled && match && roundClosesAt !== null ? (
             <RoomReveal
-              startAt={match.startAt!}
-              roundIndex={roundIndex}
+              closesAt={roundClosesAt}
               lastRound={lastRound}
               board={room.board}
               you={match.player}

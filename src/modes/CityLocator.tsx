@@ -60,6 +60,7 @@ export default function CityLocator({
         const city = cityNear(click);
         return { name: `${city.name} in ${city.country}` };
       }}
+      answerLabel={(city) => `${city.name}, ${city.country}`}
       renderResultExtra={(city) => (
         <FactCard title={`${city.name}, ${city.country}`} fact={city.fact} />
       )}

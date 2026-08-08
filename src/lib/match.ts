@@ -1,4 +1,5 @@
 import type { ModeId } from "../modes/ModeProps";
+import { roundClosedAt } from "./roomClock";
 import { serverNow } from "./supabase";
 import type { RoundSchedule } from "./useGame";
 
@@ -378,6 +379,8 @@ export function matchOptions(match?: Match): MatchGameOptions | undefined {
             revealMs: MATCH_REVEAL_MS,
             // The room's clock, not this device's: see `serverNow`.
             now: serverNow,
+            // And the room's own word for when a round was done with.
+            answeredAt: (round) => roundClosedAt(match.code, round),
           },
   };
 }

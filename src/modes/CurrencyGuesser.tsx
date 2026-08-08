@@ -97,6 +97,7 @@ function CurrencyGame({
           </span>
         </div>
       )}
+      answerLabel={(money) => `${money.name} (${money.code})`}
       renderResultExtra={(money) => (
         <FactCard title={`${money.name} (${money.code})`} fact={money.fact} />
       )}

@@ -176,6 +176,23 @@ function WorldDuelMark() {
 }
 
 /**
+ * Two gloves meeting in the middle.
+ *
+ * One emoji again, made of two: the second flipped so they face each other
+ * rather than both pointing the same way, and turned blue so the pair reads as
+ * two people rather than one person's kit. Drawn overlapping, because gloves
+ * that don't touch are gloves waiting to be worn.
+ */
+function DuelMark() {
+  return (
+    <span className="mode-emoji duel-mark" aria-hidden="true">
+      <span className="duel-mark-red">🥊</span>
+      <span className="duel-mark-blue">🥊</span>
+    </span>
+  );
+}
+
+/**
  * The two ways of playing against other people, behind one door.
  *
  * They're one thing on the menu because they answer the same wish — I want to
@@ -210,7 +227,7 @@ function HeadToHeadMenu({
           </span>
         </button>
         <button className="mode-card mode-card-social" onClick={() => onPick("room")}>
-          <span className="mode-emoji">🥊</span>
+          <DuelMark />
           <span className="mode-title">Duel a Friend</span>
           <span className="muted mode-blurb">
             Read out a code and play the same rounds at the same time. One table at the

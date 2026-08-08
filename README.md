@@ -63,8 +63,17 @@ who want to play, not a contest to defend.
 There is no live connection between the players and nothing to reconnect to. The
 only thing that travels is the moment the first round opens, written into the
 room's row when the host presses go. After that every device works out for itself
-which round should be on screen — the rounds are 40 seconds apart, and
-the rounds themselves come from the code as they always have.
+which round should be on screen, and the rounds themselves come from the code as
+they always have.
+
+A round ends when its last player answers, not when its thirty seconds are up —
+the thirty is a limit, and sitting out the remainder of a round everybody has
+already answered is dead time on every screen. Ten seconds later the next one
+opens. That moment has to be one every device agrees on, so it's taken from the
+server's own timestamp on the last score filed, which is a fact about the room
+rather than about whoever noticed it first; a device that hasn't heard yet runs
+the full thirty and catches up on its next poll. The last round has no pause at
+all — when everyone's in, the table is what's left.
 
 That means a phone that locks for a minute rejoins the room where the room is,
 with the rounds it slept through marked zero, rather than finishing a minute

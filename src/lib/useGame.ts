@@ -49,6 +49,16 @@ export interface RoundSchedule {
    * be a minute's head start.
    */
   now: () => number;
+  /**
+   * When everyone had answered round `n`, if they all have — which ends the
+   * round early, because the thirty seconds is a limit and not a length.
+   *
+   * A moment agreed on by the room rather than decided here: everybody reads
+   * the same one and lands on the same round. A device that hasn't heard it
+   * yet runs to the full thirty and catches up, which is what makes this safe
+   * to be late with.
+   */
+  answeredAt?: (round: number) => number | null;
 }
 
 export interface GameOptions<T> {
@@ -106,6 +116,11 @@ export interface GameOptions<T> {
 export interface Game<T> {
   /** The target the player is currently trying to locate. */
   target: T;
+  /**
+   * Every target this game will ask about, in order — so the results screen can
+   * name what each round was, which a list of distances can't.
+   */
+  targets: T[];
   roundIndex: number;
   /** Rounds in this game. */
   totalRounds: number;
@@ -121,8 +136,56 @@ export interface Game<T> {
   restart: () => void;
   /** Milliseconds left in this round, or null when nothing is timing it. */
   timeLeftMs: number | null;
+  /**
+   * When the round on screen gives way to the next — or to the results, on the
+   * last of them. Only in a timetabled game, and only worth reading during the
+   * pause on the answer, where it's the countdown everyone is waiting on.
+   */
+  roundClosesAt: number | null;
   /** How long the whole game has taken so far, summed over its rounds. */
   totalMs: number;
+}
+
+/** Where a timetabled game is: which round, when it opened, when it gives way. */
+interface Timing {
+  index: number;
+  openedAt: number;
+  closesAt: number;
+}
+
+/**
+ * The timetable, walked from the start rather than worked out in one step.
+ *
+ * It can't be a formula any more: a round ends either when its thirty seconds
+ * are up or when the last player answers, whichever comes first, so where round
+ * four begins depends on how quickly rounds one to three went. Walking it is a
+ * handful of arithmetic over five rounds and needs no state of its own, which
+ * is what lets a late-arriving fact about round one move every round after it
+ * without anything having to be undone.
+ *
+ * A plain function rather than a hook: it's read both while rendering and from
+ * inside the loop that drives the rounds, and those want the same answer.
+ */
+function timingAt(schedule: RoundSchedule | undefined, rounds: number): Timing {
+  const now = schedule?.now() ?? Date.now();
+  let openedAt = schedule?.startAt ?? now;
+  if (!schedule) return { index: 0, openedAt, closesAt: openedAt };
+
+  for (let round = 0; round < rounds; round++) {
+    const everyone = schedule.answeredAt?.(round) ?? null;
+    const last = round === rounds - 1;
+    // No reveal on the last round: there's nothing to turn over to, and the
+    // results screen names every answer anyway. Sitting on a finished game for
+    // ten seconds is the one wait nobody has a use for.
+    const reveal = last ? 0 : schedule.revealMs;
+    const closesAt = Math.min(
+      openedAt + schedule.roundMs + reveal,
+      everyone === null ? Infinity : everyone + reveal,
+    );
+    if (now < closesAt) return { index: round, openedAt, closesAt };
+    openedAt = closesAt;
+  }
+  return { index: rounds, openedAt, closesAt: openedAt };
 }
 
 /** Fisher-Yates shuffle, in place, from whichever source of chance is given. */
@@ -217,14 +280,19 @@ export function useGame<T>(
   // this device's otherwise. Held in a ref because it arrives in a fresh object
   // every render and nothing below should restart when it does.
   const nowRef = useRef<() => number>(Date.now);
+  // The timetable, held where the loop below can read it without depending on
+  // the identity of an object that arrives fresh every render — the countdown
+  // re-renders ten times a second, and an interval that restarted that often
+  // would never come round to firing.
+  const scheduleRef = useRef(schedule);
   useEffect(() => {
     nowRef.current = schedule?.now ?? Date.now;
+    scheduleRef.current = schedule;
   });
 
-  // Pulled out of the schedule so the effects below depend on numbers rather
-  // than on an object identity that changes every render.
+  // Pulled out of the schedule so the effects below depend on a number rather
+  // than on that identity.
   const startAt = schedule?.startAt;
-  const period = schedule ? schedule.roundMs + schedule.revealMs : 0;
 
   const [targets, setTargets] = useState(() => pickTargets(pool, rounds, seed));
   const [roundIndex, setRoundIndex] = useState(0);
@@ -239,6 +307,12 @@ export function useGame<T>(
   const [timeLeftMs, setTimeLeftMs] = useState<number | null>(roundLimitMs ?? null);
 
   const target = targets[roundIndex];
+
+  /** Where the timetable says the game is, from inside the loop that drives it. */
+  const dueRound = useCallback(
+    (): Timing => timingAt(scheduleRef.current, targets.length),
+    [targets.length],
+  );
 
   const submitGuess = useCallback(
     (click: Coord) => {
@@ -312,9 +386,8 @@ export function useGame<T>(
   // the same thirty seconds as the rest of them rather than a fresh thirty.
   useEffect(() => {
     if (phase !== "guessing") return;
-    startedAt.current =
-      startAt === undefined ? nowRef.current() : startAt + roundIndex * period;
-  }, [phase, roundIndex, startAt, period]);
+    startedAt.current = startAt === undefined ? nowRef.current() : dueRound().openedAt;
+  }, [phase, roundIndex, startAt, dueRound]);
 
   // The countdown, which only exists in a timed game. A tenth of a second is
   // finer than the bar can show but keeps the seconds honest as they turn over.
@@ -376,13 +449,13 @@ export function useGame<T>(
   useEffect(() => {
     if (startAt === undefined || phase === "done") return;
     const tick = () => {
-      const due = Math.floor((nowRef.current() - startAt) / period);
+      const due = dueRound().index;
       if (due > roundIndex) advanceTo(due);
     };
     tick();
     const id = setInterval(tick, 150);
     return () => clearInterval(id);
-  }, [startAt, period, phase, roundIndex, advanceTo]);
+  }, [startAt, phase, roundIndex, dueRound, advanceTo]);
 
   const next = useCallback(() => {
     // A room's rounds turn over on the clock; there is no button, and nothing
@@ -413,6 +486,7 @@ export function useGame<T>(
 
   return {
     target,
+    targets,
     roundIndex,
     totalRounds: targets.length,
     phase,
@@ -424,6 +498,10 @@ export function useGame<T>(
     next,
     restart,
     timeLeftMs: phase === "guessing" ? timeLeftMs : null,
+    // Worked out on the spot rather than kept: it changes when the room's word
+    // on the round changes, which is exactly when this renders again.
+    roundClosesAt:
+      startAt === undefined ? null : timingAt(schedule, targets.length).closesAt,
     totalMs: results.reduce((sum, r) => sum + r.elapsedMs, 0),
   };
 }
