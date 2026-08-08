@@ -42,6 +42,12 @@ interface GameFrameProps<T> {
   answerLabel?: (target: T) => string;
   /** What to click, for modes where it isn't just anywhere on the map. */
   hint?: string;
+  /**
+   * What a round asks you to find, in one word: a city, a station. Only wanted
+   * by modes that pay full marks within a radius, where the verdict has to say
+   * what you were close enough to.
+   */
+  targetNoun?: string;
   /** Set when this is a head-to-head match: adds the clock and the code. */
   match?: Match;
 }
@@ -73,6 +79,7 @@ export default function GameFrame<T>({
   pickedLabel,
   answerLabel,
   hint = "Click the map to place your guess.",
+  targetNoun = "place",
   match,
 }: GameFrameProps<T>) {
   const {
@@ -192,6 +199,16 @@ export default function GameFrame<T>({
   // The guess was worth everything it could be worth, whether by landing in
   // the answer's own area or by landing near enough to a point one.
   const fullMarks = lastResult !== null && lastResult.accuracy >= MAX_ROUND_SCORE;
+  // Full marks that were earned by the radius rather than by landing on the
+  // answer. Said out loud, because otherwise it looks like the game rounded
+  // something in the player's favour and won't say what: the distance is right
+  // there on the map, and a hundred beside it wants explaining. Below a
+  // kilometre there's nothing to explain — they clicked on the place.
+  const nearNote =
+    fullMarks && lastResult && !lastResult.hit && lastResult.distanceKm >= 1
+      ? `You were close enough to the ${targetNoun} — just ` +
+        `${formatDistance(lastResult.distanceKm)} away!`
+      : null;
 
   // A solid bar across the top, and the map gets every pixel below it. The bar
   // holds what you need to see at all times, so nothing has to sit on the map
@@ -275,6 +292,7 @@ export default function GameFrame<T>({
           {fullMarks ? (
             <p className="picked-line">
               <span className="result-hit result-verdict">Spot on!</span>
+              {nearNote && <span className="result-near">{nearNote}</span>}
             </p>
           ) : (
             picked && (
@@ -290,8 +308,10 @@ export default function GameFrame<T>({
           )}
           <div className="result-headline">
             {/* The verdict has been given at the top; all this line owes is how
-                far out the guess was, and what it scored. */}
-            {!lastResult.hit && (
+                far out the guess was, and what it scored — and not even that
+                where the verdict has already said it, which is the one case
+                the distance is part of the good news rather than the bad. */}
+            {!lastResult.hit && !nearNote && (
               <span className="result-distance">
                 {lastResult.label ?? `${formatDistance(lastResult.distanceKm)} away`}
               </span>

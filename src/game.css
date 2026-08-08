@@ -1311,7 +1311,10 @@ body:has(.game-play) {
 .picked-line {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  /* Wraps rather than squeezing: on a phone the verdict and the note it
+     explains would otherwise share one line by breaking both of them. */
+  flex-wrap: wrap;
+  gap: 2px 10px;
   width: 100%;
   max-width: 640px;
   box-sizing: border-box;
@@ -1329,6 +1332,15 @@ body:has(.game-play) {
 .result-verdict {
   font-size: 18px;
   font-weight: 800;
+}
+/* Why full marks were full, on the same line as the verdict and quieter than
+   it — it explains the green rather than adding to it. */
+.result-near {
+  font-size: 14px;
+  color: var(--text);
+}
+.result-panel.hud .result-near {
+  color: #d1d5db;
 }
 .picked-label {
   font-size: 12px;

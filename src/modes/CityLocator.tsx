@@ -40,6 +40,7 @@ export default function CityLocator({
       night={night}
       onToggleNight={onToggleNight}
       match={match}
+      targetNoun="city"
       renderPrompt={(city) => (
         <div className="prompt-card">
           <span className="prompt-label">Locate this city:</span>
