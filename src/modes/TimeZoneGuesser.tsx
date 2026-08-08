@@ -110,6 +110,10 @@ function TimeZoneGame({
   // the mode: Lisbon and Warsaw are close on the map and an hour apart on the
   // clock, and Norway and South Africa are four thousand kilometres apart and
   // on the same one. Distance would mark this game backwards.
+  //
+  // And marked hard — see `scoreFromClockGap`. With forty-six countries on the
+  // busiest clock, being roughly right here is much easier than being roughly
+  // right about where a city is, and the marks have to say so.
   const game = useGame<TimeTarget>(pool, (t) => t, 2000, {
     rounds: settings.rounds,
     hitTest: (click, when) => gapFromClick(shapes, click, when, now) === 0,

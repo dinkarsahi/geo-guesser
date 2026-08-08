@@ -138,22 +138,35 @@ export function clockGap(a: number, b: number): number {
 }
 
 /**
- * How wide the "you knew roughly where that was" shoulder is, in half-hours.
- * Six is three hours: half marks at three hours out, near enough nothing at six.
+ * How wide the "you were nearly there" shoulder is, in half-hours. Three is an
+ * hour and a half: two thirds at an hour out, a third at ninety minutes, and
+ * nothing to speak of past three hours.
  */
-const GAP_SCALE = 6;
+const GAP_SCALE = 3;
 
 /**
  * Score a guess by how far its clock is from the one asked about — in
  * half-hours, since that's the unit the world's clocks are actually offset in.
  *
- * The same shape as the tube map's, and for the same reason. A plain decay
- * falls hardest at the first step, and the first step here is an hour: the
- * difference between clicking France and clicking Britain, which is to say
- * between knowing the answer and very nearly knowing it. Squaring the exponent
- * leaves full marks slowly and then falls away, so being an hour out costs
- * eleven points and being six hours out — the wrong side of the world, and most
- * of the map — costs almost all of them.
+ * Tighter than the other games on purpose, because this one is easier than the
+ * other games. There are thirty-five answers in the world rather than two
+ * hundred cities, five countries share the median clock and forty-six share the
+ * busiest, and a player who knows only that Europe is ahead of London has a
+ * third of the map to be right with. A curve that paid well for being close
+ * would pay well for knowing almost nothing.
+ *
+ * Still squared rather than a plain decay, but for the opposite half of the
+ * reason it is on the tube map. There the flat start was the point; here it's
+ * the cliff after it. A plain decay charges a fixed fraction per hour, so the
+ * second hour costs less than the first and the fifth costs almost nothing —
+ * exactly backwards for a game where the first hour is a near miss and the
+ * fifth is a different continent. Squared, each of the first two hours costs
+ * more than the one before it: thirty-six points, then forty-seven.
+ *
+ * The sub-hour end stays gentle, since it has to be. A handful of the world's
+ * clocks sit on the half hour and three of them on the quarter, and being
+ * thirty minutes out means picking Pakistan for India — the right part of the
+ * world, on a clock almost nobody could name.
  */
 export function scoreFromClockGap(minutes: number): number {
   const halfHours = minutes / 30;
