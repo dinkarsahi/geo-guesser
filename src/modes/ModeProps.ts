@@ -1,7 +1,14 @@
 import type { Match } from "../lib/match";
 
 /** The games on the menu. */
-export type ModeId = "city" | "flag" | "currency" | "company" | "population" | "tube";
+export type ModeId =
+  | "city"
+  | "flag"
+  | "currency"
+  | "company"
+  | "population"
+  | "tube"
+  | "timezone";
 
 /** The lengths a game comes in, chosen on the setup screen. */
 export const ROUND_CHOICES = [5, 10] as const;

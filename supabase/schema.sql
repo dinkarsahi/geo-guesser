@@ -64,7 +64,8 @@ create policy "file a result"
 create table if not exists public.duel_rooms (
   code       text primary key check (code ~ '^[0-9A-Z]{7}$'),
   mode       text not null check (
-               mode in ('city','flag','currency','company','population','tube')),
+               mode in ('city','flag','currency','company','population','tube',
+                        'timezone')),
   -- The host's map, so a room is one contest rather than four.
   flat       boolean not null default false,
   borders    boolean not null default true,
@@ -73,6 +74,18 @@ create table if not exists public.duel_rooms (
   starts_at  timestamptz,
   created_at timestamptz not null default now()
 );
+
+-- The list of games, restated for a table that already exists.
+--
+-- "create table if not exists" does nothing at all to a table that's already
+-- there, constraints included, so a project set up before a game was added
+-- would go on refusing rooms for it — and refuse them from inside Postgres,
+-- where the app can only report that the room couldn't be opened. Dropping and
+-- re-adding the check is the one statement that's right whether the table was
+-- made a minute ago or a year ago.
+alter table public.duel_rooms drop constraint if exists duel_rooms_mode_check;
+alter table public.duel_rooms add constraint duel_rooms_mode_check
+  check (mode in ('city','flag','currency','company','population','tube','timezone'));
 
 create table if not exists public.duel_players (
   id        bigint generated always as identity primary key,

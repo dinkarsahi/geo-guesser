@@ -7,6 +7,7 @@ import FlagGuesser from "./modes/FlagGuesser";
 import HeadToHead from "./modes/HeadToHead";
 import PlayFriend from "./modes/PlayFriend";
 import PopulationGuesser from "./modes/PopulationGuesser";
+import TimeZoneGuesser from "./modes/TimeZoneGuesser";
 import TubeGuesser from "./modes/TubeGuesser";
 import type { GameSettings, ModeId, ModeProps } from "./modes/ModeProps";
 
@@ -48,6 +49,12 @@ const MODES: { id: Mode; title: string; blurb: string; emoji: string }[] = [
     title: "Tube Station Spotter",
     blurb: "Pinpoint a London Underground station on a zoomed-in map.",
     emoji: "🚇",
+  },
+  {
+    id: "timezone",
+    title: "Time Zone Spotter",
+    blurb: "Read a clock and find somewhere on Earth it's that time right now.",
+    emoji: "🕰️",
   },
 ];
 
@@ -246,6 +253,7 @@ function PlayMode({ mode, ...props }: ModeProps & { mode: Mode }) {
   if (mode === "currency") return <CurrencyGuesser {...props} />;
   if (mode === "company") return <CompanyGuesser {...props} />;
   if (mode === "population") return <PopulationGuesser {...props} />;
+  if (mode === "timezone") return <TimeZoneGuesser {...props} />;
   return <TubeGuesser {...props} />;
 }
 

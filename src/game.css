@@ -922,6 +922,19 @@ body:has(.game-play) {
 .game-topbar .prompt-money-symbol {
   font-size: 19px;
 }
+/* The time is the whole question, so it's set like one — large, in the accent,
+   and with figures that don't jump about as the minutes turn over. */
+.prompt-clock {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+.game-topbar .prompt-clock {
+  font-size: 27px;
+}
 @media (max-width: 700px) {
   .game-topbar .prompt-money-code {
     font-size: 23px;

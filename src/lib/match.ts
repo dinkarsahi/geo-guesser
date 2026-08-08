@@ -130,6 +130,7 @@ const MODE_LETTERS: Record<ModeId, string> = {
   company: "H",
   population: "P",
   tube: "T",
+  timezone: "Z",
 };
 
 const MODE_BY_LETTER = Object.fromEntries(
@@ -277,6 +278,7 @@ export const MATCH_MODES: { id: ModeId; title: string; emoji: string; noun: stri
   { id: "company", title: "Corporate HQ Spotter", emoji: "🏢", noun: "country" },
   { id: "population", title: "Population Spotter", emoji: "👥", noun: "country" },
   { id: "tube", title: "Tube Station Spotter", emoji: "🚇", noun: "station" },
+  { id: "timezone", title: "Time Zone Spotter", emoji: "🕰️", noun: "time" },
 ];
 
 /**
