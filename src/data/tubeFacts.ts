@@ -1,7 +1,10 @@
 /**
  * Hand-written "Did you know?" facts for notable stations. Stations without an
  * entry here fall back to an auto-generated fact (zone + lines) in tube.ts.
- * Keys must match station names in tubeData.ts.
+ *
+ * Keys are the names stations are played under — the dataset's own name where
+ * it's a real one, and otherwise whatever `stationNames` in tube.ts renames it
+ * to, since that's the name a fact is read beneath.
  */
 export const stationFacts: Record<string, string> = {
   "Notting Hill Gate":
@@ -77,7 +80,7 @@ export const stationFacts: Record<string, string> = {
     "Canary Wharf, once the world's busiest docks, is now a major financial district.",
   Paddington:
     "Paddington is the home of the much-loved storybook bear 'from darkest Peru'.",
-  "Edgware Road (B)":
+  "Edgware Road":
     "Edgware Road follows the line of Watling Street, an ancient Roman road.",
   Marylebone:
     "Marylebone is the smallest of London's main-line terminals and features on the Monopoly board.",

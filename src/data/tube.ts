@@ -44,11 +44,33 @@ const lineNameByRawColor: Record<string, string> = Object.fromEntries(
   tubeLineDefs.map((l) => [l.color, l.name]),
 );
 
-/** The dataset carries a couple of misspelled duplicates of real stations. */
-const stationAliases: Record<string, string> = {
+/**
+ * What the dataset calls a station, and what it should be called here.
+ *
+ * The dataset tags stations that shared a name with the initial of their line,
+ * which is nobody's name for them — a player asked to find "Shepherd's Bush
+ * (H)" is being asked about a station that doesn't exist under that name on any
+ * map, sign or ticket. Two of those tags are stale rather than merely ugly: the
+ * Hammersmith & City one became Shepherd's Bush Market in 2008, which is
+ * exactly the ambiguity the tag was invented to paper over, so the Central line
+ * one is now just Shepherd's Bush.
+ *
+ * Where two entries end up under one name they become one station — see
+ * `tubeStations`.
+ */
+const stationNames: Record<string, string> = {
+  // A misspelling that left the dataset holding two Piccadilly Circuses.
   "Picadilly Circus": "Piccadilly Circus",
+  "Shepherd's Bush (C)": "Shepherd's Bush",
+  "Shepherd's Bush (H)": "Shepherd's Bush Market",
+  // Both of these really are called Edgware Road, by TfL and by everyone else.
+  // They're separate stations 150 metres apart across the Marylebone Road, and
+  // no player asked for "Edgware Road" can be expected to pick which — so the
+  // question has one answer and either side of the road is it.
+  "Edgware Road (B)": "Edgware Road",
+  "Edgware Road (C)": "Edgware Road",
 };
-const canonical = (name: string) => stationAliases[name] ?? name;
+const canonical = (name: string) => stationNames[name] ?? name;
 
 /** "Zone 3", or "Zone 2/3" for a boundary station. */
 export function zoneLabel(zone: number): string {
@@ -68,16 +90,60 @@ function autoFact(s: { name: string; zone: number; lines: string[] }): string {
   return `${s.name} is in ${zoneLabel(s.zone)}, served by ${listLines(s.lines)}.`;
 }
 
-export const tubeStations: TubeStation[] = tubeStationsRaw
-  .filter((s) => !(s.name in stationAliases))
-  .map((s) => ({
-    name: s.name,
-    lat: s.lat,
-    lng: s.lng,
-    zone: s.zone,
-    lines: s.lines,
-    fact: stationFacts[s.name] ?? autoFact(s),
-  }));
+/**
+ * Every station to be found, under the name it's known by — and one entry per
+ * name, so two rows that renamed onto the same station become that station.
+ *
+ * Merged rather than deduplicated: a misspelling is one station written twice
+ * and either row will do, but the two Edgware Roads are two real sets of
+ * platforms and both belong to the answer. So the point is the midpoint of
+ * them, 76 metres from either, and the lines are the lines of both. Which
+ * makes a click on either side of the road the right click, which is the whole
+ * of what a player asked to find "Edgware Road" can fairly be held to.
+ */
+export const tubeStations: TubeStation[] = (() => {
+  interface Merge {
+    lat: number;
+    lng: number;
+    zone: number;
+    lines: string[];
+    /** How many dataset rows have been folded in, for the average. */
+    parts: number;
+  }
+  const byName = new Map<string, Merge>();
+
+  for (const s of tubeStationsRaw) {
+    const name = canonical(s.name);
+    const found = byName.get(name);
+    if (!found) {
+      byName.set(name, {
+        lat: s.lat,
+        lng: s.lng,
+        zone: s.zone,
+        lines: [...s.lines],
+        parts: 1,
+      });
+      continue;
+    }
+    found.lat += s.lat;
+    found.lng += s.lng;
+    found.parts += 1;
+    // The zone of the first row stands: the pairs here agree on it, and a
+    // station can only be in one.
+    for (const line of s.lines) if (!found.lines.includes(line)) found.lines.push(line);
+  }
+
+  return [...byName].map(([name, m]) => {
+    const station = {
+      name,
+      lat: m.lat / m.parts,
+      lng: m.lng / m.parts,
+      zone: m.zone,
+      lines: m.lines,
+    };
+    return { ...station, fact: stationFacts[name] ?? autoFact(station) };
+  });
+})();
 
 /** Connections re-pointed at canonical stations and recoloured, duplicates dropped. */
 export const tubeConnections: TubeConnectionRaw[] = (() => {
