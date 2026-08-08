@@ -55,12 +55,15 @@ const SCORES = "duel_scores";
 /**
  * How long everyone gets between the host pressing start and round one opening.
  *
- * Generous on purpose: it's the only moment in the game where every screen has
- * to catch up with the same fact, and a phone that polls a second and a half
- * after the button was pressed still wants time to draw the countdown, let its
- * player look up, and be looking at round one when it opens.
+ * It's the only moment in the game where every screen has to catch up with the
+ * same fact, so it can't be tight: a phone that polls a second and a half after
+ * the button was pressed still wants time to draw the countdown, let its player
+ * look up, and be looking at round one when it opens. Ten seconds is four times
+ * the worst of that, and short enough that a room which is already assembled —
+ * which it is, because the host only presses go once everyone is on the list —
+ * isn't kept standing about.
  */
-export const LOBBY_LEAD_MS = 15_000;
+export const LOBBY_LEAD_MS = 10_000;
 
 /** One round and the pause on its answer — the distance between round openings. */
 export const ROUND_PERIOD_MS = MATCH_ROUND_MS + MATCH_REVEAL_MS;

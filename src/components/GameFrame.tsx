@@ -343,6 +343,7 @@ export default function GameFrame<T>({
               and what the question just answered was worth to each of them. */}
           {timetabled && match && roundClosesAt !== null ? (
             <RoomReveal
+              code={match.code}
               closesAt={roundClosesAt}
               round={roundIndex + 1}
               lastRound={lastRound}

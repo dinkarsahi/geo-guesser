@@ -1,9 +1,13 @@
 import type { RoomStanding } from "../lib/duel";
 import { MATCH_REVEAL_MS, modeNoun } from "../lib/match";
+import { roundSeenDoneAt } from "../lib/roomClock";
+import { serverNow } from "../lib/supabase";
 import { useCountdown } from "../lib/useRoom";
 import type { ModeId } from "../modes/ModeProps";
 
 interface RoomRevealProps {
+  /** The room, so the pause can remember when it started here. */
+  code: string;
   /** When the next round opens, on the room's clock. */
   closesAt: number;
   /** The round just answered, counted from one — what the marks below are for. */
@@ -45,6 +49,7 @@ function nameList(names: string[]): string {
  * questions — the table can wait until there's nothing left to play for.
  */
 export default function RoomReveal({
+  code,
   closesAt,
   round,
   lastRound,
@@ -58,29 +63,32 @@ export default function RoomReveal({
   /** What this player scored on the round being revealed, if they've filed it. */
   const scored = (s: RoomStanding) => s.scores[round - 1] ?? null;
 
+  // Who the room is still short of — everyone but you, because your own answer
+  // is what put this panel on screen and no reading of the table is allowed to
+  // argue with that. It's the one row that can be missing for reasons that have
+  // nothing to do with the game: a filing that hasn't landed yet, a name the
+  // table joined up differently. Waiting on yourself is never right, and it was
+  // enough to hold the countdown back for the whole round.
   const missing = (board ?? [])
     .filter((s) => s.player.toLowerCase() !== mine && scored(s) === null)
     .map((s) => s.player);
 
-  // Whether the round is still open for somebody, taken off the table rather
-  // than off the clock.
-  //
-  // The clock looks like it should answer this — the round closes ten seconds
-  // after the last answer, so anything further out than ten seconds means
-  // somebody hasn't answered — and it can't. `serverNow` is this device's
-  // clock nudged onto the server's by an HTTP `Date` header, which is rounded
-  // down to the whole second and already a network hop old when it's read, so
-  // it runs a second or two slow. Measured against a closing time that came
-  // out of Postgres to the microsecond, that leaves eleven seconds on a
-  // ten-second pause, and the countdown never appears at all.
-  //
-  // The table has no such problem: it's the same rows that put the marks on
-  // screen, so what's shown and what's waited for can't disagree. The clock is
-  // only the backstop, for a board that hasn't arrived or a player who left
-  // mid-round and will never file anything.
-  const answeredAll =
-    board !== null && board.length > 0 && board.every((s) => scored(s) !== null);
-  const waiting = !answeredAll && left > MATCH_REVEAL_MS;
+  // Still open for somebody. The table is asked first and the clock is the
+  // backstop: past the round's own limit it's over whoever hasn't answered,
+  // which is what stops a player who shut their laptop mid-round holding four
+  // other people on this screen. Before the table has arrived at all, assume
+  // the room is still answering — the alternative is counting down to a round
+  // change that isn't coming.
+  const waiting = (board === null || missing.length > 0) && left > MATCH_REVEAL_MS;
+
+  // The number on the pause: whichever of the room's ten seconds and this
+  // device's own runs out first, so that it is always there and always moving
+  // even when the room's closing time is late or never comes. See
+  // `roundSeenDoneAt`.
+  const ownEnd = waiting
+    ? 0
+    : roundSeenDoneAt(code, round - 1, serverNow()) + MATCH_REVEAL_MS;
+  const showLeft = Math.max(0, Math.min(left, ownEnd - serverNow(), MATCH_REVEAL_MS));
 
   // This round's marks, best first. Sorted on the round rather than on the
   // game, so first place here is whoever answered this question best and not
@@ -107,11 +115,7 @@ export default function RoomReveal({
         // for those seconds is the fact underneath it.
         !lastRound && (
           <p className="room-next">
-            {/* Capped at the length of the pause itself. The slow clock above
-                can put a couple of seconds on the front of it, and a ten-second
-                wait that opens on "12s" reads as a broken timer. */}
-            Next round in{" "}
-            <strong>{Math.ceil(Math.min(left, MATCH_REVEAL_MS) / 1000)}s</strong>
+            Next round in <strong>{Math.ceil(showLeft / 1000)}s</strong>
           </p>
         )
       )}

@@ -28,3 +28,37 @@ export const setRoundClosings = (code: string, closings_: (number | null)[]) => 
 /** When round `round` (counted from zero) closed, if it has. */
 export const roundClosedAt = (code: string, round: number): number | null =>
   closings.get(code)?.[round] ?? null;
+
+/**
+ * When *this device* first saw a round finish, as against when it actually did.
+ *
+ * The two differ by however long the news took to arrive: the closing above is
+ * a server timestamp fetched on a poll, so it lands up to a couple of seconds
+ * late, and it lands not at all while the room is short a player who has shut
+ * their laptop. Neither is a reason to leave the pause on the answer without a
+ * number on it — the ten seconds is a promise to the player, and a promise that
+ * only shows up when the network is obliging is not one.
+ *
+ * So the screen counts down to whichever runs out first, the room's ten seconds
+ * or this device's. The room still decides when the round actually turns over;
+ * this only decides what the number says while it waits.
+ *
+ * Here rather than in React state for the same reason as the closings: it's a
+ * fact about a room, it must survive the component re-rendering ten times a
+ * second, and the moment it records has to be the first one — not the moment of
+ * whichever render happens to ask.
+ */
+const firstSeenDone = new Map<string, number[]>();
+
+/**
+ * Notes round `round` (counted from zero, as above) as finished now, and hands
+ * back when it first was.
+ */
+export function roundSeenDoneAt(code: string, round: number, now: number): number {
+  const seen = firstSeenDone.get(code) ?? [];
+  if (seen[round] === undefined) {
+    seen[round] = now;
+    firstSeenDone.set(code, seen);
+  }
+  return seen[round];
+}
