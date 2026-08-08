@@ -75,9 +75,10 @@
   box-shadow: var(--shadow);
   transform: translateY(-2px);
 }
-/* The two ways of playing against other people, picked out from the six games
-   they're played at — same card, but it's a different kind of choice and the
-   grid shouldn't read as eight games. */
+/* The two ways of playing against other people, on the screen that offers only
+   those two — same card, tinted, because there's nothing else on it to be
+   picked out from. On the menu proper the head-to-head door is a plain card
+   like the six games beside it. */
 .mode-card-social {
   border-color: var(--accent-border);
   background: var(--accent-bg);
@@ -662,6 +663,15 @@
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
+/* The other kind of wait: names rather than a number, so they sit at the size
+   of the sentence they're in instead of at the size of a countdown. */
+.room-waiting {
+  text-align: center;
+  text-wrap: balance;
+}
+.room-waiting strong {
+  font-size: inherit;
+}
 /* What the columns are, said once so they aren't guessed at. */
 .room-live-head {
   width: 100%;
@@ -677,7 +687,6 @@
   padding-bottom: 3px;
 }
 .room-live-head .room-live-name,
-.room-live-head .room-live-rounds,
 .room-live-head .room-live-score {
   font-size: inherit;
   font-weight: inherit;
@@ -704,6 +713,11 @@
   border-radius: 8px;
   font-size: 14px;
 }
+/* One question's marks: a name and what it scored, and no third column —
+   there's no progress to report when everyone answered the same round. */
+.room-live-round {
+  grid-template-columns: 1fr 52px;
+}
 .room-live-row.is-you {
   background: var(--accent-bg);
 }
@@ -713,18 +727,11 @@
   color: var(--text-h);
   overflow-wrap: anywhere;
 }
-.room-live-rounds {
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
 .room-live-score {
   text-align: right;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--text-h);
-}
-.room-live-row:first-child .room-live-score {
-  color: var(--accent);
 }
 
 /* ---- Game shell ----------------------------------------------------- */

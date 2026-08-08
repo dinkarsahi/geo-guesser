@@ -288,12 +288,14 @@ export default function GameFrame<T>({
             </span>
           </div>
           {/* In a room there is nothing to press: the round turns over for
-              everybody at once, so what goes here is how long that is and
-              where the room stands after the question just answered. */}
+              everybody at once, so what goes here is who it's still waiting on
+              and what the question just answered was worth to each of them. */}
           {timetabled && match && roundClosesAt !== null ? (
             <RoomReveal
               closesAt={roundClosesAt}
+              round={roundIndex + 1}
               lastRound={lastRound}
+              mode={match.mode}
               board={room.board}
               you={match.player}
             />

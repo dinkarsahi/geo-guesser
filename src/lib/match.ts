@@ -262,14 +262,21 @@ export function parseMatchCode(input: string): MatchCode | null {
 /** Formatted for reading out: "CD4 KQ7M". */
 export const spellCode = (code: string) => `${code.slice(0, 3)} ${code.slice(3)}`;
 
-/** The modes a match can be played in, as they're named on the menu. */
-export const MATCH_MODES: { id: ModeId; title: string; emoji: string }[] = [
-  { id: "city", title: "City Spotter", emoji: "🏙️" },
-  { id: "flag", title: "Flag Spotter", emoji: "🚩" },
-  { id: "currency", title: "Currency Spotter", emoji: "💱" },
-  { id: "company", title: "Corporate HQ Spotter", emoji: "🏢" },
-  { id: "population", title: "Population Spotter", emoji: "👥" },
-  { id: "tube", title: "Tube Station Spotter", emoji: "🚇" },
+/**
+ * The modes a match can be played in, as they're named on the menu.
+ *
+ * `noun` is what the round asks you to find, in one word — what a player is
+ * still looking for while the room waits on them. It's what the click has to
+ * land on rather than what the question showed: a flag, a currency and a
+ * population are all answered by picking a country.
+ */
+export const MATCH_MODES: { id: ModeId; title: string; emoji: string; noun: string }[] = [
+  { id: "city", title: "City Spotter", emoji: "🏙️", noun: "city" },
+  { id: "flag", title: "Flag Spotter", emoji: "🚩", noun: "country" },
+  { id: "currency", title: "Currency Spotter", emoji: "💱", noun: "country" },
+  { id: "company", title: "Corporate HQ Spotter", emoji: "🏢", noun: "country" },
+  { id: "population", title: "Population Spotter", emoji: "👥", noun: "country" },
+  { id: "tube", title: "Tube Station Spotter", emoji: "🚇", noun: "station" },
 ];
 
 /**
@@ -324,6 +331,9 @@ export function gameOfDay(day: number = localDay()): ModeId {
 export const modeTitle = (mode: ModeId) => MATCH_MODES.find((m) => m.id === mode)!.title;
 
 export const modeEmoji = (mode: ModeId) => MATCH_MODES.find((m) => m.id === mode)!.emoji;
+
+/** What a round of this game asks you to click on: a city, a country, a station. */
+export const modeNoun = (mode: ModeId) => MATCH_MODES.find((m) => m.id === mode)!.noun;
 
 /**
  * What a code commits everyone to, in words — read over a leaderboard, where it

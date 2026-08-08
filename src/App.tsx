@@ -340,8 +340,10 @@ export default function App() {
         ))}
         {/* One door for playing other people, rather than two. The six above
             are games; this is an opponent, and which opponent is a question
-            for the other side of it. */}
-        <button className="mode-card mode-card-social" onClick={() => setSocial("hub")}>
+            for the other side of it. Drawn as one more card all the same — it
+            sits in their grid, and picking it out in colour made it read as
+            the thing you were meant to press rather than the seventh choice. */}
+        <button className="mode-card" onClick={() => setSocial("hub")}>
           <span className="mode-emoji">⚔️</span>
           <span className="mode-title">Head to Head</span>
           <span className="muted mode-blurb">

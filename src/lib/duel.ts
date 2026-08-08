@@ -256,6 +256,13 @@ export async function postRound(
 export interface RoomStanding extends SharedResult {
   /** Rounds they've filed so far, so the board can be read mid-game. */
   rounds: number;
+  /**
+   * What they scored in each round, counted from zero, or null for a round they
+   * haven't filed. Kept apart from the total because between rounds the total
+   * is the wrong thing to show — the question there is what the answer everyone
+   * just gave was worth, and a null in it is the room still waiting on them.
+   */
+  scores: (number | null)[];
 }
 
 
@@ -299,7 +306,14 @@ export async function fetchRoomBoard(code: string): Promise<RoomStanding[]> {
     const key = player.toLowerCase();
     let found = byName.get(key);
     if (!found) {
-      found = { code, player, score: 0, ms: 0, rounds: 0 };
+      found = {
+        code,
+        player,
+        score: 0,
+        ms: 0,
+        rounds: 0,
+        scores: Array<number | null>(MATCH_ROUNDS).fill(null),
+      };
       byName.set(key, found);
     }
     return found;
@@ -311,6 +325,7 @@ export async function fetchRoomBoard(code: string): Promise<RoomStanding[]> {
     entry.score += r.score;
     entry.ms += r.ms;
     entry.rounds += 1;
+    if (r.round >= 1 && r.round <= MATCH_ROUNDS) entry.scores[r.round - 1] = r.score;
   }
 
   // The average round *so far*, out of 100 — the same mark every other game

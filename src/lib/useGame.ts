@@ -173,14 +173,13 @@ function timingAt(schedule: RoundSchedule | undefined, rounds: number): Timing {
 
   for (let round = 0; round < rounds; round++) {
     const everyone = schedule.answeredAt?.(round) ?? null;
-    const last = round === rounds - 1;
-    // No reveal on the last round: there's nothing to turn over to, and the
-    // results screen names every answer anyway. Sitting on a finished game for
-    // ten seconds is the one wait nobody has a use for.
-    const reveal = last ? 0 : schedule.revealMs;
+    // The last round gets its pause on the answer like every other one. There's
+    // nothing to turn over to, but there is something to read: the fact under
+    // the answer is worth the same ten seconds at the end of the game as in the
+    // middle of it, and dropping straight onto the table means nobody reads it.
     const closesAt = Math.min(
-      openedAt + schedule.roundMs + reveal,
-      everyone === null ? Infinity : everyone + reveal,
+      openedAt + schedule.roundMs + schedule.revealMs,
+      everyone === null ? Infinity : everyone + schedule.revealMs,
     );
     if (now < closesAt) return { index: round, openedAt, closesAt };
     openedAt = closesAt;
