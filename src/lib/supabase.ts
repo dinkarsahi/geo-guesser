@@ -29,6 +29,25 @@ export const hasRemote = Boolean(BASE && ANON_KEY);
 /** Postgres' "that row already exists" — how a second attempt at a code reads. */
 export const UNIQUE_VIOLATION = "23505";
 
+/**
+ * How far this device's clock is from the server's, in milliseconds.
+ *
+ * Nobody sets their phone by hand any more, but they are still seconds apart,
+ * and a room starts on a moment written down by one player and read by four.
+ * Off by a minute the wrong way and someone opens the page to a game already
+ * finished. Every response carries the server's `Date`, so this is free.
+ */
+let skewMs = 0;
+
+/**
+ * The clock a room runs on: this device's, corrected onto the server's.
+ *
+ * Only as good as the last response — a second's granularity in the header and
+ * however long the reply took to arrive, so call it a second either way. Rounds
+ * are thirty seconds with eight between them, which swallows that whole.
+ */
+export const serverNow = (): number => Date.now() + skewMs;
+
 /** A request that reached Supabase and was refused, with the reason it gave. */
 export class RemoteError extends Error {
   status: number;
@@ -63,6 +82,11 @@ export async function rest<T>(path: string, init: RequestInit = {}): Promise<T> 
     },
   });
 
+  // Taken from every reply, refused or not: a room that can't start is a worse
+  // failure than a clock that's a little out, and both want the same header.
+  const stamp = Date.parse(res.headers.get("date") ?? "");
+  if (!Number.isNaN(stamp)) skewMs = stamp - Date.now();
+
   if (!res.ok) {
     // PostgREST reports its failures as JSON, but a proxy in front of it may
     // not, so a body that isn't JSON mustn't turn into a different error.
@@ -74,7 +98,11 @@ export async function rest<T>(path: string, init: RequestInit = {}): Promise<T> 
     );
   }
 
-  // 204, which is what a write asks for unless it asks for the row back.
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+  // A write that didn't ask for the row back answers with an empty body — 201
+  // on an insert, 204 on an update — and parsing that as JSON throws, which
+  // reads all the way up as "the server couldn't be reached" over a row that
+  // was filed perfectly well. So the body is read as text and only parsed if
+  // there's something there.
+  const body = await res.text();
+  return (body ? JSON.parse(body) : undefined) as T;
 }

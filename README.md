@@ -2,14 +2,20 @@
 
 A geography guessing game. `npm install --legacy-peer-deps`, then `npm run dev`.
 
-## One round a day
+## Two ways to play against people
 
-Head-to-head codes aren't drawn any more, they're worked out: the game, the map
-settings and the date go in, and a code comes out. Everyone in the world who
-picks City Spotter on the globe with borders today is holding the same code and
-landing on the same table, without anyone having sent it to them. There are 21 a
-day — five games across four map settings, plus the tube, which ignores the map
-and so gets one.
+**Today's Round** is the world, once a day. Pick one of the six games and you
+play the same five rounds as everyone else who picked it today, on one table.
+Nothing is handed around: the code is worked out from the game and the date, so
+two people who choose City Spotter are already on it. One go each, and it starts
+again at your midnight.
+
+**Play a Friend** is a room. The host picks a game, reads out a code, and presses
+go; from that moment everyone answers the same round at the same second, with a
+live table between rounds. When the five rounds are done there's one table saying
+who won, and the code is finished — no standings that go on afterwards.
+
+## One round a day
 
 The day turns over at each player's own midnight, taken from their device's
 calendar date. That means a given day's code is live somewhere across a 26-hour
@@ -18,38 +24,61 @@ round before London starts it, and both are on the same code. It's how Wordle
 does it, and it's what makes the reset land at midnight for everybody instead of
 at midnight for one timezone and teatime for another.
 
-The five characters after the mode and map letters are a scramble of the day
+A code is a mode letter, a kind letter (`D` for the day's round, `V` for a room),
+and five characters. For a daily code those five are a scramble of the day
 number, not a hash of it — multiplication by a constant sharing no factor with
 the code space, which is one-to-one over that space. So no two days can collide,
 rather than merely being unlikely to: `src/lib/match.ts` has the arithmetic. The
-seed the rounds are dealt from is still a hash of the finished code, and 32 bits
-across 21 codes a day works out at about one same-pool repeat a decade.
+seed the rounds are dealt from is a hash of the finished code.
+
+The map settings used to go into the code too, which quietly cut each game into
+four tables and put the player who likes the flat map in a different contest from
+the player who likes the globe. They're a matter of taste rather than of
+difficulty, so they're each player's own now: six games, six tables a day.
 
 Because a code is derived rather than issued, it's also the thing that makes one
-go a day stick: there is no second code with the same settings to mint and play
-again. And because the algorithm ships in the bundle, anyone can work out next
-week's codes and practise — the game is client-side and self-scored, so this is
-a leaderboard for people who want to play, not a contest to defend.
+go a day stick: there is no second code to mint and play again. And because the
+algorithm ships in the bundle, anyone can work out next week's codes and practise
+— the game is client-side and self-scored, so this is a leaderboard for people
+who want to play, not a contest to defend.
 
-## The head-to-head leaderboard
+## How a room stays in step
 
-Head to Head works without any of this — codes are self-contained, and standings
-fall back to games finished on the device. Setting up Supabase is what makes the
-standings shared, so two people racing on two phones see each other, and what
-makes a code one go each.
+There is no live connection between the players and nothing to reconnect to. The
+only thing that travels is the moment the first round opens, written into the
+room's row when the host presses go. After that every device works out for itself
+which round should be on screen — round *n* opens 38 seconds after round one, and
+the rounds themselves come from the code as they always have.
+
+That means a phone that locks for a minute rejoins the room where the room is,
+with the rounds it slept through marked zero, rather than finishing a minute
+after everyone has gone. Two devices whose clocks disagree would be a head start,
+so the room runs on the server's clock: every Supabase response carries a `Date`,
+and `serverNow()` in `src/lib/supabase.ts` is the local clock corrected onto it.
+
+Rounds are filed one at a time as they're marked, which is what puts everyone
+else's score on the screen between rounds, and what lets a player who walks off
+after round three still count for the three they played.
+
+## The leaderboard and the rooms
+
+The daily table falls back to games finished on the device when there's no
+Supabase behind it. Rooms need one outright — they're a shared clock and a list
+of who's in, and there's nowhere else for either to live.
 
 1. Create a project at [supabase.com](https://supabase.com) (the free tier is
    ample — a result is four small columns).
 2. In the project's SQL Editor, run [`supabase/schema.sql`](supabase/schema.sql).
-   It creates the table, the policies, and the unique index that makes a code
-   one attempt per player.
+   It creates the results table and the three small room tables, the policies,
+   the unique index that makes a code one attempt per player, and the sweeps
+   that clear out finished days and finished rooms. Safe to run again.
 3. Copy `.env.example` to `.env` and fill in the project URL and anon key from
    Settings → API. Both are public values; the policies are what protect the
    table. Whatever hosts the built site needs those two variables set at build
    time too.
 
-Without them the app builds and runs exactly as before, and the Leaderboard tab
-says so.
+Without them the app still plays and the Leaderboard tab says so; Play a Friend
+says so too, and won't open a room it has nowhere to put.
 
 ### On the host, not just here
 

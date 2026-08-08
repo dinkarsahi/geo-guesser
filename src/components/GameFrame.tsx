@@ -4,9 +4,12 @@ import { finalScore, formatDistance, MAX_ROUND_SCORE } from "../lib/geo";
 import type { Match } from "../lib/match";
 import { MATCH_ROUND_MS } from "../lib/match";
 import type { Game, Phase } from "../lib/useGame";
+import { useRoom } from "../lib/useRoom";
 import MatchResult from "./MatchResult";
 import type { GuessMapProps } from "./mapTypes";
 import NightToggle from "./NightToggle";
+import RoomResult from "./RoomResult";
+import RoomReveal from "./RoomReveal";
 
 interface GameFrameProps<T> {
   title: string;
@@ -77,6 +80,14 @@ export default function GameFrame<T>({
     totalMs,
   } = game;
 
+  // A room's rounds go up as they're marked and the table comes back with them.
+  // Called for every game, room or not — it does nothing outside one, and a
+  // hook can't be asked for halfway down a component.
+  const room = useRoom(match, results, phase);
+  // A room runs to a timetable, which is what everything below tests for: no
+  // "next round" button, a countdown in its place, and its own results screen.
+  const timetabled = match?.startAt !== undefined;
+
   if (phase === "done") {
     // The mark for the whole game, on the same scale as each round in the list
     // below it — so the big number and the small ones can be read against one
@@ -103,8 +114,11 @@ export default function GameFrame<T>({
             <span className="summary-max"> / {MAX_ROUND_SCORE}</span>
           </p>
           {/* The leaderboard is handed the same mark that's printed above it,
-              so a player's row reads as the number they were just given. */}
-          {match && <MatchResult match={match} score={mark} ms={totalMs} />}
+              so a player's row reads as the number they were just given. A
+              room counts itself up instead: its table is the whole room's
+              rounds, filed as they were played, and it ends where it ends. */}
+          {match && timetabled && <RoomResult match={match} room={room} />}
+          {match && !timetabled && <MatchResult match={match} score={mark} ms={totalMs} />}
           <ol className="summary-list" start={hidden + 1}>
             {shown.map((r, i) => (
               <li key={hidden + i}>
@@ -171,7 +185,14 @@ export default function GameFrame<T>({
               {Math.ceil(timeLeftMs / 1000)}s
             </span>
           )}
-          {match && <span className="match-code-tag">{match.code}</span>}
+          {/* A room's code is worth keeping on screen — it's what somebody
+              still trying to get in will ask you for. A daily game's isn't
+              shown anywhere and isn't the player's business. */}
+          {match && (
+            <span className="match-code-tag">
+              {match.kind === "room" ? match.code : "Today's round"}
+            </span>
+          )}
         </div>
         {/* The clock itself, drawn along the foot of the bar: something to read
             without looking at it, straight under whatever you were looking at. */}
@@ -240,11 +261,24 @@ export default function GameFrame<T>({
               +{lastResult.score.toLocaleString()} pts
             </span>
           </div>
-          <div className="button-row">
-            <button className="btn btn-primary" onClick={next}>
-              {lastRound ? "See results" : "Next round →"}
-            </button>
-          </div>
+          {/* In a room there is nothing to press: the round turns over for
+              everybody at once, so what goes here is how long that is and
+              where the room stands after the question just answered. */}
+          {timetabled && match ? (
+            <RoomReveal
+              startAt={match.startAt!}
+              roundIndex={roundIndex}
+              lastRound={lastRound}
+              board={room.board}
+              you={match.player}
+            />
+          ) : (
+            <div className="button-row">
+              <button className="btn btn-primary" onClick={next}>
+                {lastRound ? "See results" : "Next round →"}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

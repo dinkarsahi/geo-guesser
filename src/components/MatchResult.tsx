@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Match } from "../lib/match";
-import { cleanName, formatDuration } from "../lib/match";
+import { cleanName, formatDuration, modeTitle } from "../lib/match";
 import { publishResult, type Board } from "../lib/leaderboard";
 import { saveName } from "../lib/playerName";
 import { hasRemote } from "../lib/supabase";
@@ -88,7 +88,10 @@ export default function MatchResult({ match, score, ms }: MatchResultProps) {
         <span className="match-line-value">{formatDuration(ms)}</span>
       </p>
 
-      <p className="match-line-label">Game {match.code}</p>
+      {/* The game rather than the code: everyone who played today's {mode} is
+          on this one table however they chose to draw the map, and the code
+          behind it is no longer something a player ever sees. */}
+      <p className="match-line-label">Today's {modeTitle(match.mode)}</p>
 
       {/* The score is made and can't be lost — it just needs a free name to go
           up under, and asking here beats telling the player they've already
@@ -134,8 +137,8 @@ export default function MatchResult({ match, score, ms }: MatchResultProps) {
           {board.source === "offline"
             ? "Your score is saved but the leaderboard is out of reach — it'll go up next time you're online."
             : hasRemote
-              ? `Nobody else has finished ${match.code} yet today. Check back when they have.`
-              : `Nobody else has played ${match.code} here yet — hand it over and their score joins the table.`}
+              ? `Nobody else has finished today's ${modeTitle(match.mode)} yet. Check back when they have.`
+              : `No shared leaderboard is set up, so this table only holds games finished on this device.`}
         </p>
       )}
 

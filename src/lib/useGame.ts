@@ -26,6 +26,31 @@ export interface RoundResult {
   timedOut: boolean;
 }
 
+/**
+ * A timetable the rounds run to, rather than a game that waits for the player.
+ *
+ * A room full of friends has to be looking at the same question at the same
+ * moment, and nothing else can decide when that is: the fastest player would
+ * otherwise be three rounds ahead by the end. So every device works the round
+ * out from one shared clock and the moment the room started — no messages pass
+ * between them, and a player whose phone locks for a minute rejoins the room
+ * where everybody else is rather than a minute behind it.
+ */
+export interface RoundSchedule {
+  /** When round one opens, on whatever clock `now` reads. */
+  startAt: number;
+  /** How long each round stays open for answers. */
+  roundMs: number;
+  /** The pause on the answer between one round closing and the next opening. */
+  revealMs: number;
+  /**
+   * The clock everyone in the room is on — the server's, carried onto this
+   * device. Two phones disagreeing by a minute is normal and would otherwise
+   * be a minute's head start.
+   */
+  now: () => number;
+}
+
 export interface GameOptions<T> {
   /** Rounds the game runs to. */
   rounds?: number;
@@ -71,6 +96,11 @@ export interface GameOptions<T> {
   roundLimitMs?: number;
   /** Reshapes a round's score once it's known — a match pays for speed here. */
   adjustScore?: (score: number, elapsedMs: number) => number;
+  /**
+   * Turn the rounds over on a timetable rather than on the player's "next
+   * round" button. Set only in a room, where everyone has to move together.
+   */
+  schedule?: RoundSchedule;
 }
 
 export interface Game<T> {
@@ -180,7 +210,21 @@ export function useGame<T>(
     seed,
     roundLimitMs,
     adjustScore,
+    schedule,
   } = options;
+
+  // The clock the game is timed against: the room's, where there is one, and
+  // this device's otherwise. Held in a ref because it arrives in a fresh object
+  // every render and nothing below should restart when it does.
+  const nowRef = useRef<() => number>(Date.now);
+  useEffect(() => {
+    nowRef.current = schedule?.now ?? Date.now;
+  });
+
+  // Pulled out of the schedule so the effects below depend on numbers rather
+  // than on an object identity that changes every render.
+  const startAt = schedule?.startAt;
+  const period = schedule ? schedule.roundMs + schedule.revealMs : 0;
 
   const [targets, setTargets] = useState(() => pickTargets(pool, rounds, seed));
   const [roundIndex, setRoundIndex] = useState(0);
@@ -199,7 +243,7 @@ export function useGame<T>(
   const submitGuess = useCallback(
     (click: Coord) => {
       if (phase !== "guessing") return;
-      const elapsedMs = Date.now() - startedAt.current;
+      const elapsedMs = nowRef.current() - startedAt.current;
       const guess = guessAt?.(click) ?? click;
       const answer = answerFor?.(guess, target) ?? getCoord(target);
       const distanceKm = haversineKm(guess, answer);
@@ -237,31 +281,40 @@ export function useGame<T>(
     ],
   );
 
+  /** A round nobody answered: no guess, no marks. */
+  const missed = useCallback(
+    (t: T): RoundResult => ({
+      guess: null,
+      click: null,
+      answer: getCoord(t),
+      distanceKm: 0,
+      score: 0,
+      hit: false,
+      label: "Out of time",
+      elapsedMs: roundLimitMs ?? 0,
+      timedOut: true,
+    }),
+    [getCoord, roundLimitMs],
+  );
+
   /** The clock ran out with nothing clicked: no guess, no marks, next round. */
   const timeOut = useCallback(() => {
-    setResults((r) => [
-      ...r,
-      {
-        guess: null,
-        click: null,
-        answer: getCoord(target),
-        distanceKm: 0,
-        score: 0,
-        hit: false,
-        label: "Out of time",
-        elapsedMs: roundLimitMs ?? 0,
-        timedOut: true,
-      },
-    ]);
+    setResults((r) => [...r, missed(target)]);
     setPhase("result");
-  }, [target, getCoord, roundLimitMs]);
+  }, [target, missed]);
 
   // The moment the round on screen was put in front of the player, which is
   // what everything below times from. Declared before the clock so that the
   // clock always reads a start that has already been marked.
+  //
+  // In a room that moment isn't when this device got here — it's when the round
+  // opened for everybody, so a player whose page was slow to draw is marked on
+  // the same thirty seconds as the rest of them rather than a fresh thirty.
   useEffect(() => {
-    if (phase === "guessing") startedAt.current = Date.now();
-  }, [phase, roundIndex]);
+    if (phase !== "guessing") return;
+    startedAt.current =
+      startAt === undefined ? nowRef.current() : startAt + roundIndex * period;
+  }, [phase, roundIndex, startAt, period]);
 
   // The countdown, which only exists in a timed game. A tenth of a second is
   // finer than the bar can show but keeps the seconds honest as they turn over.
@@ -271,7 +324,7 @@ export function useGame<T>(
     if (!roundLimitMs) return;
     if (phase !== "guessing") return;
     const id = setInterval(() => {
-      const left = roundLimitMs - (Date.now() - startedAt.current);
+      const left = roundLimitMs - (nowRef.current() - startedAt.current);
       if (left <= 0) {
         clearInterval(id);
         setTimeLeftMs(0);
@@ -283,7 +336,58 @@ export function useGame<T>(
     return () => clearInterval(id);
   }, [phase, roundIndex, roundLimitMs, timeOut]);
 
+  /**
+   * Jump to whichever round the timetable says is open, filling in any that
+   * went by unanswered.
+   *
+   * Usually that's the very next one and the fill does nothing, since the
+   * round's own clock has already marked it. The fill is for the phone that
+   * was in a pocket for two rounds: it comes back to the round everyone else
+   * is on, with the ones it slept through marked zero, rather than picking up
+   * where it left off and finishing a minute after the room has gone.
+   */
+  const advanceTo = useCallback(
+    (due: number) => {
+      setResults((r) => {
+        const filled = [...r];
+        while (filled.length < Math.min(due, targets.length)) {
+          filled.push(missed(targets[filled.length]));
+        }
+        return filled;
+      });
+      if (due >= targets.length) {
+        // Kept in range so the round on screen stays a real one; the results
+        // screen is what draws from here on.
+        setRoundIndex(targets.length - 1);
+        setPhase("done");
+        return;
+      }
+      setRoundIndex(due);
+      setCurrentGuess(null);
+      setTimeLeftMs(roundLimitMs ?? null);
+      setPhase("guessing");
+    },
+    [targets, missed, roundLimitMs],
+  );
+
+  // The timetable itself. Read off the clock rather than counted up, so it
+  // survives a tab that was throttled or asleep — which is the case a counter
+  // would get wrong, and the case that happens.
+  useEffect(() => {
+    if (startAt === undefined || phase === "done") return;
+    const tick = () => {
+      const due = Math.floor((nowRef.current() - startAt) / period);
+      if (due > roundIndex) advanceTo(due);
+    };
+    tick();
+    const id = setInterval(tick, 150);
+    return () => clearInterval(id);
+  }, [startAt, period, phase, roundIndex, advanceTo]);
+
   const next = useCallback(() => {
+    // A room's rounds turn over on the clock; there is no button, and nothing
+    // this could do that wouldn't put this player out of step with the others.
+    if (startAt !== undefined) return;
     if (phase !== "result") return;
     const upcoming = roundIndex + 1;
     if (upcoming >= targets.length) {
@@ -294,7 +398,7 @@ export function useGame<T>(
     setCurrentGuess(null);
     setTimeLeftMs(roundLimitMs ?? null);
     setPhase("guessing");
-  }, [phase, roundIndex, targets.length, roundLimitMs]);
+  }, [phase, roundIndex, targets.length, roundLimitMs, startAt]);
 
   const restart = useCallback(() => {
     // A seeded game replays the same five rounds, which is the point of it:

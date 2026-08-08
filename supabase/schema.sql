@@ -53,6 +53,95 @@ create policy "file a result"
   to anon, authenticated
   with check (true);
 
+-- Rooms: a game against people you know, played at the same time.
+--
+-- The daily table above needs no coordination — everyone plays the same code
+-- whenever suits them and the scores meet at the end. A room does: it has to
+-- start for four people at once. These three tables are the whole of that
+-- coordination, and the only thing that actually passes between the players is
+-- `starts_at`. Everything after it each device works out from the clock.
+
+create table if not exists public.duel_rooms (
+  code       text primary key check (code ~ '^[0-9A-Z]{7}$'),
+  mode       text not null check (
+               mode in ('city','flag','currency','company','population','tube')),
+  -- The host's map, so a room is one contest rather than four.
+  flat       boolean not null default false,
+  borders    boolean not null default true,
+  host       text not null check (char_length(btrim(host)) between 1 and 16),
+  -- When round one opens. Null while the room is still filling up.
+  starts_at  timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.duel_players (
+  id        bigint generated always as identity primary key,
+  code      text not null check (code ~ '^[0-9A-Z]{7}$'),
+  player    text not null check (char_length(btrim(player)) between 1 and 16),
+  joined_at timestamptz not null default now()
+);
+
+-- One of each name in a room. Two Sams in one game is two names on one table.
+create unique index if not exists duel_players_one_name
+  on public.duel_players (code, lower(btrim(player)));
+
+create index if not exists duel_players_room
+  on public.duel_players (code, joined_at);
+
+-- A round at a time rather than a game at a time, so the room can see itself
+-- between rounds, and so a player who walks off after round three still counts
+-- for the three they played.
+create table if not exists public.duel_scores (
+  id         bigint generated always as identity primary key,
+  code       text not null check (code ~ '^[0-9A-Z]{7}$'),
+  player     text not null check (char_length(btrim(player)) between 1 and 16),
+  round      smallint not null check (round between 1 and 20),
+  score      integer not null check (score between 0 and 100),
+  ms         integer not null check (ms >= 0),
+  created_at timestamptz not null default now()
+);
+
+-- One score per round per player: the lock that makes a round final, and what
+-- makes a reload during a room harmless rather than a second score.
+create unique index if not exists duel_scores_one_go
+  on public.duel_scores (code, lower(btrim(player)), round);
+
+create index if not exists duel_scores_room on public.duel_scores (code);
+
+alter table public.duel_rooms   enable row level security;
+alter table public.duel_players enable row level security;
+alter table public.duel_scores  enable row level security;
+
+do $$
+declare t text;
+begin
+  foreach t in array array['duel_rooms', 'duel_players', 'duel_scores'] loop
+    execute format('drop policy if exists "read the room" on public.%I', t);
+    execute format(
+      'create policy "read the room" on public.%I for select to anon, authenticated using (true)', t);
+    execute format('drop policy if exists "join the room" on public.%I', t);
+    execute format(
+      'create policy "join the room" on public.%I for insert to anon, authenticated with check (true)', t);
+  end loop;
+end $$;
+
+-- Starting a room is the one update anything here is allowed to make, and only
+-- on a room that hasn't started: once a moment is written down, four people are
+-- counting on it, and moving it would drop them into different rounds.
+--
+-- The column grant is what keeps this to `starts_at` alone — RLS decides which
+-- rows may be touched, not which columns, and Supabase grants update on every
+-- column of a new table by default.
+revoke update on public.duel_rooms from anon, authenticated;
+grant update (starts_at) on public.duel_rooms to anon, authenticated;
+
+drop policy if exists "start the room" on public.duel_rooms;
+create policy "start the room"
+  on public.duel_rooms for update
+  to anon, authenticated
+  using (starts_at is null)
+  with check (starts_at is not null);
+
 -- Clearing out finished days.
 --
 -- A code lasts until the player's own midnight, so one day's code is live
@@ -74,4 +163,21 @@ select cron.schedule(
   'sweep-old-match-results',
   '17 * * * *',
   $$delete from public.match_results where created_at < now() - interval '48 hours'$$
+);
+
+-- Rooms are shorter-lived than days: five rounds is under four minutes, and a
+-- room that never started is a code somebody typed once. An hour is generous
+-- either way, and a code that outlives its game is a code that can be typed
+-- into by mistake.
+select cron.unschedule('sweep-old-duels')
+where exists (select 1 from cron.job where jobname = 'sweep-old-duels');
+
+select cron.schedule(
+  'sweep-old-duels',
+  '23 * * * *',
+  $$
+  delete from public.duel_scores  where created_at < now() - interval '3 hours';
+  delete from public.duel_players where joined_at  < now() - interval '3 hours';
+  delete from public.duel_rooms   where created_at < now() - interval '3 hours';
+  $$
 );

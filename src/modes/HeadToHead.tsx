@@ -2,16 +2,13 @@ import { useState } from "react";
 import {
   cleanName,
   dailyCode,
-  describeCode,
-  isTodaysCode,
   parseMatchCode,
-  spellCode,
+  MATCH_GRACE_MS,
   MATCH_MODES,
   MATCH_ROUNDS,
   MATCH_ROUND_MS,
+  modeTitle,
   type Match,
-  type MatchCode,
-  type MatchSetup,
 } from "../lib/match";
 import { checkEntry } from "../lib/leaderboard";
 import { loadName, saveName } from "../lib/playerName";
@@ -20,7 +17,9 @@ import type { ModeId } from "./ModeProps";
 
 const RULES = `${MATCH_ROUNDS} rounds, ${Math.round(
   MATCH_ROUND_MS / 1000,
-)} seconds each, marked out of 100 a round as usual and averaged into one mark out of 100. Sitting on a round costs you up to 40% of what it was worth — so knowing it still beats guessing it quickly. One go a day at each game, for everyone, everywhere.`;
+)} seconds each, marked out of 100 a round as usual and averaged into one mark out of 100. The first ${Math.round(
+  MATCH_GRACE_MS / 1000,
+)} seconds of a round are free — after that, sitting on it costs you up to 30% of what it was worth. One go a day at each game, for everyone, everywhere.`;
 
 interface HeadToHeadProps {
   onBack: () => void;
@@ -29,42 +28,43 @@ interface HeadToHeadProps {
 }
 
 /**
- * The front of the head-to-head game: take today's code, type one in, or look
- * one up.
+ * The front of the daily game: pick one of the six, and play the round the
+ * whole world is playing today.
  *
- * There is still no lobby and no server dealing rounds. What changed is that
- * the code is no longer drawn at random and sent to four friends — it's worked
- * out from the game and the date, so everyone in the world picking the same
- * game today is already holding the same code and landing on the same table.
- * A code is good until the player's own midnight, and there isn't another to
- * mint before then: one go a day, at each of the games.
+ * There's no code to be seen here any more. There never was much point in
+ * showing one — it's worked out from the game and the date rather than issued,
+ * so everyone picking City Spotter today is already on it and already on the
+ * table it leads to. All the code did was ask people to pass around something
+ * they were both holding anyway.
+ *
+ * The map settings went the same way. They used to travel in the code, which
+ * quietly cut each game into four tables and put the player who likes the flat
+ * map in a different contest from the player who likes the globe. The rounds
+ * are what's being marked, so they're the only thing the table is drawn from:
+ * how you'd rather see the world is your own business.
  */
 export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
-  const [screen, setScreen] = useState<"pick" | "create" | "join" | "board">("pick");
-  const [made, setMade] = useState<MatchCode | null>(null);
-  const [typed, setTyped] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [screen, setScreen] = useState<"pick" | "games" | "board">("pick");
   const [name, setName] = useState(loadName);
-  // The maker's choices, which the code will carry to everyone else.
-  const [setup, setSetup] = useState<MatchSetup>({ flat: false, borders: true });
-  // Set when a player is sent to the standings because their code is spent,
+  // How this player likes the world drawn. Theirs alone now — everyone playing
+  // today's City Spotter is on one table whichever of these they chose.
+  const [setup, setSetup] = useState({ flat: false, borders: true });
+  // Set when a player is sent to the standings because they've had their go,
   // rather than having asked to see them.
-  const [spent, setSpent] = useState<string | null>(null);
+  const [spent, setSpent] = useState<ModeId | null>(null);
   // Set when the name is somebody else's today. Sends the player back to the
   // name field, which is the only thing standing between them and a game.
   const [taken, setTaken] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
 
-  const show = (mode: ModeId) => {
-    setMade(parseMatchCode(dailyCode(mode, setup)));
-  };
-
   /**
-   * Off to play, under the name that will appear in everyone's standings —
-   * unless this device has already had its go at today's code, or the name is
-   * spoken for by one of the strangers sharing it.
+   * Off to play today's round of a game, under the name that will appear in
+   * everyone's standings — unless this device has already had its go, or the
+   * name is spoken for by one of the strangers sharing the table.
    */
-  const play = async (code: MatchCode) => {
+  const play = async (mode: ModeId) => {
+    const code = parseMatchCode(dailyCode(mode));
+    if (!code) return;
     const player = name.trim();
     saveName(player);
     setTaken(null);
@@ -72,7 +72,7 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
     const entry = await checkEntry(code.code, player);
     setChecking(false);
     if (entry === "played") {
-      setSpent(code.code);
+      setSpent(mode);
       setScreen("board");
       return;
     }
@@ -81,33 +81,14 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
       setScreen("pick");
       return;
     }
-    onStart({ ...code, player });
+    onStart({ ...code, player, flat: setup.flat, borders: setup.borders });
   };
 
   const named = name.trim().length > 0;
 
-  const copy = (code: string) => {
-    navigator.clipboard?.writeText(code).then(
-      () => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      },
-      () => setCopied(false),
-    );
-  };
-
-  const joining = parseMatchCode(typed);
-  const typedEnough = typed.replace(/[^0-9a-zA-Z]/g, "").length >= 7;
-  // A code that parses but isn't today's is a round that has already been and
-  // gone. Its table is still worth reading; its rounds are not worth playing,
-  // since nobody it would rank is still playing them.
-  const over = joining !== null && !isTodaysCode(joining);
-  const insteadOf = over ? parseMatchCode(dailyCode(joining.mode, joining)) : null;
-
   const back = () => {
     if (screen === "pick") return onBack();
     setScreen("pick");
-    setMade(null);
     setSpent(null);
   };
 
@@ -119,7 +100,7 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
         </button>
       </div>
       <h1>
-        <span className="mode-emoji">⚔️</span> Head to Head
+        <span className="mode-emoji">🌍</span> Today's Round
       </h1>
       <p className="muted menu-sub">{RULES}</p>
 
@@ -155,43 +136,33 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
             <button
               className="h2h-choice"
               disabled={!named}
-              onClick={() => setScreen("create")}
+              onClick={() => setScreen("games")}
             >
-              <span className="h2h-choice-title">Today's games</span>
+              <span className="h2h-choice-title">Play today's round</span>
               <span className="muted h2h-choice-hint">
-                Pick one and get today's code — the same rounds everyone else is on.
+                Pick a game and play the same rounds as everyone else today.
               </span>
             </button>
-            <button
-              className="h2h-choice"
-              disabled={!named}
-              onClick={() => setScreen("join")}
-            >
-              <span className="h2h-choice-title">Join a game</span>
-              <span className="muted h2h-choice-hint">
-                Type the code you were given and play the same rounds.
-              </span>
-            </button>
-            {/* Open to anyone holding a code, name or not: reading a table is
-                not playing, and a spectator shouldn't have to invent a name. */}
+            {/* Open to anyone, name or not: reading a table is not playing, and
+                a spectator shouldn't have to invent a name. */}
             <button className="h2h-choice" onClick={() => setScreen("board")}>
               <span className="h2h-choice-title">Leaderboard</span>
               <span className="muted h2h-choice-hint">
-                Look up a code and see everyone who has played it.
+                Today's table for any of the six games.
               </span>
             </button>
           </div>
           {!named && (
-            <p className="muted h2h-code-hint">Put a name in to play or join a game.</p>
+            <p className="muted h2h-code-hint">Put a name in to play today's round.</p>
           )}
         </>
       )}
 
-      {screen === "create" && !made && (
+      {screen === "games" && (
         <div className="setup-panel">
-          {/* Chosen before the game rather than after, because the game and
-              these choices together are what the day's code is worked out
-              from — a different map is a different code and a different table. */}
+          {/* Yours, not the table's. Kept here rather than buried because the
+              globe and the flat map are genuinely different games to look at,
+              and the choice no longer costs anyone their place in the ranking. */}
           <div className="setup-row">
             <span className="setup-label">Map</span>
             <div className="setup-options">
@@ -240,99 +211,29 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
             <span className="setup-label">Game</span>
             <div className="h2h-modes">
               {MATCH_MODES.map((m) => (
-                <button key={m.id} className="h2h-mode" onClick={() => show(m.id)}>
+                <button
+                  key={m.id}
+                  className="h2h-mode"
+                  disabled={checking}
+                  onClick={() => play(m.id)}
+                >
                   <span className="mode-emoji">{m.emoji}</span>
-                  <span>{m.title}</span>
+                  <span>{checking ? "Checking…" : m.title}</span>
                 </button>
               ))}
             </div>
           </div>
           <p className="muted h2h-code-hint">
-            The game and the settings above are what today's code is worked out from —
-            everyone who picks the same ones today is already on it.
+            One table a game a day. Everyone who plays {modeTitle("city")} today gets the
+            same five rounds in the same order, and they all land here. It starts again at
+            your midnight.
           </p>
-        </div>
-      )}
-
-      {screen === "create" && made && (
-        <div className="setup-panel h2h-code-panel">
-          <p className="muted h2h-code-label">Today's code</p>
-          <p className="h2h-code">{spellCode(made.code)}</p>
-          <p className="h2h-setup">{describeCode(made)}</p>
-          <p className="muted h2h-code-hint">
-            Everyone playing this game today is on this code — the same rounds, in the
-            same order, on the same map, whether you sent it to them or not. It lasts
-            until midnight, when a new one takes over and the table starts again. One go
-            each, so make it count.
-          </p>
-          <div className="button-row">
-            <button className="btn btn-ghost" onClick={() => copy(made.code)}>
-              {copied ? "Copied ✓" : "Copy code"}
-            </button>
-            <button
-              className="btn btn-primary"
-              disabled={checking}
-              onClick={() => play(made)}
-            >
-              {checking ? "Checking…" : "Play it ▸"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {screen === "join" && (
-        <div className="setup-panel h2h-code-panel">
-          <p className="muted h2h-code-label">Enter the code</p>
-          <input
-            className="h2h-code-input"
-            value={typed}
-            onChange={(e) => setTyped(e.target.value)}
-            placeholder="FA4 KQ7M"
-            autoFocus
-            maxLength={10}
-            aria-label="Match code"
-          />
-          {/* What the code commits you to, before you commit to it. */}
-          {joining ? (
-            <>
-              <p className="h2h-setup">{describeCode(joining)}</p>
-              {over ? (
-                <p className="muted h2h-code-hint">
-                  That round is over — codes last until midnight. Today's is{" "}
-                  {insteadOf ? spellCode(insteadOf.code) : "a new one"}, and you can still
-                  read the old table from the Leaderboard.
-                </p>
-              ) : (
-                <p className="muted h2h-code-hint">
-                  The same rounds on the same map as everyone else playing today.
-                </p>
-              )}
-            </>
-          ) : (
-            <p className="muted h2h-code-hint">
-              {typedEnough
-                ? "That isn't a code we recognise."
-                : "Seven characters, in any case."}
-            </p>
-          )}
-          <div className="button-row">
-            <button
-              className="btn btn-primary"
-              disabled={!joining || checking}
-              onClick={() => {
-                const go = over ? insteadOf : joining;
-                if (go) play(go);
-              }}
-            >
-              {checking ? "Checking…" : over ? "Play today's ▸" : "Play it ▸"}
-            </button>
-          </div>
         </div>
       )}
 
       {screen === "board" && (
         <Leaderboard
-          code={spent ?? undefined}
+          mode={spent ?? undefined}
           player={named ? name.trim() : undefined}
           locked={spent !== null}
         />

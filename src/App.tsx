@@ -5,6 +5,7 @@ import CompanyGuesser from "./modes/CompanyGuesser";
 import CurrencyGuesser from "./modes/CurrencyGuesser";
 import FlagGuesser from "./modes/FlagGuesser";
 import HeadToHead from "./modes/HeadToHead";
+import PlayFriend from "./modes/PlayFriend";
 import PopulationGuesser from "./modes/PopulationGuesser";
 import TubeGuesser from "./modes/TubeGuesser";
 import type { GameSettings, ModeId, ModeProps } from "./modes/ModeProps";
@@ -173,14 +174,15 @@ export default function App() {
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
   // Day (colourful) by default; the toggle switches to the grey night look.
   const [night, setNight] = useState(false);
-  // Set while a head-to-head code is being made, typed, or played out.
-  const [duel, setDuel] = useState(false);
+  // Which of the two ways of playing against other people is open, if either:
+  // today's round for the world, or a room full of people you know.
+  const [social, setSocial] = useState<"daily" | "room" | null>(null);
   const [match, setMatch] = useState<Match | null>(null);
 
   const toMenu = () => {
     setMode(null);
     setStarted(false);
-    setDuel(false);
+    setSocial(null);
     setMatch(null);
   };
   const toggleNight = () => setNight((n) => !n);
@@ -194,11 +196,11 @@ export default function App() {
     return () => document.body.classList.remove("playing");
   }, [playing]);
 
-  // A match names its own mode and the map it's played on, so it skips the
-  // setup screen entirely: everyone playing a code has to be asked the same
-  // five questions of the same world, and none of that is the joiner's to
-  // change. Only the day/night look stays personal — it changes how the map is
-  // lit, not what it can tell you.
+  // A match names its own game and carries the map it's to be played on, so it
+  // skips the setup screen entirely: everyone playing it is asked the same five
+  // questions, and in a room they're looking at the same world as well. Where
+  // the map came from differs — the player's own taste in today's round, the
+  // host's choice in a room — but by here it's decided either way.
   if (match)
     return (
       <PlayMode
@@ -209,8 +211,12 @@ export default function App() {
       />
     );
 
-  if (duel) {
+  if (social === "daily") {
     return <HeadToHead onBack={toMenu} onStart={setMatch} />;
+  }
+
+  if (social === "room") {
+    return <PlayFriend onBack={toMenu} onStart={setMatch} />;
   }
 
   if (mode && started) {
@@ -243,11 +249,23 @@ export default function App() {
             <span className="muted mode-blurb">{m.blurb}</span>
           </button>
         ))}
-        <button className="mode-card" onClick={() => setDuel(true)}>
-          <span className="mode-emoji">⚔️</span>
-          <span className="mode-title">Head to Head</span>
+        {/* The two ways of playing against somebody, which are different games
+            rather than one game with a setting: today's round is the world,
+            once, whenever you like; a room is your friends, now. */}
+        <button className="mode-card mode-card-social" onClick={() => setSocial("daily")}>
+          <span className="mode-emoji">🌍</span>
+          <span className="mode-title">Today's Round</span>
           <span className="muted mode-blurb">
-            Today's rounds against the clock, the same for everyone. One go.
+            The same five rounds as everyone else today, against the clock. One go, one
+            table per game.
+          </span>
+        </button>
+        <button className="mode-card mode-card-social" onClick={() => setSocial("room")}>
+          <span className="mode-emoji">⚔️</span>
+          <span className="mode-title">Play a Friend</span>
+          <span className="muted mode-blurb">
+            Make a room, read out the code, and play the same rounds at the same time.
+            Winner takes it.
           </span>
         </button>
       </div>

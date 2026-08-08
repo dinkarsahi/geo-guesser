@@ -1,35 +1,56 @@
 import type { ModeId } from "../modes/ModeProps";
+import { serverNow } from "./supabase";
+import type { RoundSchedule } from "./useGame";
 
 /**
- * A head-to-head match, which is nothing but a code.
+ * A game played against other people, which is nothing but a code.
  *
- * There is no server behind this game and no lobby to sit in: the code *is*
- * the match. It carries the mode in its first letter and a seed in the rest,
- * and both players' devices deal the same five rounds from that seed without
- * ever having spoken to each other. Read a code out over the phone and you are
- * playing the same game as the person who made it.
+ * The code carries the game in its first letter, what kind of contest it is in
+ * its second, and a seed in the rest. Every device deals the same five rounds
+ * from that seed, so two people holding one code are asked the same questions
+ * in the same order without their devices ever having spoken.
  *
- * What that buys is a game anyone can start from a static page with no
- * account, no connection between the two devices and nothing to go down. What
- * it costs is that neither player can see the other play: the scores meet at
- * the end, by one player reading their result to the other.
+ * There are two kinds, and the difference is only where the code comes from:
+ *
+ * - `daily` — worked out from the game and the date, so it isn't sent to
+ *   anybody. Everyone in the world who picks City Spotter today is already on
+ *   it, and on the table it leads to. Played whenever suits you.
+ * - `room` — drawn at random when someone makes a room for their friends. This
+ *   one does need a server, because the players have to start together: the
+ *   room row carries the moment the first round opens, and every device runs
+ *   the rounds off that one clock.
+ *
+ * The map settings used to travel in the code as well, which meant four City
+ * Spotter tables a day and four ways to be alone on one. They're a matter of
+ * taste rather than of difficulty, so they're each player's own now, and one
+ * game a day means one table.
  */
 export interface MatchCode {
-  /** The code as typed and shown, e.g. "FA4KQ7M". */
+  /** The code as stored and read out, e.g. "CD4KQ7M". */
   code: string;
   mode: ModeId;
-  /** The flat map rather than the globe — the maker's choice, everyone's game. */
-  flat: boolean;
-  /** Country outlines drawn on. */
-  borders: boolean;
+  kind: MatchKind;
   /** The code, hashed — see `pickTargets`. */
   seed: number;
 }
+
+/** Where a code came from, which is also what it commits the player to. */
+export type MatchKind = "daily" | "room";
 
 /** A match being played, by someone. */
 export interface Match extends MatchCode {
   /** Who's playing, so the standings can name a leader rather than a line. */
   player: string;
+  /** The flat map rather than the globe. */
+  flat: boolean;
+  /** Country outlines drawn on. */
+  borders: boolean;
+  /**
+   * Rooms only: when round one opens, on the shared clock (see `duel.ts`).
+   * Its presence is what turns the rounds over on a timetable rather than on
+   * the player's own "next round" button.
+   */
+  startAt?: number;
 }
 
 /** Rounds in a match. Fixed, so that two players always play the same game. */
@@ -39,14 +60,31 @@ export const MATCH_ROUNDS = 5;
 export const MATCH_ROUND_MS = 30_000;
 
 /**
- * How much of a round the clock can take off you: answer on the buzzer and
- * you keep 60% of what the guess was worth, answer instantly and you keep all
- * of it. Taken off the accuracy rather than added to it, so a match is marked
- * out of the same 100 a round as every other game here — and so a fast wrong
- * answer still loses to a slow right one, which is the point: the question is
- * who knows the map, with the clock deciding the near-run things.
+ * How long the answer stays up between rounds in a room, where nobody presses
+ * "next" — long enough to read the reveal and see where everyone stands, short
+ * enough that four people aren't sitting waiting on it.
  */
-const SPEED_PENALTY = 0.4;
+export const MATCH_REVEAL_MS = 8_000;
+
+/**
+ * The clock costs nothing for the first ten seconds of a round.
+ *
+ * Somebody who knows where Lima is takes a couple of seconds to find it on a
+ * globe they still have to spin, and taking that off them was marking dexterity
+ * rather than geography. Past the grace the discount comes on gradually, so the
+ * clock only separates people who are still thinking about it.
+ */
+export const MATCH_GRACE_MS = 10_000;
+
+/**
+ * How much of a round the clock can take off you once the grace is up: sit on a
+ * round to the buzzer and you keep 70% of what the guess was worth. Taken off
+ * the accuracy rather than added to it, so a match is marked out of the same
+ * 100 a round as every other game here — and so a fast wrong answer still loses
+ * to a slow right one, which is the point: the question is who knows the map,
+ * with the clock deciding the near-run things.
+ */
+const SPEED_PENALTY = 0.3;
 
 /**
  * The alphabet codes are drawn from: no O/0, no I/1/L, nothing else that gets
@@ -54,7 +92,7 @@ const SPEED_PENALTY = 0.4;
  */
 const ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 
-/** How many characters follow the mode letter. */
+/** How many characters follow the two leading letters. */
 const SEED_LENGTH = 5;
 
 /** Every arrangement of those characters — the room a day's code has to land in. */
@@ -97,40 +135,15 @@ const MODE_BY_LETTER = Object.fromEntries(
   Object.entries(MODE_LETTERS).map(([mode, letter]) => [letter, mode as ModeId]),
 ) as Record<string, ModeId>;
 
-/** What the maker chose to play on, which the code has to carry to everyone else. */
-export interface MatchSetup {
-  flat: boolean;
-  borders: boolean;
-}
-
 /**
- * The second letter of a code: which map, and whether it's drawn with borders.
- * Both players have to be looking at the same world for the same five rounds
- * to be the same test, so it travels with the code rather than being each
- * player's own setting.
+ * The second letter: which of the two contests this code is for. It's in the
+ * code rather than worked out from context because a code is the only thing
+ * handed around, and a room code that read as a daily one would send its
+ * players to the wrong table — and to rounds dealt for the whole world.
  */
-const SETUP_LETTERS: [string, MatchSetup][] = [
-  ["A", { flat: false, borders: true }],
-  ["B", { flat: false, borders: false }],
-  ["C", { flat: true, borders: true }],
-  ["D", { flat: true, borders: false }],
-];
+const KIND_LETTERS: Record<MatchKind, string> = { daily: "D", room: "V" };
 
-const letterFor = (setup: MatchSetup) =>
-  SETUP_LETTERS.find(([, s]) => s.flat === setup.flat && s.borders === setup.borders)![0];
-
-const setupFor = (letter: string) => SETUP_LETTERS.find(([l]) => l === letter)?.[1];
-
-/**
- * The setup a mode actually plays under.
- *
- * The tube has its own map, so the world-map choices change nothing a player
- * can see — but the letter still goes into the seed, which would quietly make
- * four tube rounds a day that read identically and deal differently. It pins to
- * one letter so there is one tube game a day, as there looks to be.
- */
-const setupForMode = (mode: ModeId, setup: MatchSetup): MatchSetup =>
-  mode === "tube" ? SETUP_LETTERS[0][1] : setup;
+const KIND_BY_LETTER: Record<string, MatchKind> = { D: "daily", V: "room" };
 
 /** Strips the punctuation people add when writing a code down. */
 const tidy = (input: string) => input.toUpperCase().replace(/[^0-9A-Z]/g, "");
@@ -172,19 +185,19 @@ export function localDay(now: Date = new Date()): number {
 }
 
 /**
- * Today's code for a game, e.g. "FA4KQ7M".
+ * Today's code for a game, e.g. "CD4KQ7M".
  *
  * Worked out rather than drawn: the same game on the same day is the same code
  * on every device in the world, so there is one round a day per game and one
  * table everybody lands on. Nobody has to be sent a code — two people who pick
- * the same game are already playing the same one.
+ * the same game are already playing the same one, whatever map each of them
+ * chose to play it on.
  *
- * That's also what makes one go a day stick. A code used to be replayable by
- * minting another with the same settings; now there isn't another to mint until
- * tomorrow.
+ * That's also what makes one go a day stick. There is no second code to mint
+ * with different settings and play again.
  */
-export function dailyCode(mode: ModeId, setup: MatchSetup, day: number = localDay()): string {
-  const letters = MODE_LETTERS[mode] + letterFor(setupForMode(mode, setup));
+export function dailyCode(mode: ModeId, day: number = localDay()): string {
+  const letters = MODE_LETTERS[mode] + KIND_LETTERS.daily;
   // Which of the day's games this is, taken from the two letters themselves so
   // that it doesn't depend on the order anything happens to be listed in.
   const slot = ALPHABET.indexOf(letters[0]) * ALPHABET.length + ALPHABET.indexOf(letters[1]);
@@ -206,27 +219,46 @@ export function dailyCode(mode: ModeId, setup: MatchSetup, day: number = localDa
 }
 
 /**
+ * A fresh code for a room, drawn rather than worked out.
+ *
+ * This one *is* handed around, and it has to be unguessable in the small: a
+ * room is four friends who all start together, and a stranger who could type
+ * their way into it would be playing in their game. Five characters of a
+ * 31-letter alphabet is 28 million, against the handful of rooms alive at once.
+ */
+export function roomCode(mode: ModeId): string {
+  const bytes = new Uint8Array(SEED_LENGTH);
+  crypto.getRandomValues(bytes);
+  let code = MODE_LETTERS[mode] + KIND_LETTERS.room;
+  // Rejection-free and near enough uniform: 256 isn't a multiple of 31, so the
+  // first few letters come up about 1.03 times as often as the last few. That
+  // matters to a cryptographer and to nobody sitting in a lobby.
+  for (const b of bytes) code += ALPHABET[b % ALPHABET.length];
+  return code;
+}
+
+/**
  * Whether a code is one of today's, which is the set of codes that can still be
  * played. Yesterday's rounds are still readable while their table lasts, but
  * they're over: the point of a daily code is that everyone is on the same one.
  */
 export const isTodaysCode = (code: MatchCode, day: number = localDay()): boolean =>
-  dailyCode(code.mode, code, day) === code.code;
+  code.kind === "daily" && dailyCode(code.mode, day) === code.code;
 
 /** The match a code describes, or null if it isn't one. */
 export function parseMatchCode(input: string): MatchCode | null {
   const code = tidy(input);
   if (code.length !== SEED_LENGTH + 2) return null;
   const mode = MODE_BY_LETTER[code[0]];
-  const setup = setupFor(code[1]);
-  if (!mode || !setup) return null;
+  const kind = KIND_BY_LETTER[code[1]];
+  if (!mode || !kind) return null;
   // Every character has to be one we'd have dealt, or the code is a typo of
   // some other game and would quietly deal a different five rounds.
   for (const c of code.slice(2)) if (!ALPHABET.includes(c)) return null;
-  return { code, mode, ...setup, seed: hash(code) };
+  return { code, mode, kind, seed: hash(code) };
 }
 
-/** Formatted for reading out: "FA4 KQ7M". */
+/** Formatted for reading out: "CD4 KQ7M". */
 export const spellCode = (code: string) => `${code.slice(0, 3)} ${code.slice(3)}`;
 
 /** The modes a match can be played in, as they're named on the menu. */
@@ -239,23 +271,19 @@ export const MATCH_MODES: { id: ModeId; title: string; emoji: string }[] = [
   { id: "tube", title: "Tube Station Spotter", emoji: "🚇" },
 ];
 
-const titleOf = (mode: ModeId) => MATCH_MODES.find((m) => m.id === mode)!.title;
+/** What a game is called, given only its id. */
+export const modeTitle = (mode: ModeId) => MATCH_MODES.find((m) => m.id === mode)!.title;
+
+export const modeEmoji = (mode: ModeId) => MATCH_MODES.find((m) => m.id === mode)!.emoji;
 
 /**
- * What a code commits everyone to, in words. Read on the way in by the player
- * who chose it, on the way out by the players who didn't, and again over the
- * leaderboard — where it says which of the six games these scores were got at,
- * which the numbers alone can't.
+ * What a code commits everyone to, in words — read over a leaderboard, where it
+ * says which of the six games these scores were got at, which the numbers alone
+ * can't. The map isn't in it: everyone on this table played the same questions,
+ * and how each of them chose to draw the world is their own business.
  */
-export function describeCode(code: MatchCode): string {
-  const parts = [titleOf(code.mode), `${MATCH_ROUNDS} rounds`];
-  // The tube has its own map, and the world-map choices say nothing about it.
-  if (code.mode !== "tube") {
-    parts.push(code.flat ? "flat map" : "3D globe");
-    parts.push(code.borders ? "borders on" : "no borders");
-  }
-  return parts.join(" · ");
-}
+export const describeCode = (code: MatchCode): string =>
+  `${modeTitle(code.mode)} · ${MATCH_ROUNDS} rounds`;
 
 /**
  * A round's score once the clock is counted. Both players answer the same
@@ -263,7 +291,8 @@ export function describeCode(code: MatchCode): string {
  * guess was and how long it took.
  */
 export function matchPoints(accuracy: number, elapsedMs: number): number {
-  const spent = Math.min(1, Math.max(0, elapsedMs) / MATCH_ROUND_MS);
+  const over = Math.max(0, elapsedMs - MATCH_GRACE_MS);
+  const spent = Math.min(1, over / (MATCH_ROUND_MS - MATCH_GRACE_MS));
   return Math.round(accuracy * (1 - SPEED_PENALTY * spent));
 }
 
@@ -273,12 +302,17 @@ export interface MatchGameOptions {
   seed: number;
   roundLimitMs: number;
   adjustScore: (score: number, elapsedMs: number) => number;
+  schedule?: RoundSchedule;
 }
 
 /**
  * The rules a match imposes on whichever mode it's played in — a fixed five
  * rounds dealt from the code, a clock on each, and a score that pays for
  * speed. Undefined outside a match, so it spreads into the options harmlessly.
+ *
+ * A room adds the timetable: its rounds turn over together on everyone's screen
+ * whether or not they've answered, which is the whole of what makes it a race
+ * rather than two people playing the same questions apart.
  */
 export function matchOptions(match?: Match): MatchGameOptions | undefined {
   if (!match) return undefined;
@@ -287,6 +321,16 @@ export function matchOptions(match?: Match): MatchGameOptions | undefined {
     seed: match.seed,
     roundLimitMs: MATCH_ROUND_MS,
     adjustScore: matchPoints,
+    schedule:
+      match.startAt === undefined
+        ? undefined
+        : {
+            startAt: match.startAt,
+            roundMs: MATCH_ROUND_MS,
+            revealMs: MATCH_REVEAL_MS,
+            // The room's clock, not this device's: see `serverNow`.
+            now: serverNow,
+          },
   };
 }
 
