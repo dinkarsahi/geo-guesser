@@ -103,7 +103,8 @@
       "Bash(curl -s https://spot0n.vercel.app/__TRACKED_VAR__ -o l4.js)",
       "Bash(npx prettier *)",
       "Bash(grep -vE \"gameOfDay|ModeId|One go a day|Head to head: pick|spent, setSpent|setSpent\\\\\\(|play = async|setSpent\\\\\\(mode|Pick a game and play|Today's table for any|Set when a player|const play|MATCH_MODES.map|h2h-mode|mode-emoji|m.title|checking|One table a game|modeTitle|Leaderboard$|mode=\\\\{spent|locked=\\\\{spent|player=\\\\{named|/>|\\\\\\)\\\\}|<div|</div|<span|<button|</button\")",
-      "Bash(echo \"ESLINT EXIT: $?\")"
+      "Bash(echo \"ESLINT EXIT: $?\")",
+      "Bash(echo \"LINT: $?\")"
     ]
   }
 }

@@ -239,15 +239,35 @@ export function stopsBetween(a: string, b: string): number {
 }
 
 /**
+ * How wide the "you knew where that was" shoulder is, in stops. Six puts the
+ * halfway mark at five stops and near enough nothing at twelve.
+ */
+const STOPS_SCALE = 6;
+
+/**
  * Score a tube guess out of MAX_ROUND_SCORE by stops rather than metres. Two
  * stations a few hundred metres apart can be a long ride from each other, and
  * two a mile apart can be one stop — on a tube map it's the stops you know.
- * The right station is full marks; from there the score halves roughly every
- * three stops, so a near miss still pays and the far side of London doesn't.
+ *
+ * Squared in the exponent, which is the whole shape of it: the curve leaves
+ * full marks slowly and then falls off a cliff, rather than dropping hardest
+ * at the very first stop the way a plain decay does.
+ *
+ * That's what the network is actually like. Two stations picked at random are
+ * fourteen stops apart on average and thirteen at the median; only one pair in
+ * fifty is within two stops, and one in fourteen within four. So landing three
+ * stops out isn't a near miss, it's the top few per cent of the answers
+ * available — and when somebody clicks the station next door, four times in
+ * five that is exactly one stop. Charging twenty-two points for it, as a plain
+ * decay did, was billing a right answer at the rate of a wrong one.
+ *
+ * The far end is unchanged in spirit: by the distance between two stations
+ * picked at random, this is worth a point.
  */
 export function scoreFromStops(stops: number): number {
   if (!Number.isFinite(stops)) return 0;
-  return Math.round(MAX_ROUND_SCORE * Math.exp(-stops / 4));
+  const out = stops / STOPS_SCALE;
+  return Math.round(MAX_ROUND_SCORE * Math.exp(-out * out));
 }
 
 /** "Spot on", "1 stop away", "6 stops away". */
