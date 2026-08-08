@@ -86,6 +86,28 @@
   font-size: 44px;
   line-height: 1;
 }
+/* Two emoji made into one mark: the world, with the swords hung off it. Drawn
+   rather than set side by side, so it reads as a single thing at a glance and
+   doesn't take twice the width of every other icon on the grid. */
+.mode-mark {
+  position: relative;
+  display: inline-block;
+}
+.mode-mark-badge {
+  position: absolute;
+  right: -0.3em;
+  bottom: -0.08em;
+  font-size: 0.6em;
+  line-height: 1;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
+}
+/* Two cards where the menu has seven: given a little more room each, since
+   they're a choice being made rather than a list being scanned, but still held
+   to the middle rather than stretched into a pair of banners. */
+.mode-grid-pair {
+  max-width: 640px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
 
 /* ---- Setup screen (how to play) ------------------------------------- */
 .setup h1 {

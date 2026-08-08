@@ -2,11 +2,12 @@
 
 A geography guessing game. `npm install --legacy-peer-deps`, then `npm run dev`.
 
-## Two ways to play against people
+## Head to Head
 
-They differ in who you're playing, and whether you're playing them now.
+One door on the menu for playing other people, and two games behind it. They
+differ in who you're playing, and whether you're playing them now.
 
-**Head to Head** is you against the world, once a day. Pick one of the six games
+**Today's Round** is you against the world, once a day. Pick one of the six games
 and you play the same five rounds as everyone else who picked it today, on one
 table. Nothing is handed around: the code is worked out from the game and the
 date, so two people who choose City Spotter are already on it. One go each, and

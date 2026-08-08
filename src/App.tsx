@@ -158,6 +158,70 @@ function ModeSetup({
   );
 }
 
+/**
+ * The globe with the swords crossed over it.
+ *
+ * Today's round is a fight, and the other side of it is everybody — which no
+ * single emoji says, so it's said with two: the world first and biggest,
+ * because that's who you're up against, and the swords hung off it to make
+ * clear it isn't a geography lesson.
+ */
+function WorldDuelMark() {
+  return (
+    <span className="mode-emoji mode-mark" aria-hidden="true">
+      🌍
+      <span className="mode-mark-badge">⚔️</span>
+    </span>
+  );
+}
+
+/**
+ * The two ways of playing against other people, behind one door.
+ *
+ * They're one thing on the menu because they answer the same wish — I want to
+ * play somebody — and two things here because the answer forks on who, and on
+ * whether they're free right now.
+ */
+function HeadToHeadMenu({
+  onPick,
+  onBack,
+}: {
+  onPick: (which: "daily" | "room") => void;
+  onBack: () => void;
+}) {
+  return (
+    <div className="menu">
+      <div className="menu-bar">
+        <button className="btn btn-ghost" onClick={onBack}>
+          ← Menu
+        </button>
+      </div>
+      <h1>
+        <span className="mode-emoji">⚔️</span> Head to Head
+      </h1>
+      <p className="muted menu-sub">Play the world, or play someone you know.</p>
+      <div className="mode-grid mode-grid-pair">
+        <button className="mode-card mode-card-social" onClick={() => onPick("daily")}>
+          <WorldDuelMark />
+          <span className="mode-title">Today's Round</span>
+          <span className="muted mode-blurb">
+            Take on everyone playing today: the same five rounds, against the clock, on
+            one table. One go, and it starts again at midnight.
+          </span>
+        </button>
+        <button className="mode-card mode-card-social" onClick={() => onPick("room")}>
+          <span className="mode-emoji">⚔️</span>
+          <span className="mode-title">Duel a Friend</span>
+          <span className="muted mode-blurb">
+            Read out a code and play the same rounds at the same time. One table at the
+            end, and the winner takes it.
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** The mode itself, whichever it is, wired to the props they all share. */
 function PlayMode({ mode, ...props }: ModeProps & { mode: Mode }) {
   if (mode === "city") return <CityLocator {...props} />;
@@ -174,9 +238,9 @@ export default function App() {
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
   // Day (colourful) by default; the toggle switches to the grey night look.
   const [night, setNight] = useState(false);
-  // Which of the two ways of playing against other people is open, if either:
-  // today's round for the world, or a room full of people you know.
-  const [social, setSocial] = useState<"daily" | "room" | null>(null);
+  // Head to head: the door itself, or whichever of the two games behind it is
+  // open — today's round against the world, or a room of people you know.
+  const [social, setSocial] = useState<"hub" | "daily" | "room" | null>(null);
   const [match, setMatch] = useState<Match | null>(null);
 
   const toMenu = () => {
@@ -211,12 +275,20 @@ export default function App() {
       />
     );
 
+  // Back from either game goes to the pair of them rather than all the way out:
+  // a player who opened the wrong one of the two wanted the other one.
+  const toHeadToHead = () => setSocial("hub");
+
   if (social === "daily") {
-    return <HeadToHead onBack={toMenu} onStart={setMatch} />;
+    return <HeadToHead onBack={toHeadToHead} onStart={setMatch} />;
   }
 
   if (social === "room") {
-    return <PlayFriend onBack={toMenu} onStart={setMatch} />;
+    return <PlayFriend onBack={toHeadToHead} onStart={setMatch} />;
+  }
+
+  if (social === "hub") {
+    return <HeadToHeadMenu onPick={setSocial} onBack={toMenu} />;
   }
 
   if (mode && started) {
@@ -249,24 +321,15 @@ export default function App() {
             <span className="muted mode-blurb">{m.blurb}</span>
           </button>
         ))}
-        {/* The two ways of playing against somebody, and they differ in who
-            that somebody is: head to head is you against everyone playing
-            today, whenever you get to it; a duel is you against the people you
-            invited, right now. */}
-        <button className="mode-card mode-card-social" onClick={() => setSocial("daily")}>
-          <span className="mode-emoji">🌍</span>
+        {/* One door for playing other people, rather than two. The six above
+            are games; this is an opponent, and which opponent is a question
+            for the other side of it. */}
+        <button className="mode-card mode-card-social" onClick={() => setSocial("hub")}>
+          <span className="mode-emoji">⚔️</span>
           <span className="mode-title">Head to Head</span>
           <span className="muted mode-blurb">
-            Today's round, against the world: the same five rounds as everyone else
-            playing it. One go, one table per game.
-          </span>
-        </button>
-        <button className="mode-card mode-card-social" onClick={() => setSocial("room")}>
-          <span className="mode-emoji">⚔️</span>
-          <span className="mode-title">Duel a Friend</span>
-          <span className="muted mode-blurb">
-            Read out a code and play the same rounds at the same time. One table at the
-            end, and the winner takes it.
+            Play the world at today's round, or duel a friend on the same rounds at the
+            same time.
           </span>
         </button>
       </div>

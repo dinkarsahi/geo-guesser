@@ -198,7 +198,7 @@ export default function PlayFriend({ onBack, onStart }: PlayFriendProps) {
     <div className="menu setup">
       <div className="menu-bar">
         <button className="btn btn-ghost" onClick={back}>
-          ← {screen === "pick" ? "Menu" : "Back"}
+          ← {screen === "pick" ? "Head to Head" : "Back"}
         </button>
       </div>
       <h1>
@@ -208,7 +208,7 @@ export default function PlayFriend({ onBack, onStart }: PlayFriendProps) {
 
       {!canPlayRooms && (
         <p className="h2h-taken">
-          Duels need the shared leaderboard set up — see the README. Head to Head still
+          Duels need the shared leaderboard set up — see the README. Today's Round still
           works without it.
         </p>
       )}

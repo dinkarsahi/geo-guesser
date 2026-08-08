@@ -101,14 +101,18 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
     <div className="menu setup">
       <div className="menu-bar">
         <button className="btn btn-ghost" onClick={back}>
-          ← {screen === "pick" ? "Menu" : "Back"}
+          ← {screen === "pick" ? "Head to Head" : "Back"}
         </button>
       </div>
       <h1>
-        <span className="mode-emoji">🌍</span> Head to Head
+        <span className="mode-emoji mode-mark" aria-hidden="true">
+          🌍
+          <span className="mode-mark-badge">⚔️</span>
+        </span>{" "}
+        Today's Round
       </h1>
       <p className="muted menu-sub">
-        Today's round, against everyone else in the world playing it. {RULES}
+        You against everyone else in the world playing it. {RULES}
       </p>
 
       {screen === "pick" && (
