@@ -44,8 +44,8 @@ export interface RoomView {
   refresh: () => void;
 }
 
-/** How often the finished screen asks again while it waits for the stragglers. */
-const POLL_MS = 2_500;
+/** How often the table asks again while it's waiting on somebody else's round. */
+const POLL_MS = 2_000;
 
 export function useRoom(match: Match | undefined, results: RoundResult[], phase: Phase): RoomView {
   // A daily game has no room behind it, and nothing below should happen for it.
@@ -92,11 +92,18 @@ export function useRoom(match: Match | undefined, results: RoundResult[], phase:
   const settled =
     board !== null && board.length > 0 && board.every((s) => s.rounds >= MATCH_ROUNDS);
 
-  // At the end everyone is finishing within a few seconds of each other, so the
-  // table is worth asking for again — until it's complete, and then it can't
-  // change.
+  // Kept asking for while the answer is up, and after the last one.
+  //
+  // Filing a round fetches the table straight after it, which is enough for
+  // whoever answers last — everyone else's round is already in by then. It is
+  // no good at all for whoever answers first, whose fetch goes out before the
+  // others have even clicked, leaving them looking at a table that says they're
+  // alone. The reveal is the moment the room is compared, so it's the moment
+  // worth asking again through.
   useEffect(() => {
-    if (!code || phase !== "done" || settled) return;
+    if (!code) return;
+    if (phase === "guessing") return;
+    if (phase === "done" && settled) return;
     const id = setInterval(read, POLL_MS);
     return () => clearInterval(id);
   }, [code, phase, settled, read]);

@@ -249,23 +249,24 @@ export default function App() {
             <span className="muted mode-blurb">{m.blurb}</span>
           </button>
         ))}
-        {/* The two ways of playing against somebody, which are different games
-            rather than one game with a setting: today's round is the world,
-            once, whenever you like; a room is your friends, now. */}
+        {/* The two ways of playing against somebody, and they differ in who
+            that somebody is: head to head is you against everyone playing
+            today, whenever you get to it; a duel is you against the people you
+            invited, right now. */}
         <button className="mode-card mode-card-social" onClick={() => setSocial("daily")}>
           <span className="mode-emoji">🌍</span>
-          <span className="mode-title">Today's Round</span>
+          <span className="mode-title">Head to Head</span>
           <span className="muted mode-blurb">
-            The same five rounds as everyone else today, against the clock. One go, one
-            table per game.
+            Today's round, against the world: the same five rounds as everyone else
+            playing it. One go, one table per game.
           </span>
         </button>
         <button className="mode-card mode-card-social" onClick={() => setSocial("room")}>
           <span className="mode-emoji">⚔️</span>
-          <span className="mode-title">Play a Friend</span>
+          <span className="mode-title">Duel a Friend</span>
           <span className="muted mode-blurb">
-            Make a room, read out the code, and play the same rounds at the same time.
-            Winner takes it.
+            Read out a code and play the same rounds at the same time. One table at the
+            end, and the winner takes it.
           </span>
         </button>
       </div>

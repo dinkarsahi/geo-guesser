@@ -41,21 +41,29 @@ export default function RoomReveal({
         <strong>{seconds}s</strong>
       </p>
       {board && board.length > 1 && (
-        <ol className="room-live">
-          {board.map((s) => (
-            <li
-              key={s.player}
-              className={`room-live-row${s.player.toLowerCase() === mine ? " is-you" : ""}`}
-            >
-              <span className="room-live-name">{s.player}</span>
-              {/* How far through they are, which mid-game is as much of the
-                  story as the score: a blank round is a player who stepped
-                  away, not a player who guessed badly. */}
-              <span className="muted room-live-rounds">{s.rounds}/{roundIndex + 1}</span>
-              <span className="room-live-score">{s.score}</span>
-            </li>
-          ))}
-        </ol>
+        <>
+          {/* Said out loud, because a number on its own here reads as points
+              and isn't: it's the mark the game is decided on, which is an
+              average and therefore moves both ways. */}
+          <p className="muted room-live-cap">Marks so far, out of 100</p>
+          <ol className="room-live">
+            {board.map((s) => (
+              <li
+                key={s.player}
+                className={`room-live-row${s.player.toLowerCase() === mine ? " is-you" : ""}`}
+              >
+                <span className="room-live-name">{s.player}</span>
+                {/* How far through they are, which mid-game is as much of the
+                    story as the score: a blank round is a player who stepped
+                    away, not a player who guessed badly. */}
+                <span className="muted room-live-rounds">
+                  {s.rounds}/{roundIndex + 1}
+                </span>
+                <span className="room-live-score">{s.score}</span>
+              </li>
+            ))}
+          </ol>
+        </>
       )}
     </div>
   );

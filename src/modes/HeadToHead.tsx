@@ -28,8 +28,13 @@ interface HeadToHeadProps {
 }
 
 /**
- * The front of the daily game: pick one of the six, and play the round the
- * whole world is playing today.
+ * Head to head: pick one of the six games and play the round the whole world is
+ * playing today.
+ *
+ * The other half of playing against people is a duel, which is you against the
+ * three people you sent a code to, all at once. This one is you against
+ * everybody, and not at once — the day is the thing everyone shares, so you
+ * play it whenever you get to it and the scores meet on a table.
  *
  * There's no code to be seen here any more. There never was much point in
  * showing one — it's worked out from the game and the date rather than issued,
@@ -100,9 +105,11 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
         </button>
       </div>
       <h1>
-        <span className="mode-emoji">🌍</span> Today's Round
+        <span className="mode-emoji">🌍</span> Head to Head
       </h1>
-      <p className="muted menu-sub">{RULES}</p>
+      <p className="muted menu-sub">
+        Today's round, against everyone else in the world playing it. {RULES}
+      </p>
 
       {screen === "pick" && (
         <>

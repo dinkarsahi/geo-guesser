@@ -44,13 +44,13 @@ interface PlayFriendProps {
 }
 
 /**
- * Rooms: the same five rounds as your friends, at the same moment as them.
+ * A duel: the same five rounds as your friends, at the same moment as them.
  *
- * The daily round needs nothing between the players — the code is worked out
- * from the date and the scores meet on a table afterwards, so two people
- * "playing together" are really playing separately and comparing. That's the
- * right shape for a thing the whole world plays once a day, and the wrong shape
- * for four people in a group chat who want to race.
+ * Head to head needs nothing between the players — the code is worked out from
+ * the date and the scores meet on a table afterwards, so two people "playing
+ * together" are really playing separately and comparing. That's the right shape
+ * for a thing the whole world plays once a day, and the wrong shape for two
+ * people in a group chat who want to race.
  *
  * So this one has a code that's drawn rather than derived, a lobby that fills
  * up, and a moment when it starts. That moment is the only thing that actually
@@ -202,13 +202,13 @@ export default function PlayFriend({ onBack, onStart }: PlayFriendProps) {
         </button>
       </div>
       <h1>
-        <span className="mode-emoji">⚔️</span> Play a Friend
+        <span className="mode-emoji">⚔️</span> Duel a Friend
       </h1>
       <p className="muted menu-sub">{RULES}</p>
 
       {!canPlayRooms && (
         <p className="h2h-taken">
-          Rooms need the shared leaderboard set up — see the README. Today's Round still
+          Duels need the shared leaderboard set up — see the README. Head to Head still
           works without it.
         </p>
       )}

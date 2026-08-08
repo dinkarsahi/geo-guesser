@@ -588,6 +588,14 @@
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
+/* What the column of numbers is, said once so it isn't guessed at. */
+.room-live-cap {
+  margin: 0;
+  font-family: var(--heading);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 /* A tighter standings than the one at the end: this is read in a few seconds,
    over a map, between two questions. */
 .room-live {

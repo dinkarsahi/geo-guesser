@@ -4,16 +4,19 @@ A geography guessing game. `npm install --legacy-peer-deps`, then `npm run dev`.
 
 ## Two ways to play against people
 
-**Today's Round** is the world, once a day. Pick one of the six games and you
-play the same five rounds as everyone else who picked it today, on one table.
-Nothing is handed around: the code is worked out from the game and the date, so
-two people who choose City Spotter are already on it. One go each, and it starts
-again at your midnight.
+They differ in who you're playing, and whether you're playing them now.
 
-**Play a Friend** is a room. The host picks a game, reads out a code, and presses
-go; from that moment everyone answers the same round at the same second, with a
-live table between rounds. When the five rounds are done there's one table saying
-who won, and the code is finished — no standings that go on afterwards.
+**Head to Head** is you against the world, once a day. Pick one of the six games
+and you play the same five rounds as everyone else who picked it today, on one
+table. Nothing is handed around: the code is worked out from the game and the
+date, so two people who choose City Spotter are already on it. One go each, and
+it starts again at your midnight.
+
+**Duel a Friend** is you against the people you invited, right now. The host
+picks a game, reads out a code, and presses go; from that moment everyone answers
+the same round at the same second, with a live table between rounds. When the
+five rounds are done there's one table saying who won, and the code is finished —
+no standings that go on afterwards.
 
 ## One round a day
 
@@ -47,7 +50,7 @@ who want to play, not a contest to defend.
 There is no live connection between the players and nothing to reconnect to. The
 only thing that travels is the moment the first round opens, written into the
 room's row when the host presses go. After that every device works out for itself
-which round should be on screen — round *n* opens 38 seconds after round one, and
+which round should be on screen — the rounds are 40 seconds apart, and
 the rounds themselves come from the code as they always have.
 
 That means a phone that locks for a minute rejoins the room where the room is,
@@ -77,7 +80,7 @@ of who's in, and there's nowhere else for either to live.
    table. Whatever hosts the built site needs those two variables set at build
    time too.
 
-Without them the app still plays and the Leaderboard tab says so; Play a Friend
+Without them the app still plays and the Leaderboard tab says so; Duel a Friend
 says so too, and won't open a room it has nowhere to put.
 
 ### On the host, not just here

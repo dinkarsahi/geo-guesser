@@ -53,10 +53,13 @@ const SCORES = "duel_scores";
 
 /**
  * How long everyone gets between the host pressing start and round one opening.
- * Long enough for the four of them to look up, and for a phone polling every
- * second and a half to hear about it with time to spare.
+ *
+ * Generous on purpose: it's the only moment in the game where every screen has
+ * to catch up with the same fact, and a phone that polls a second and a half
+ * after the button was pressed still wants time to draw the countdown, let its
+ * player look up, and be looking at round one when it opens.
  */
-export const LOBBY_LEAD_MS = 7_000;
+export const LOBBY_LEAD_MS = 15_000;
 
 /** One round and the pause on its answer — the distance between round openings. */
 export const ROUND_PERIOD_MS = MATCH_ROUND_MS + MATCH_REVEAL_MS;
@@ -284,14 +287,20 @@ export async function fetchRoomBoard(code: string): Promise<RoomStanding[]> {
     entry.rounds += 1;
   }
 
-  // The average round, out of 100 — the same mark every other game here gives.
-  // Over all five rounds rather than the ones filed so far, so the table is
-  // read the same way at round two as at the end: a player is at 40 because
-  // they're halfway, and a round sat out costs them rather than averaging
-  // itself away.
+  // The average round *so far*, out of 100 — the same mark every other game
+  // here gives, and by the last round the same mark the player is shown above
+  // this table.
+  //
+  // Over the rounds played rather than all five, because this is read during
+  // the game as much as after it: a player who has just scored 82 wants to see
+  // 82, not the 16 that 82 out of a game they're a fifth of the way through
+  // works out at. Everyone is divided by the same number — the furthest anyone
+  // has got — so the lines stay comparable, and a round nobody filed for
+  // themselves still costs them against the players who did.
+  const played = Math.max(1, ...[...byName.values()].map((s) => s.rounds));
   const standings = [...byName.values()].map((s) => ({
     ...s,
-    score: Math.round(s.score / MATCH_ROUNDS),
+    score: Math.round(s.score / played),
   }));
   return standings.sort((a, b) => b.score - a.score || a.ms - b.ms);
 }

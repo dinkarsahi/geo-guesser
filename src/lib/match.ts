@@ -61,10 +61,10 @@ export const MATCH_ROUND_MS = 30_000;
 
 /**
  * How long the answer stays up between rounds in a room, where nobody presses
- * "next" — long enough to read the reveal and see where everyone stands, short
- * enough that four people aren't sitting waiting on it.
+ * "next" — long enough to read the reveal, and long enough for everyone's score
+ * for the round just played to have reached everyone else's screen.
  */
-export const MATCH_REVEAL_MS = 8_000;
+export const MATCH_REVEAL_MS = 10_000;
 
 /**
  * The clock costs nothing for the first ten seconds of a round.
