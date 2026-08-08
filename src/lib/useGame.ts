@@ -82,6 +82,19 @@ export interface GameOptions<T> {
    */
   hitTest?: (guess: Coord, target: T) => boolean;
   /**
+   * A radius around the answer, in kilometres, that costs nothing — see
+   * `scoreFromDistance`. For targets that are a point in the data and an area
+   * on the ground, which is every city in the pool.
+   *
+   * Not the same thing as a `hitTest`, and deliberately not wired to one: a
+   * click inside a country *is* the country and there's nothing further to
+   * say about where in it you pressed, whereas a click 30 km from a city
+   * centre is worth full marks and is still 30 km from the city centre. So
+   * this pays out the marks without claiming the guess landed on the answer,
+   * and the map goes on showing where it actually landed.
+   */
+  spotOnKm?: number;
+  /**
    * Scores the round on something other than how far the click landed — the
    * tube map counts stops, where metres say little. Also supplies the wording
    * for the miss, since "800 m away" would be the wrong thing to report.
@@ -277,6 +290,7 @@ export function useGame<T>(
   const {
     rounds = 5,
     hitTest,
+    spotOnKm,
     scoreGuess,
     answerFor,
     guessAt,
@@ -334,7 +348,8 @@ export function useGame<T>(
       const hit = hitTest?.(click, target) ?? false;
       const scored = scoreGuess?.(click, target);
       const accuracy =
-        scored?.score ?? (hit ? MAX_ROUND_SCORE : scoreFromDistance(distanceKm, scaleKm));
+        scored?.score ??
+        (hit ? MAX_ROUND_SCORE : scoreFromDistance(distanceKm, scaleKm, spotOnKm));
       setCurrentGuess(guess);
       setResults((r) => [
         ...r,
@@ -359,6 +374,7 @@ export function useGame<T>(
       getCoord,
       scaleKm,
       hitTest,
+      spotOnKm,
       scoreGuess,
       answerFor,
       guessAt,

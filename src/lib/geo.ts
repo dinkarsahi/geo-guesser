@@ -47,9 +47,25 @@ export const finalScore = (total: number, rounds: number): number =>
  * the mode is (large for the world, tiny for the tube map).
  * A perfect click scores the max; the score halves roughly every
  * 0.69 * scaleKm.
+ *
+ * `spotOnKm` is a radius around the answer that costs nothing — anywhere
+ * inside it is full marks. A place with an area rather than a point can say
+ * so with a `hitTest`; this is for the ones that are a point on the map but
+ * not a point on the ground. A city is a coordinate here and forty miles of
+ * streets in life, and marking someone down for landing on the near edge of
+ * it was measuring their aim rather than their geography.
+ *
+ * The decay is measured from the edge of that radius, not from the centre, so
+ * there's no step at the boundary: a click just outside it scores just under
+ * full marks rather than dropping several points for the last metre.
  */
-export function scoreFromDistance(distanceKm: number, scaleKm: number): number {
-  return Math.round(MAX_ROUND_SCORE * Math.exp(-distanceKm / scaleKm));
+export function scoreFromDistance(
+  distanceKm: number,
+  scaleKm: number,
+  spotOnKm = 0,
+): number {
+  const beyond = Math.max(0, distanceKm - spotOnKm);
+  return Math.round(MAX_ROUND_SCORE * Math.exp(-beyond / scaleKm));
 }
 
 /**

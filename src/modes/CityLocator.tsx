@@ -7,6 +7,9 @@ import { matchOptions } from "../lib/match";
 import { useGame } from "../lib/useGame";
 import type { ModeProps } from "./ModeProps";
 
+/** How near a city's point counts as being in the city. */
+const CITY_SPOT_ON_KM = 50;
+
 export default function CityLocator({
   onExit,
   night,
@@ -14,10 +17,18 @@ export default function CityLocator({
   settings,
   match,
 }: ModeProps) {
-  // Cities already carry lat/lng, so the target is its own coordinate. A city is
-  // a point, not an area, so this mode scores purely on how close the click is.
+  // Cities already carry lat/lng, so the target is its own coordinate, and the
+  // round is marked on how close the click landed to it.
+  //
+  // With fifty kilometres of that for nothing. A city is one point in the data
+  // and a sprawl in life — Greater London is fifty across, and its coordinate
+  // is a spot in Westminster somebody had to choose. Docklands is London by any
+  // reading, and marking it down against Westminster was scoring which part of
+  // the city was picked, in a game that asked where the city is. Fifty covers
+  // the sprawl of the largest of them, and on the globe it's under a pixel.
   const game = useGame<City>(cities, (c) => c, 2000, {
     rounds: settings.rounds,
+    spotOnKm: CITY_SPOT_ON_KM,
     ...matchOptions(match),
   });
 

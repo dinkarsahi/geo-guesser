@@ -189,6 +189,9 @@ export default function GameFrame<T>({
   // What the clock took off this round. Always zero outside a match, where
   // there's no clock on a round to take anything.
   const timeCost = lastResult ? lastResult.accuracy - lastResult.score : 0;
+  // The guess was worth everything it could be worth, whether by landing in
+  // the answer's own area or by landing near enough to a point one.
+  const fullMarks = lastResult !== null && lastResult.accuracy >= MAX_ROUND_SCORE;
 
   // A solid bar across the top, and the map gets every pixel below it. The bar
   // holds what you need to see at all times, so nothing has to sit on the map
@@ -261,8 +264,15 @@ export default function GameFrame<T>({
           {/* Full marks and a miss take the same row, so the verdict is always
               the first thing read and always in the same place. Nothing needs
               naming after "Spot on!" — the answer is named in full directly
-              below it, and on a hit that's the place just clicked. */}
-          {lastResult.hit ? (
+              below it, and that's near enough the place just clicked.
+
+              On the mark rather than on the hit, because a click can be worth
+              full marks without landing on the answer: a city has a radius
+              round it, and thirty kilometres from the centre of one is still
+              knowing where it is. Read off the accuracy so that a match, where
+              the clock takes its cut afterwards, still says so — the guess was
+              perfect, and the line below explains what the seconds cost. */}
+          {fullMarks ? (
             <p className="picked-line">
               <span className="result-hit result-verdict">Spot on!</span>
             </p>
