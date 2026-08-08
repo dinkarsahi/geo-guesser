@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { Coord } from "../lib/geo";
 import { finalScore, formatDistance, MAX_ROUND_SCORE } from "../lib/geo";
 import type { Match } from "../lib/match";
-import { MATCH_ROUND_MS } from "../lib/match";
+import { MATCH_GRACE_MS, MATCH_ROUND_MS } from "../lib/match";
 import type { Game, Phase } from "../lib/useGame";
 import { useRoom } from "../lib/useRoom";
 import MatchResult from "./MatchResult";
@@ -186,6 +186,9 @@ export default function GameFrame<T>({
     isResult && lastResult && !lastResult.hit && lastResult.click
       ? pickedLabel?.(lastResult.click)
       : null;
+  // What the clock took off this round. Always zero outside a match, where
+  // there's no clock on a round to take anything.
+  const timeCost = lastResult ? lastResult.accuracy - lastResult.score : 0;
 
   // A solid bar across the top, and the map gets every pixel below it. The bar
   // holds what you need to see at all times, so nothing has to sit on the map
@@ -287,6 +290,24 @@ export default function GameFrame<T>({
               +{lastResult.score.toLocaleString()} pts
             </span>
           </div>
+          {/* Where the clock took some of it, the sum is shown rather than the
+              answer alone. A player who pointed straight at the place and was
+              handed 70 has been marked on two things and told about one of
+              them, and reads it as a worse guess than they made. */}
+          {timeCost > 0 && (
+            <p className="result-timecost">
+              <span className="result-timecost-sum">
+                {lastResult.accuracy.toLocaleString()} for the guess
+                {" − "}
+                {timeCost.toLocaleString()} for the clock
+              </span>
+              <span className="muted result-timecost-note">
+                Every round is free for its first{" "}
+                {Math.round(MATCH_GRACE_MS / 1000)} seconds, then costs you
+                slowly.
+              </span>
+            </p>
+          )}
           {/* In a room there is nothing to press: the round turns over for
               everybody at once, so what goes here is who it's still waiting on
               and what the question just answered was worth to each of them. */}

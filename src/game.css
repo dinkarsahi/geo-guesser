@@ -1354,6 +1354,30 @@ body:has(.game-play) {
   font-weight: 700;
   color: var(--accent);
 }
+/* The sum behind the mark, where the clock changed it. Under the headline and
+   smaller than it: it explains the number rather than competing with it. */
+.result-timecost {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  margin: 0;
+  text-align: center;
+}
+.result-timecost-sum {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.result-timecost-note {
+  font-size: 11px;
+}
+.result-panel.hud .result-timecost-sum {
+  color: #e5e7eb;
+}
+.result-panel.hud .result-timecost-note {
+  color: #9ca3af;
+}
 /* Full marks: the click landed inside the target's own area. */
 .result-hit {
   font-weight: 700;

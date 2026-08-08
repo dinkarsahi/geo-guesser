@@ -15,6 +15,17 @@ export interface RoundResult {
   click: Coord | null;
   answer: Coord;
   distanceKm: number;
+  /**
+   * What the guess itself was worth, before the clock was counted — the mark
+   * for pointing at the right bit of the world and nothing else.
+   *
+   * Kept beside the score rather than folded into it because the difference is
+   * the thing worth saying: a player who found the place and then sat on it
+   * needs to see that the round cost them thirty of the hundred, or the mark
+   * reads as a worse guess than they made.
+   */
+  accuracy: number;
+  /** The mark the round actually counts for: the accuracy, once timed. */
   score: number;
   /** The guess landed inside the target's own area (country, station…). */
   hit: boolean;
@@ -332,6 +343,7 @@ export function useGame<T>(
           click,
           answer,
           distanceKm,
+          accuracy,
           score: adjustScore?.(accuracy, elapsedMs) ?? accuracy,
           hit,
           label: scored?.label,
@@ -361,6 +373,7 @@ export function useGame<T>(
       click: null,
       answer: getCoord(t),
       distanceKm: 0,
+      accuracy: 0,
       score: 0,
       hit: false,
       label: "Out of time",

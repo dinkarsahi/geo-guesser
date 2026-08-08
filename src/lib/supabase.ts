@@ -40,6 +40,13 @@ export const UNIQUE_VIOLATION = "23505";
 let skewMs = 0;
 
 /**
+ * Half a second, which is what an HTTP `Date` header loses to its own
+ * granularity: it names a whole second, and the moment it stands for is
+ * somewhere in the second that follows.
+ */
+const HEADER_ROUNDING_MS = 500;
+
+/**
  * The clock a room runs on: this device's, corrected onto the server's.
  *
  * Only as good as the last response — a second's granularity in the header and
@@ -72,6 +79,7 @@ export class RemoteError extends Error {
 export async function rest<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!hasRemote) throw new Error("No leaderboard configured");
 
+  const sentAt = Date.now();
   const res = await fetch(`${BASE}/rest/v1/${path}`, {
     ...init,
     headers: {
@@ -84,8 +92,18 @@ export async function rest<T>(path: string, init: RequestInit = {}): Promise<T> 
 
   // Taken from every reply, refused or not: a room that can't start is a worse
   // failure than a clock that's a little out, and both want the same header.
+  //
+  // Two corrections, because the raw header is wrong in the same direction
+  // every time and a clock that's reliably slow is worse than one that's
+  // merely imprecise — it makes every ten-second pause read as eleven. The
+  // header is written when the reply is sent, so half the round trip has to be
+  // added back; and it's rounded down to the whole second, so on average it
+  // names a moment half a second before the one it stands for.
   const stamp = Date.parse(res.headers.get("date") ?? "");
-  if (!Number.isNaN(stamp)) skewMs = stamp - Date.now();
+  if (!Number.isNaN(stamp)) {
+    const arrivedAt = Date.now();
+    skewMs = stamp + HEADER_ROUNDING_MS + (arrivedAt - sentAt) / 2 - arrivedAt;
+  }
 
   if (!res.ok) {
     // PostgREST reports its failures as JSON, but a proxy in front of it may

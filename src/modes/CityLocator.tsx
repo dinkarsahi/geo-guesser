@@ -3,24 +3,9 @@ import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
 import WorldMap from "../components/WorldMap";
 import { cities, type City } from "../data/cities";
-import { haversineKm, type Coord } from "../lib/geo";
 import { matchOptions } from "../lib/match";
 import { useGame } from "../lib/useGame";
 import type { ModeProps } from "./ModeProps";
-
-/** The city on the map nearest a click. */
-function cityNear(c: Coord): City {
-  let best = cities[0];
-  let bestKm = Infinity;
-  for (const city of cities) {
-    const km = haversineKm(c, city);
-    if (km < bestKm) {
-      bestKm = km;
-      best = city;
-    }
-  }
-  return best;
-}
 
 export default function CityLocator({
   onExit,
@@ -54,12 +39,13 @@ export default function CityLocator({
           </span>
         </div>
       )}
-      // A click almost never lands on a city, so the nearest one on the map
-      // stands in for what was picked.
-      pickedLabel={(click) => {
-        const city = cityNear(click);
-        return { name: `${city.name} in ${city.country}` };
-      }}
+      // No "you picked" line here, unlike the modes that ask for a country or a
+      // station. Those are answered by choosing a thing off a list, and naming
+      // the wrong thing you chose is the other half of the answer. A city is a
+      // point on a map: a click near Lima isn't a vote for some other city, so
+      // the nearest one to it was a place you'd never heard of, dug up and
+      // announced as your answer. The pin and the line to the real city already
+      // say everything true about where you clicked.
       answerLabel={(city) => `${city.name}, ${city.country}`}
       renderResultExtra={(city) => (
         <FactCard title={`${city.name}, ${city.country}`} fact={city.fact} />
