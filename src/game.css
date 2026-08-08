@@ -86,20 +86,25 @@
   font-size: 44px;
   line-height: 1;
 }
-/* Two emoji made into one mark: the world, with the swords hung off it. Drawn
-   rather than set side by side, so it reads as a single thing at a glance and
-   doesn't take twice the width of every other icon on the grid. */
+/* Two emoji made into one mark: the world, with the swords crossed over the
+   whole of it. Drawn rather than set side by side, so it reads as a single
+   thing at a glance and doesn't take twice the width of every other icon.
+   The swords sit in front and run past the edges of the globe — the fight is
+   with the world, not somewhere on it. */
 .mode-mark {
   position: relative;
   display: inline-block;
 }
 .mode-mark-badge {
   position: absolute;
-  right: -0.3em;
-  bottom: -0.08em;
-  font-size: 0.6em;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  /* Wider than the globe it covers, so the blades overhang both sides. */
+  font-size: 1.15em;
   line-height: 1;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
+  /* Lifts the blades off a globe of much the same brightness. */
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.85));
 }
 /* Two cards where the menu has seven: given a little more room each, since
    they're a choice being made rather than a list being scanned, but still held
@@ -283,11 +288,24 @@
   opacity: 0.5;
   cursor: default;
 }
-/* Which table is on screen, on the leaderboard where these six are a filter
-   rather than six ways to start a game. */
+/* Today's game, and the five it isn't. The six are shown rather than just the
+   one because "today is the tube" reads as an announcement next to the games it
+   isn't, and as an arbitrary fact on its own. */
 .h2h-mode.is-active {
   border-color: var(--accent);
   background: var(--accent-bg);
+  font-weight: 600;
+  color: var(--text-h);
+}
+.h2h-mode.is-off {
+  opacity: 0.34;
+  border-style: dashed;
+}
+/* Not buttons on that screen — nothing here is a choice, so nothing should
+   look like it's waiting to be pressed. */
+.h2h-mode.is-off,
+.h2h-mode.is-active {
+  cursor: default;
 }
 .h2h-mode .mode-emoji {
   font-size: 24px;
@@ -333,6 +351,12 @@
   font-size: 15px;
   font-weight: 700;
   color: var(--text-h);
+}
+/* The game's own icon, over its table. Set to the line rather than to the
+   grid's 44px, where it would dwarf the words beside it. */
+.h2h-setup-emoji {
+  font-size: 20px;
+  vertical-align: -2px;
 }
 .h2h-code-input {
   font-family: var(--heading);

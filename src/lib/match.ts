@@ -271,6 +271,54 @@ export const MATCH_MODES: { id: ModeId; title: string; emoji: string }[] = [
   { id: "tube", title: "Tube Station Spotter", emoji: "🚇" },
 ];
 
+/**
+ * The order the six games come round in, for a block of six days.
+ *
+ * A shuffle rather than a fixed rota, so the week doesn't become "Tuesday is
+ * flags" — but a shuffle of all six at once, so every game gets exactly one day
+ * in every six however the block falls. Drawn from the hash rather than a
+ * generator, since all this needs is the same answer on every device forever.
+ */
+function dayOrder(block: number): ModeId[] {
+  const order = MATCH_MODES.map((m) => m.id);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = hash(`${block}:${i}`) % (i + 1);
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
+}
+
+/**
+ * Which game today is.
+ *
+ * Nobody picks any more: the day does, and it's the same day's game for
+ * everyone. That's what makes a single table worth looking at — six games each
+ * with a table of the handful of people who chose it is six lonely tables, and
+ * one game everybody is on today is a leaderboard.
+ *
+ * Evenly spread by construction. Every run of six days is a permutation of the
+ * six, so no game can go a fortnight unplayed or turn up twice in a week, which
+ * is what an unconstrained draw would do often enough to look broken.
+ */
+export function gameOfDay(day: number = localDay()): ModeId {
+  const size = MATCH_MODES.length;
+  const block = Math.floor(day / size);
+  const index = mod(day, size);
+  const order = dayOrder(block);
+  // Two blocks can meet on the same game — the last of one and the first of the
+  // next — which is the one way an even spread still reads as a repeat. Swapped
+  // rather than redrawn, so the block stays a permutation of all six.
+  //
+  // Decided for the block, not for the day being asked about: a swap applied
+  // only on the first of the six would leave the second day still handing back
+  // the game that was moved onto it, which is a fortnight with one game twice
+  // and another missing.
+  if (order[0] === dayOrder(block - 1)[size - 1]) {
+    [order[0], order[1]] = [order[1], order[0]];
+  }
+  return order[index];
+}
+
 /** What a game is called, given only its id. */
 export const modeTitle = (mode: ModeId) => MATCH_MODES.find((m) => m.id === mode)!.title;
 

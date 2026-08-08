@@ -100,7 +100,9 @@
       "PowerShell(npx tsc -b --pretty false 2>&1 | Select-Object -First 20; npx eslint src/lib/match.ts src/lib/leaderboard.ts src/lib/matchHistory.ts src/modes/HeadToHead.tsx src/components/MatchResult.tsx 2>&1 | Select-Object -First 20)",
       "Bash(curl -s -o /dev/null -w \"\" http://localhost:5233/)",
       "Bash(curl -s https://spot0n.vercel.app/ -o l4.html)",
-      "Bash(curl -s https://spot0n.vercel.app/__TRACKED_VAR__ -o l4.js)"
+      "Bash(curl -s https://spot0n.vercel.app/__TRACKED_VAR__ -o l4.js)",
+      "Bash(npx prettier *)",
+      "Bash(grep -vE \"gameOfDay|ModeId|One go a day|Head to head: pick|spent, setSpent|setSpent\\\\\\(|play = async|setSpent\\\\\\(mode|Pick a game and play|Today's table for any|Set when a player|const play|MATCH_MODES.map|h2h-mode|mode-emoji|m.title|checking|One table a game|modeTitle|Leaderboard$|mode=\\\\{spent|locked=\\\\{spent|player=\\\\{named|/>|\\\\\\)\\\\}|<div|</div|<span|<button|</button\")"
     ]
   }
 }

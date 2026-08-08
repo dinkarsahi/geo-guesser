@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Match } from "./lib/match";
+import { gameOfDay, modeTitle, type Match } from "./lib/match";
 import CityLocator from "./modes/CityLocator";
 import CompanyGuesser from "./modes/CompanyGuesser";
 import CurrencyGuesser from "./modes/CurrencyGuesser";
@@ -205,12 +205,12 @@ function HeadToHeadMenu({
           <WorldDuelMark />
           <span className="mode-title">Today's Round</span>
           <span className="muted mode-blurb">
-            Take on everyone playing today: the same five rounds, against the clock, on
-            one table. One go, and it starts again at midnight.
+            Take on everyone playing today. The day picks the game — it's{" "}
+            {modeTitle(gameOfDay())} — and everyone gets the same five rounds, once.
           </span>
         </button>
         <button className="mode-card mode-card-social" onClick={() => onPick("room")}>
-          <span className="mode-emoji">⚔️</span>
+          <span className="mode-emoji">🥊</span>
           <span className="mode-title">Duel a Friend</span>
           <span className="muted mode-blurb">
             Read out a code and play the same rounds at the same time. One table at the

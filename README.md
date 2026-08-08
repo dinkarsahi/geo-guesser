@@ -7,11 +7,22 @@ A geography guessing game. `npm install --legacy-peer-deps`, then `npm run dev`.
 One door on the menu for playing other people, and two games behind it. They
 differ in who you're playing, and whether you're playing them now.
 
-**Today's Round** is you against the world, once a day. Pick one of the six games
-and you play the same five rounds as everyone else who picked it today, on one
-table. Nothing is handed around: the code is worked out from the game and the
-date, so two people who choose City Spotter are already on it. One go each, and
-it starts again at your midnight.
+**Today's Round** is you against the world, once a day. The day names the game —
+today might be City Spotter, tomorrow the tube — and everyone who plays it gets
+the same five rounds, on one table. Nothing is handed around: the code is worked
+out from the game and the date, so anyone who opens it is already on it. One go
+each, and it starts again at your midnight.
+
+The game isn't the player's to choose, and that's the point. Six games each with
+a table of the few people who happened to pick that one is six lonely tables; one
+game everybody is on is a leaderboard. The rota is a shuffle of all six per block
+of six days, so every game gets exactly one day in every six and none can turn up
+twice in a week or go a fortnight unplayed — `gameOfDay` in `src/lib/match.ts`.
+The setup screen shows all six with the other five greyed, so you know what
+you're walking into and what the rest of the week looks like.
+
+What is still yours is how the world is drawn: globe or flat map, borders or
+none, on the games where that means anything.
 
 **Duel a Friend** is you against the people you invited, right now. The host
 picks a game, reads out a code, and presses go; from that moment everyone answers
@@ -38,7 +49,8 @@ seed the rounds are dealt from is a hash of the finished code.
 The map settings used to go into the code too, which quietly cut each game into
 four tables and put the player who likes the flat map in a different contest from
 the player who likes the globe. They're a matter of taste rather than of
-difficulty, so they're each player's own now: six games, six tables a day.
+difficulty, so they're each player's own now — and with the day naming the game
+as well, that leaves exactly one table a day.
 
 Because a code is derived rather than issued, it's also the thing that makes one
 go a day stick: there is no second code to mint and play again. And because the

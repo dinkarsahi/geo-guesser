@@ -202,7 +202,7 @@ export default function PlayFriend({ onBack, onStart }: PlayFriendProps) {
         </button>
       </div>
       <h1>
-        <span className="mode-emoji">⚔️</span> Duel a Friend
+        <span className="mode-emoji">🥊</span> Duel a Friend
       </h1>
       <p className="muted menu-sub">{RULES}</p>
 

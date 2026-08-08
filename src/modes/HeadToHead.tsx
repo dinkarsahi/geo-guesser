@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   cleanName,
   dailyCode,
+  gameOfDay,
   parseMatchCode,
   MATCH_GRACE_MS,
   MATCH_MODES,
@@ -13,13 +14,12 @@ import {
 import { checkEntry } from "../lib/leaderboard";
 import { loadName, saveName } from "../lib/playerName";
 import Leaderboard from "../components/Leaderboard";
-import type { ModeId } from "./ModeProps";
 
 const RULES = `${MATCH_ROUNDS} rounds, ${Math.round(
   MATCH_ROUND_MS / 1000,
 )} seconds each, marked out of 100 a round as usual and averaged into one mark out of 100. The first ${Math.round(
   MATCH_GRACE_MS / 1000,
-)} seconds of a round are free — after that, sitting on it costs you up to 30% of what it was worth. One go a day at each game, for everyone, everywhere.`;
+)} seconds of a round are free — after that, sitting on it costs you up to 30% of what it was worth. One game a day and one go at it, for everyone, everywhere.`;
 
 interface HeadToHeadProps {
   onBack: () => void;
@@ -28,13 +28,19 @@ interface HeadToHeadProps {
 }
 
 /**
- * Head to head: pick one of the six games and play the round the whole world is
- * playing today.
+ * Today's round: the one game the whole world is playing today.
  *
  * The other half of playing against people is a duel, which is you against the
  * three people you sent a code to, all at once. This one is you against
  * everybody, and not at once — the day is the thing everyone shares, so you
  * play it whenever you get to it and the scores meet on a table.
+ *
+ * Which game it is isn't the player's to choose either. Six games each with a
+ * table of the few people who happened to pick that one is six lonely tables;
+ * one game everybody is on is a leaderboard. So the day names the game, the
+ * same game for everyone, and the six are shown with the other five greyed —
+ * partly so you know what you're walking into, partly because a game you can't
+ * play today is still a game you can play this week.
  *
  * There's no code to be seen here any more. There never was much point in
  * showing one — it's worked out from the game and the date rather than issued,
@@ -54,9 +60,11 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
   // How this player likes the world drawn. Theirs alone now — everyone playing
   // today's City Spotter is on one table whichever of these they chose.
   const [setup, setSetup] = useState({ flat: false, borders: true });
-  // Set when a player is sent to the standings because they've had their go,
+  // Whether the player was sent to the standings because they've had their go,
   // rather than having asked to see them.
-  const [spent, setSpent] = useState<ModeId | null>(null);
+  const [spent, setSpent] = useState(false);
+  // The game the day landed on, which is nobody's choice and everybody's.
+  const today = gameOfDay();
   // Set when the name is somebody else's today. Sends the player back to the
   // name field, which is the only thing standing between them and a game.
   const [taken, setTaken] = useState<string | null>(null);
@@ -67,8 +75,8 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
    * everyone's standings — unless this device has already had its go, or the
    * name is spoken for by one of the strangers sharing the table.
    */
-  const play = async (mode: ModeId) => {
-    const code = parseMatchCode(dailyCode(mode));
+  const play = async () => {
+    const code = parseMatchCode(dailyCode(today));
     if (!code) return;
     const player = name.trim();
     saveName(player);
@@ -77,7 +85,7 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
     const entry = await checkEntry(code.code, player);
     setChecking(false);
     if (entry === "played") {
-      setSpent(mode);
+      setSpent(true);
       setScreen("board");
       return;
     }
@@ -94,7 +102,7 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
   const back = () => {
     if (screen === "pick") return onBack();
     setScreen("pick");
-    setSpent(null);
+    setSpent(false);
   };
 
   return (
@@ -151,7 +159,7 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
             >
               <span className="h2h-choice-title">Play today's round</span>
               <span className="muted h2h-choice-hint">
-                Pick a game and play the same rounds as everyone else today.
+                {modeTitle(today)} — the same five rounds as everyone else today.
               </span>
             </button>
             {/* Open to anyone, name or not: reading a table is not playing, and
@@ -159,7 +167,7 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
             <button className="h2h-choice" onClick={() => setScreen("board")}>
               <span className="h2h-choice-title">Leaderboard</span>
               <span className="muted h2h-choice-hint">
-                Today's table for any of the six games.
+                Everyone who has finished today's round.
               </span>
             </button>
           </div>
@@ -171,83 +179,100 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
 
       {screen === "games" && (
         <div className="setup-panel">
-          {/* Yours, not the table's. Kept here rather than buried because the
-              globe and the flat map are genuinely different games to look at,
-              and the choice no longer costs anyone their place in the ranking. */}
+          {/* What today is, and what it isn't. The five that aren't on are
+              greyed rather than hidden, because "today is the tube" means more
+              next to the five games it isn't — and because they're what the
+              rest of the week looks like. */}
           <div className="setup-row">
-            <span className="setup-label">Map</span>
-            <div className="setup-options">
-              <button
-                className={`setup-option${!setup.flat ? " is-active" : ""}`}
-                onClick={() => setSetup((s) => ({ ...s, flat: false }))}
-                aria-pressed={!setup.flat}
-              >
-                <span className="setup-option-title">3D globe</span>
-                <span className="muted setup-option-hint">Spin and zoom a real globe</span>
-              </button>
-              <button
-                className={`setup-option${setup.flat ? " is-active" : ""}`}
-                onClick={() => setSetup((s) => ({ ...s, flat: true }))}
-                aria-pressed={setup.flat}
-              >
-                <span className="setup-option-title">Flat map</span>
-                <span className="muted setup-option-hint">The whole world at once</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="setup-row">
-            <span className="setup-label">Borders</span>
-            <div className="setup-options">
-              <button
-                className={`setup-option${setup.borders ? " is-active" : ""}`}
-                onClick={() => setSetup((s) => ({ ...s, borders: true }))}
-                aria-pressed={setup.borders}
-              >
-                <span className="setup-option-title">Show borders</span>
-                <span className="muted setup-option-hint">Country outlines drawn on</span>
-              </button>
-              <button
-                className={`setup-option${!setup.borders ? " is-active" : ""}`}
-                onClick={() => setSetup((s) => ({ ...s, borders: false }))}
-                aria-pressed={!setup.borders}
-              >
-                <span className="setup-option-title">Hide borders</span>
-                <span className="muted setup-option-hint">Coastlines only — harder</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="setup-row">
-            <span className="setup-label">Game</span>
+            <span className="setup-label">Today's game</span>
             <div className="h2h-modes">
               {MATCH_MODES.map((m) => (
-                <button
+                <div
                   key={m.id}
-                  className="h2h-mode"
-                  disabled={checking}
-                  onClick={() => play(m.id)}
+                  className={`h2h-mode${m.id === today ? " is-active" : " is-off"}`}
                 >
                   <span className="mode-emoji">{m.emoji}</span>
-                  <span>{checking ? "Checking…" : m.title}</span>
-                </button>
+                  <span>{m.title}</span>
+                </div>
               ))}
             </div>
           </div>
+
+          {/* Yours, not the table's. Kept here rather than buried because the
+              globe and the flat map are genuinely different games to look at,
+              and the choice no longer costs anyone their place in the ranking.
+              Gone entirely when today's game has its own map to draw. */}
+          {today !== "tube" && (
+            <>
+              <div className="setup-row">
+                <span className="setup-label">Map</span>
+                <div className="setup-options">
+                  <button
+                    className={`setup-option${!setup.flat ? " is-active" : ""}`}
+                    onClick={() => setSetup((s) => ({ ...s, flat: false }))}
+                    aria-pressed={!setup.flat}
+                  >
+                    <span className="setup-option-title">3D globe</span>
+                    <span className="muted setup-option-hint">
+                      Spin and zoom a real globe
+                    </span>
+                  </button>
+                  <button
+                    className={`setup-option${setup.flat ? " is-active" : ""}`}
+                    onClick={() => setSetup((s) => ({ ...s, flat: true }))}
+                    aria-pressed={setup.flat}
+                  >
+                    <span className="setup-option-title">Flat map</span>
+                    <span className="muted setup-option-hint">
+                      The whole world at once
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="setup-row">
+                <span className="setup-label">Borders</span>
+                <div className="setup-options">
+                  <button
+                    className={`setup-option${setup.borders ? " is-active" : ""}`}
+                    onClick={() => setSetup((s) => ({ ...s, borders: true }))}
+                    aria-pressed={setup.borders}
+                  >
+                    <span className="setup-option-title">Show borders</span>
+                    <span className="muted setup-option-hint">
+                      Country outlines drawn on
+                    </span>
+                  </button>
+                  <button
+                    className={`setup-option${!setup.borders ? " is-active" : ""}`}
+                    onClick={() => setSetup((s) => ({ ...s, borders: false }))}
+                    aria-pressed={!setup.borders}
+                  >
+                    <span className="setup-option-title">Hide borders</span>
+                    <span className="muted setup-option-hint">
+                      Coastlines only — harder
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="button-row setup-start">
+            <button className="btn btn-primary" disabled={checking} onClick={play}>
+              {checking ? "Checking…" : "Start ▸"}
+            </button>
+          </div>
           <p className="muted h2h-code-hint">
-            One table a game a day. Everyone who plays {modeTitle("city")} today gets the
-            same five rounds in the same order, and they all land here. It starts again at
-            your midnight.
+            Everyone playing {modeTitle(today)} today gets the same five rounds in the
+            same order, and they all land on one table. Tomorrow it's one of the others,
+            and this one starts again at your midnight.
           </p>
         </div>
       )}
 
       {screen === "board" && (
-        <Leaderboard
-          mode={spent ?? undefined}
-          player={named ? name.trim() : undefined}
-          locked={spent !== null}
-        />
+        <Leaderboard player={named ? name.trim() : undefined} locked={spent} />
       )}
     </div>
   );
