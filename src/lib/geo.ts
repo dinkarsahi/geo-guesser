@@ -43,10 +43,8 @@ export const finalScore = (total: number, rounds: number): number =>
 
 /**
  * Convert a guess distance into a 0..MAX_ROUND_SCORE score.
- * Score decays exponentially with distance; `scaleKm` sets how forgiving
- * the mode is (large for the world, tiny for the tube map).
- * A perfect click scores the max; the score halves roughly every
- * 0.69 * scaleKm.
+ * `scaleKm` sets how forgiving the mode is (large for the world, tiny for the
+ * tube map): it's the distance at which a guess is worth 37 of the 100.
  *
  * `spotOnKm` is a radius around the answer that costs nothing — anywhere
  * inside it is full marks. A place with an area rather than a point can say
@@ -58,14 +56,27 @@ export const finalScore = (total: number, rounds: number): number =>
  * The decay is measured from the edge of that radius, not from the centre, so
  * there's no step at the boundary: a click just outside it scores just under
  * full marks rather than dropping several points for the last metre.
+ *
+ * Squared in the exponent, which is the whole shape of it — the same curve the
+ * tube map is marked on, and for the same reason. A plain decay falls hardest
+ * at the very first kilometre, so the player who put Lima two countries over
+ * and the player who put it in Kazakhstan were being separated by a curve that
+ * had already spent most of its fall on the first of them. This one leaves
+ * full marks slowly and then drops away: at a fifth of the scale it's still 96
+ * and at half of it 78, while twice the scale is worth 2 rather than 14.
+ *
+ * Which is what the world is actually like. Land is not spread evenly around
+ * the answer — there are far more wrong places a long way off than near by, so
+ * landing within a few hundred kilometres of somewhere isn't a near miss, it's
+ * the top slice of the answers available, and it should be paid like one.
  */
 export function scoreFromDistance(
   distanceKm: number,
   scaleKm: number,
   spotOnKm = 0,
 ): number {
-  const beyond = Math.max(0, distanceKm - spotOnKm);
-  return Math.round(MAX_ROUND_SCORE * Math.exp(-beyond / scaleKm));
+  const beyond = Math.max(0, distanceKm - spotOnKm) / scaleKm;
+  return Math.round(MAX_ROUND_SCORE * Math.exp(-beyond * beyond));
 }
 
 /**

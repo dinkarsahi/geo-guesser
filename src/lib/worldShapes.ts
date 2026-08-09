@@ -318,6 +318,29 @@ export function countryNameAt(shapes: WorldShapes | null, c: Coord): string | nu
   return feature ? nameOf(feature) || null : null;
 }
 
+/**
+ * The country a missed guess landed in, for painting red on the reveal beside
+ * the green answer — because "the answer was Peru" is half a lesson next to
+ * "and this is where you pressed", and on a world map a pin can be hard to
+ * place in a country by eye even once you're looking straight at it.
+ *
+ * Null whenever there's nothing to paint: mid-round, on a guess that found the
+ * right country, or on a round the clock took with nothing clicked.
+ *
+ * Taken from the raw click rather than from the marker, which modes that ask
+ * for a country move to that country's anchor — and a handful of those sit out
+ * at sea or inside a neighbour, which would paint the wrong country or none.
+ */
+export function missedCountryCode(
+  shapes: WorldShapes | null,
+  result: { hit: boolean; click: Coord | null } | null,
+  revealed: boolean,
+): string | null {
+  if (!revealed || !result || result.hit || !result.click) return null;
+  const feature = countryAt(shapes, result.click);
+  return feature ? codeOf(feature) || null : null;
+}
+
 /** The country polygons once they've downloaded; null until then. */
 export function useWorldShapes(): WorldShapes | null {
   const [shapes, setShapes] = useState<WorldShapes | null>(null);

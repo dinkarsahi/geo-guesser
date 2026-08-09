@@ -43,6 +43,14 @@ interface GameFrameProps<T> {
   /** What to click, for modes where it isn't just anywhere on the map. */
   hint?: string;
   /**
+   * What the middle column of the results table is measuring, in words. It is
+   * a distance in most modes, a count of stops on the tube map and a gap on
+   * the clock in the time zone game, and heading all three "Your guess" said
+   * the least true thing about each of them — the column doesn't hold the
+   * guess, it holds how far the guess was from being right.
+   */
+  measureLabel?: string;
+  /**
    * What a round asks you to find, in one word: a city, a station. Only wanted
    * by modes that pay full marks within a radius, where the verdict has to say
    * what you were close enough to.
@@ -79,6 +87,7 @@ export default function GameFrame<T>({
   pickedLabel,
   answerLabel,
   hint = "Click the map to place your guess.",
+  measureLabel = "Distance to destination",
   targetNoun = "place",
   match,
 }: GameFrameProps<T>) {
@@ -142,27 +151,38 @@ export default function GameFrame<T>({
           {/* Named columns, because the middle one is a distance in one mode, a
               count of stops in another and "out of time" in any of them, and a
               bare figure alongside a bare score invites the two to be read as
-              the same kind of thing. */}
-          <div className="summary-head" aria-hidden="true">
-            <span>Round</span>
-            <span>Answer</span>
-            <span>Your guess</span>
-            <span className="summary-head-score">Score</span>
-          </div>
-          <ol className="summary-list" start={hidden + 1}>
-            {shown.map((r, i) => (
-              <li key={hidden + i}>
-                <span>Round {hidden + i + 1}</span>
-                <span className="summary-answer">
-                  {answerLabel?.(targets[hidden + i]) ?? "—"}
-                </span>
-                <span className="muted">
-                  {r.hit ? "spot on" : r.label ?? formatDistance(r.distanceKm)}
-                </span>
-                <span className="round-score">{r.score.toLocaleString()}</span>
-              </li>
-            ))}
-          </ol>
+              the same kind of thing.
+
+              A real table rather than a header laid over a list: the two were
+              separate grids sized to their own contents, so "Answer" sat over
+              a round number and every heading was a column out. A table shares
+              its columns between the head and the body by construction, which
+              is the only way this stays lined up once a mode puts a long word
+              in it. */}
+          <table className="summary-table">
+            <thead>
+              <tr>
+                <th scope="col">Round</th>
+                <th scope="col">Answer</th>
+                <th scope="col">{measureLabel}</th>
+                <th scope="col">Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((r, i) => (
+                <tr key={hidden + i}>
+                  <th scope="row">Round {hidden + i + 1}</th>
+                  <td className="summary-answer">
+                    {answerLabel?.(targets[hidden + i]) ?? "—"}
+                  </td>
+                  <td className="muted">
+                    {r.hit ? "spot on" : r.label ?? formatDistance(r.distanceKm)}
+                  </td>
+                  <td className="round-score">{r.score.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
           {hidden > 0 && (
             <p className="muted">…and {hidden} earlier {hidden === 1 ? "round" : "rounds"}.</p>
           )}

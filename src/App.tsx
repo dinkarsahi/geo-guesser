@@ -229,7 +229,7 @@ function HeadToHeadMenu({
           <WorldDuelMark />
           <span className="mode-title">Today's Round</span>
           <span className="muted mode-blurb">
-            Take on everyone playing today. The day picks the game — it's{" "}
+            Take on everyone playing today. The day picks the game from all seven — it's{" "}
             {modeTitle(gameOfDay())} — and everyone gets the same five rounds, once.
           </span>
         </button>
@@ -346,11 +346,11 @@ export default function App() {
             <span className="muted mode-blurb">{m.blurb}</span>
           </button>
         ))}
-        {/* One door for playing other people, rather than two. The six above
+        {/* One door for playing other people, rather than two. The seven above
             are games; this is an opponent, and which opponent is a question
             for the other side of it. Drawn as one more card all the same — it
             sits in their grid, and picking it out in colour made it read as
-            the thing you were meant to press rather than the seventh choice. */}
+            the thing you were meant to press rather than the last choice. */}
         <button className="mode-card" onClick={() => setSocial("hub")}>
           <span className="mode-emoji">⚔️</span>
           <span className="mode-title">Head to Head</span>

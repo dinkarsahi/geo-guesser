@@ -24,6 +24,13 @@ interface GlobeMapProps extends GuessMapProps {
    */
   highlightCodes?: string[] | null;
   /**
+   * The one country the player picked instead, washed red against the green.
+   * Unlike `highlights` this changes nothing else about the reveal: the pins
+   * and the arc between them are still the story, and this only says which
+   * country the near one is standing in.
+   */
+  missCode?: string | null;
+  /**
    * Shapes to paint once the answer is out, for a mode whose answer isn't a
    * place. Given these, the globe reveals by colouring the world in rather
    * than by dropping pins: no markers, no arc between them, and it settles far
@@ -59,6 +66,7 @@ export default function GlobeMap({
   night = false,
   borders = false,
   highlightCodes = null,
+  missCode = null,
   highlights = null,
 }: GlobeMapProps) {
   // Painting the answer on rather than pinning it: see `highlights`.
@@ -139,6 +147,8 @@ export default function GlobeMap({
     () => new Set(litKey ? litKey.split(",") : []),
     [litKey],
   );
+  // Only once the round is over, which the answer's arrival is the sign of.
+  const miss = answer ? (missCode ?? "").toLowerCase() : "";
 
   /**
    * These three have to keep the same identity between renders. The globe
@@ -161,21 +171,22 @@ export default function GlobeMap({
     (d: object) => {
       const tone = toneOf.get(d);
       if (tone) return TONE_CAP[tone];
-      return lit.has(codeOf(d as CountryFeature)) ? "rgba(34,197,94,0.45)" : "rgba(0,0,0,0)";
+      const code = codeOf(d as CountryFeature);
+      if (lit.has(code)) return "rgba(34,197,94,0.45)";
+      return code && code === miss ? TONE_CAP.wrong : "rgba(0,0,0,0)";
     },
-    [lit, toneOf],
+    [lit, miss, toneOf],
   );
   const polygonStroke = useCallback(
     (d: object) => {
       const tone = toneOf.get(d);
       if (tone) return TONE_LINE[tone];
-      return lit.has(codeOf(d as CountryFeature))
-        ? "#22c55e"
-        : borders
-          ? night ? "#9aa3ae" : "#f8fafc"
-          : "";
+      const code = codeOf(d as CountryFeature);
+      if (lit.has(code)) return "#22c55e";
+      if (code && code === miss) return TONE_LINE.wrong;
+      return borders ? (night ? "#9aa3ae" : "#f8fafc") : "";
     },
-    [lit, borders, night, toneOf],
+    [lit, miss, borders, night, toneOf],
   );
   // A hair above the countries they were cut out of, so the two don't fight
   // over the same pixels — and still flat enough that a click at a shallow

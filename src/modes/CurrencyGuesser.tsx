@@ -13,6 +13,7 @@ import {
   codeOf,
   countryAt,
   isInCountry,
+  missedCountryCode,
   nameOf,
   useWorldShapes,
   type WorldShapes,
@@ -63,6 +64,10 @@ function CurrencyGame({
   });
 
   const spenders = game.target.countries.map((c) => c.code);
+  // The country pressed instead, painted red against the green everywhere the
+  // money is spent — which for the euro is twenty countries, and picking your
+  // own mistake out of that band by eye is not a thing anyone should have to do.
+  const missCode = missedCountryCode(shapes, game.lastResult, game.phase === "result");
 
   return (
     <GameFrame
@@ -108,6 +113,7 @@ function CurrencyGame({
             night={night}
             borders={settings.borders}
             highlightCodes={spenders}
+            missCode={missCode}
           />
         ) : (
           <GlobeMap
@@ -115,6 +121,7 @@ function CurrencyGame({
             night={night}
             borders={settings.borders}
             highlightCodes={spenders}
+            missCode={missCode}
           />
         )
       }

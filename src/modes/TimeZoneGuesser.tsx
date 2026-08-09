@@ -246,6 +246,7 @@ function TimeZoneGame({
         };
       }}
       hint="Click a country where it's that time right now."
+      measureLabel="Difference in hours"
       renderPrompt={(when) => (
         <div className="prompt-card">
           <span className="prompt-label">Where in the world is it</span>

@@ -50,6 +50,7 @@ export default function TubeGuesser({
         return { name: station.name, detail: zoneLabel(station.zone) };
       }}
       hint="Click a station to place your guess."
+      measureLabel="Number of stops to destination"
       renderPrompt={(station) => (
         <div className="prompt-card">
           <span className="prompt-label">Find this station:</span>

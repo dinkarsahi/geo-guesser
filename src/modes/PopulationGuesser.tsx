@@ -19,6 +19,7 @@ import {
   codeOf,
   countryAt,
   isInCountry,
+  missedCountryCode,
   nameOf,
   useWorldShapes,
   type WorldShapes,
@@ -37,10 +38,14 @@ interface GameProps extends ModeProps {
  * people live in either. So the only thing that counts is the number: a country
  * with the right sort of population scores well wherever on Earth it is.
  *
- * At 1.5, being out by a factor of two still scores 63 and a factor of ten
- * scores 21 — right that Nigeria is huge, wrong that it's China.
+ * Squared in the exponent, like the distance modes and the tube map: the curve
+ * leaves full marks slowly and then falls off, rather than charging most for
+ * the first step away from the answer. At 2, being out by half again scores 96
+ * and a factor of two 89 — both of which are knowing roughly how many people
+ * live there, which is all the question asked. A factor of ten is 27 and a
+ * factor of fifty near enough nothing.
  */
-const RATIO_SCALE = 1.5;
+const RATIO_SCALE = 2;
 
 /** "2.4", "17" — a multiplier, at a precision worth reading. */
 const times = (ratio: number) =>
@@ -83,9 +88,9 @@ function PopulationGame({
     // Indian Ocean, and there's nothing to compare against.
     if (!picked?.population) return { score: 0, label: "No figures for there" };
     const ratio = picked.population / target.population;
-    const off = Math.abs(Math.log(ratio));
+    const off = Math.abs(Math.log(ratio)) / RATIO_SCALE;
     return {
-      score: Math.round(MAX_ROUND_SCORE * Math.exp(-off / RATIO_SCALE)),
+      score: Math.round(MAX_ROUND_SCORE * Math.exp(-off * off)),
       label:
         ratio >= 1
           ? `${times(ratio)}× too many people`
@@ -107,6 +112,12 @@ function PopulationGame({
     ...matchOptions(match),
   });
 
+  // The country pressed instead, painted red under the green one. It matters
+  // more here than anywhere: the guess is scored on a number rather than on
+  // where it landed, so the pin can be a continent away from the answer and
+  // still have been a decent answer, and the two countries want comparing.
+  const missCode = missedCountryCode(shapes, game.lastResult, game.phase === "result");
+
   return (
     <GameFrame
       title="Population Spotter"
@@ -116,6 +127,10 @@ function PopulationGame({
       onToggleNight={onToggleNight}
       match={match}
       hint={`Click the country you think it is — anywhere inside it counts. Figures are ${POPULATION_AS_OF} estimates.`}
+      // Not a distance, whatever the other world modes head this column with:
+      // the round is marked on the number of people and never on where the
+      // click landed, and the column holds "17× too many people".
+      measureLabel="Difference in population"
       renderPrompt={(target) => (
         <div className="prompt-card">
           <span className="prompt-label">Which country has a population of</span>
@@ -167,6 +182,7 @@ function PopulationGame({
             night={night}
             borders={settings.borders}
             highlightCodes={[game.target.code]}
+            missCode={missCode}
           />
         ) : (
           <GlobeMap
@@ -174,6 +190,7 @@ function PopulationGame({
             night={night}
             borders={settings.borders}
             highlightCodes={[game.target.code]}
+            missCode={missCode}
           />
         )
       }

@@ -35,12 +35,12 @@ interface HeadToHeadProps {
  * everybody, and not at once — the day is the thing everyone shares, so you
  * play it whenever you get to it and the scores meet on a table.
  *
- * Which game it is isn't the player's to choose either. Six games each with a
- * table of the few people who happened to pick that one is six lonely tables;
- * one game everybody is on is a leaderboard. So the day names the game, the
- * same game for everyone, and the six are shown with the other five greyed —
- * partly so you know what you're walking into, partly because a game you can't
- * play today is still a game you can play this week.
+ * Which game it is isn't the player's to choose either. A table apiece for the
+ * few people who happened to pick each game is seven lonely tables; one game
+ * everybody is on is a leaderboard. So the day names the game, the same game
+ * for everyone, and all seven are shown with the other six greyed — partly so
+ * you know what you're walking into, partly because a game you can't play today
+ * is still a game you can play this week.
  *
  * There's no code to be seen here any more. There never was much point in
  * showing one — it's worked out from the game and the date rather than issued,
@@ -179,9 +179,9 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
 
       {screen === "games" && (
         <div className="setup-panel">
-          {/* What today is, and what it isn't. The five that aren't on are
+          {/* What today is, and what it isn't. The ones that aren't on are
               greyed rather than hidden, because "today is the tube" means more
-              next to the five games it isn't — and because they're what the
+              next to the six games it isn't — and because they're what the
               rest of the week looks like. */}
           <div className="setup-row">
             <span className="setup-label">Today's game</span>

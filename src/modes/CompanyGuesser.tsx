@@ -11,6 +11,7 @@ import {
   anchorAt,
   countryNameAt,
   isInCountry,
+  missedCountryCode,
   useWorldShapes,
   type WorldShapes,
 } from "../lib/worldShapes";
@@ -40,6 +41,10 @@ function CompanyGame({
     guessAt: (guess) => anchorAt(shapes, guess),
     ...matchOptions(match),
   });
+
+  // The country pressed instead, painted red under the green one — the "you
+  // picked Sweden" line in a form you can see from across the map.
+  const missCode = missedCountryCode(shapes, game.lastResult, game.phase === "result");
 
   return (
     <GameFrame
@@ -83,6 +88,7 @@ function CompanyGame({
             night={night}
             borders={settings.borders}
             highlightCodes={[game.target.code]}
+            missCode={missCode}
           />
         ) : (
           <GlobeMap
@@ -90,6 +96,7 @@ function CompanyGame({
             night={night}
             borders={settings.borders}
             highlightCodes={[game.target.code]}
+            missCode={missCode}
           />
         )
       }

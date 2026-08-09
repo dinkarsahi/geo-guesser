@@ -66,6 +66,13 @@ interface WorldMapProps extends GuessMapProps {
    */
   highlightCodes?: string[] | null;
   /**
+   * The one country the player picked instead, washed red against the green.
+   * Unlike `highlights` this changes nothing else about the reveal: the pins
+   * and the line between them are still the story, and this only says which
+   * country the near one is standing in.
+   */
+  missCode?: string | null;
+  /**
    * Shapes to paint once the answer is out, for a mode whose answer isn't a
    * place. Given these, the map reveals by colouring the world in rather than
    * by dropping pins: no markers, no line between them, and it draws back to
@@ -88,6 +95,7 @@ export default function WorldMap({
   night = false,
   borders = true,
   highlightCodes = null,
+  missCode = null,
   highlights = null,
 }: WorldMapProps) {
   const shapes = useWorldShapes();
@@ -281,10 +289,15 @@ export default function WorldMap({
     [litKey],
   );
 
-  const isHighlit = (geo: CountryFeature) => {
-    if (!lit.size || !answer) return false;
+  // Only once the round is over, which the answer's arrival is the sign of.
+  const miss = answer ? (missCode ?? "").toLowerCase() : "";
+
+  /** Whether this country is the answer, the miss, or neither. */
+  const toneOf = (geo: CountryFeature): "right" | "wrong" | null => {
+    if (!answer) return null;
     const code = (geo.properties?.ISO_A2_EH || geo.properties?.ISO_A2 || "").toLowerCase();
-    return lit.has(code);
+    if (lit.has(code)) return "right";
+    return code && code === miss ? "wrong" : null;
   };
 
   return (
@@ -337,19 +350,32 @@ export default function WorldMap({
             <Geographies geography={{ type: "FeatureCollection", features: shapes.features }}>
               {({ geographies }) =>
                 geographies.map((geo) => {
-                  const lit = isHighlit(geo as unknown as CountryFeature);
+                  const tone = toneOf(geo as unknown as CountryFeature);
                   return (
                     <Geography
                       key={geo.rsmKey}
                       geography={geo}
                       // The imagery underneath is the land, so the shapes are
-                      // only ever outlines — except the country being revealed,
-                      // which is washed over to pick it out.
-                      fill={lit ? theme.highlight : "transparent"}
-                      stroke={
-                        lit ? theme.highlightLine : borders ? theme.border : "transparent"
+                      // only ever outlines — except the country being revealed
+                      // and the one picked instead, which are washed over to
+                      // pick them out.
+                      fill={
+                        tone === "right"
+                          ? theme.highlight
+                          : tone === "wrong"
+                            ? theme.wrong
+                            : "transparent"
                       }
-                      strokeWidth={sz(lit ? 1.4 : 0.7)}
+                      stroke={
+                        tone === "right"
+                          ? theme.highlightLine
+                          : tone === "wrong"
+                            ? theme.wrongLine
+                            : borders
+                              ? theme.border
+                              : "transparent"
+                      }
+                      strokeWidth={sz(tone ? 1.4 : 0.7)}
                       style={{
                         default: { outline: "none" },
                         hover: { outline: "none" },

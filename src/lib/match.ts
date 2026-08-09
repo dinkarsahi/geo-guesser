@@ -282,11 +282,12 @@ export const MATCH_MODES: { id: ModeId; title: string; emoji: string; noun: stri
 ];
 
 /**
- * The order the six games come round in, for a block of six days.
+ * The order the games come round in, for a block of as many days as there are
+ * games — seven of each, since the clock joined the other six.
  *
  * A shuffle rather than a fixed rota, so the week doesn't become "Tuesday is
- * flags" — but a shuffle of all six at once, so every game gets exactly one day
- * in every six however the block falls. Drawn from the hash rather than a
+ * flags" — but a shuffle of all of them at once, so every game gets exactly one
+ * day in every block however that block falls. Drawn from the hash rather than a
  * generator, since all this needs is the same answer on every device forever.
  */
 function dayOrder(block: number): ModeId[] {
@@ -302,13 +303,13 @@ function dayOrder(block: number): ModeId[] {
  * Which game today is.
  *
  * Nobody picks any more: the day does, and it's the same day's game for
- * everyone. That's what makes a single table worth looking at — six games each
- * with a table of the handful of people who chose it is six lonely tables, and
- * one game everybody is on today is a leaderboard.
+ * everyone. That's what makes a single table worth looking at — a table apiece
+ * for the handful of people who chose each game is seven lonely tables, and one
+ * game everybody is on today is a leaderboard.
  *
- * Evenly spread by construction. Every run of six days is a permutation of the
- * six, so no game can go a fortnight unplayed or turn up twice in a week, which
- * is what an unconstrained draw would do often enough to look broken.
+ * Evenly spread by construction. Every run of seven days is a permutation of
+ * the seven, so no game can go a fortnight unplayed or turn up twice in a week,
+ * which is what an unconstrained draw would do often enough to look broken.
  */
 export function gameOfDay(day: number = localDay()): ModeId {
   const size = MATCH_MODES.length;
@@ -317,7 +318,7 @@ export function gameOfDay(day: number = localDay()): ModeId {
   const order = dayOrder(block);
   // Two blocks can meet on the same game — the last of one and the first of the
   // next — which is the one way an even spread still reads as a repeat. Swapped
-  // rather than redrawn, so the block stays a permutation of all six.
+  // rather than redrawn, so the block stays a permutation of all of them.
   //
   // Decided for the block, not for the day being asked about: a swap applied
   // only on the first of the six would leave the second day still handing back
