@@ -118,7 +118,8 @@
       "Bash(kill 1131)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5199/ --max-time 3)",
       "Bash(awk '{print $1}')",
-      "Bash(kill 1527)"
+      "Bash(kill 1527)",
+      "Bash(grep -n \"^export \\\\|^\\\\/\\\\*\\\\*\" src/lib/leaderboard.ts)"
     ]
   }
 }

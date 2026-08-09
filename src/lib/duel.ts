@@ -7,7 +7,14 @@ import {
   type SharedResult,
 } from "./match";
 import { setRoundClosings } from "./roomClock";
-import { hasRemote, rest, RemoteError, serverNow, UNIQUE_VIOLATION } from "./supabase";
+import {
+  CHECK_VIOLATION,
+  hasRemote,
+  rest,
+  RemoteError,
+  serverNow,
+  UNIQUE_VIOLATION,
+} from "./supabase";
 
 /**
  * A room: a game against people you know, played at the same time.
@@ -130,6 +137,46 @@ function rememberName(code: string, player: string) {
 /** Rooms need somewhere to be. Said once here so every screen can ask. */
 export const canPlayRooms = hasRemote;
 
+/** A room that couldn't be opened for a reason of ours rather than the server's. */
+export class RoomError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RoomError";
+  }
+}
+
+/**
+ * Why a room screen's attempt failed, in words, and — the part that matters —
+ * which kind of failure it was.
+ *
+ * There are three, and they are fixed in three different places: the server
+ * answered and refused (its reason is the useful thing), we gave up before
+ * asking (ours is), or nothing answered at all. Reported as one sentence they
+ * all read as "check your connection", which is advice that only helps for the
+ * last of them and sends you looking at the network for the other two. That is
+ * exactly how a database still listing the old set of games went unnoticed:
+ * every attempt at a Time Zone room said the connection was at fault, and the
+ * connection was fine.
+ */
+export function roomProblem(e: unknown): string {
+  if (e instanceof RemoteError) {
+    // The one refusal whose cause is worth naming outright, because it is
+    // never the player's to fix and never fixes itself: this game is newer
+    // than the database's list of them.
+    if (e.code === CHECK_VIOLATION) {
+      return (
+        "The database turned this game down — its list of games is older than " +
+        "this page. Whoever set up the leaderboard needs to run " +
+        "supabase/schema.sql again."
+      );
+    }
+    // Otherwise it's whatever the server said, which is more than a guess.
+    return `The room was refused: ${e.message}`;
+  }
+  if (e instanceof RoomError) return e.message;
+  return "Couldn't reach the room. Check your connection and try again.";
+}
+
 /**
  * Opens a room and hands back the code to read out.
  *
@@ -162,7 +209,10 @@ export async function createRoom(
       throw e;
     }
   }
-  throw new Error("Couldn't open a room — try again.");
+  // Three codes in a row already taken, which at one chance in 28 million
+  // apiece isn't chance. Ours to report rather than the server's: it answered
+  // every time, and answered the same thing.
+  throw new RoomError("Couldn't find a free room code. Try again.");
 }
 
 /** The room a code names, or null if there isn't one (or isn't any more). */

@@ -30,6 +30,19 @@ export const hasRemote = Boolean(BASE && ANON_KEY);
 export const UNIQUE_VIOLATION = "23505";
 
 /**
+ * Postgres' "that value isn't allowed in that column" — a CHECK the row didn't
+ * satisfy.
+ *
+ * Worth a name because of one failure in particular: the tables are set up by
+ * hand from `supabase/schema.sql`, so a database made before a game was added
+ * still lists the old set of games and refuses a room for the new one. That is
+ * a fact about the database being out of date, and it must not be reported as
+ * a network that couldn't be reached — the two are fixed in entirely different
+ * places, and only one of them is worth trying again.
+ */
+export const CHECK_VIOLATION = "23514";
+
+/**
  * How far this device's clock is from the server's, in milliseconds.
  *
  * Nobody sets their phone by hand any more, but they are still seconds apart,

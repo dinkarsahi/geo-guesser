@@ -13,13 +13,13 @@ the same five rounds, on one table. Nothing is handed around: the code is worked
 out from the game and the date, so anyone who opens it is already on it. One go
 each, and it starts again at your midnight.
 
-The game isn't the player's to choose, and that's the point. Six games each with
-a table of the few people who happened to pick that one is six lonely tables; one
-game everybody is on is a leaderboard. The rota is a shuffle of all six per block
-of six days, so every game gets exactly one day in every six and none can turn up
-twice in a week or go a fortnight unplayed — `gameOfDay` in `src/lib/match.ts`.
-The setup screen shows all six with the other five greyed, so you know what
-you're walking into and what the rest of the week looks like.
+The game isn't the player's to choose, and that's the point. A table apiece for
+the few people who happened to pick each game is seven lonely tables; one game
+everybody is on is a leaderboard. The rota is a shuffle of all seven per block of
+seven days, so every game gets exactly one day in every seven and none can turn
+up twice in a week or go a fortnight unplayed — `gameOfDay` in
+`src/lib/match.ts`. The setup screen shows all seven with the other six greyed,
+so you know what you're walking into and what the rest of the week looks like.
 
 What is still yours is how the world is drawn: globe or flat map, borders or
 none, on the games where that means anything.

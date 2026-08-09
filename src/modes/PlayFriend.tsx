@@ -6,6 +6,7 @@ import {
   fetchRoom,
   joinRoom,
   roomPhase,
+  roomProblem,
   startRoom,
   type Room,
 } from "../lib/duel";
@@ -73,14 +74,20 @@ export default function PlayFriend({ onBack, onStart }: PlayFriendProps) {
   const named = player.length > 0;
   const host = room !== null && room.host.toLowerCase() === player.toLowerCase();
 
-  /** Everything a screen here can fail at, said in one place and in words. */
+  /**
+   * Everything a screen here can fail at, said in one place and in words —
+   * but not in the same words, which is the point. See `roomProblem`: a value
+   * the database refused and a server that never answered are different
+   * problems with different fixes, and telling a player to check their
+   * connection over the first of them sends them nowhere.
+   */
   const attempt = async (what: () => Promise<void>) => {
     setBusy(true);
     setProblem(null);
     try {
       await what();
-    } catch {
-      setProblem("Couldn't reach the room. Check your connection and try again.");
+    } catch (e) {
+      setProblem(roomProblem(e));
     } finally {
       setBusy(false);
     }
