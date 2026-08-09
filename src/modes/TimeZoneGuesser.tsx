@@ -48,9 +48,10 @@ interface GameProps extends ModeProps {
  * The clock, live.
  *
  * The question is what time it is somewhere, so the answer cannot be a
- * screenshot of a minute that has passed. A round runs thirty seconds with ten
- * on the answer after it, which is long enough to step over a minute boundary
- * and leave the prompt claiming a time nowhere on Earth is reading any more.
+ * screenshot of a minute that has passed. A duel's round runs thirty seconds
+ * with ten on the answer after it, and today's round is not timed at all —
+ * either is long enough to step over a minute boundary and leave the prompt
+ * claiming a time nowhere on Earth is reading any more.
  *
  * The room's clock rather than this device's, so that two people in a duel are
  * asked the same minute — they're being asked about the same *offset* either

@@ -465,12 +465,6 @@
   align-items: center;
   gap: 10px;
 }
-.match-line {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin: 0;
-}
 .match-line-label {
   font-family: var(--heading);
   font-size: 12px;
@@ -478,12 +472,6 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text);
-}
-.match-line-value {
-  font-size: 20px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-h);
 }
 .match-hint {
   margin: 0;
@@ -551,12 +539,18 @@
 }
 .standing {
   display: grid;
-  grid-template-columns: 24px 1fr auto 56px;
+  grid-template-columns: 24px 1fr auto 76px;
   align-items: baseline;
   gap: 10px;
   padding: 7px 10px;
   border-radius: 8px;
   font-size: 15px;
+}
+/* Today's round has no clock, so no column of times. The score column keeps its
+   fixed width in both shapes: every row is its own grid, and only a width they
+   all share can hold the marks in a line. */
+.standing.is-untimed {
+  grid-template-columns: 24px 1fr 76px;
 }
 .standing.is-you {
   background: var(--accent-bg);
@@ -588,9 +582,21 @@
   font-variant-numeric: tabular-nums;
   color: var(--text-h);
 }
+/* What the mark is out of, set quiet and small beside it: it belongs to the
+   heading more than to the number, and repeating it in full on every line would
+   have every row shouting the same word. */
+.standing-max {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text);
+}
 .standing.is-leading .standing-place,
 .standing.is-leading .standing-score {
   color: var(--accent);
+}
+/* The leader's colour is for their mark, not for what everyone's is out of. */
+.standing.is-leading .standing-max {
+  color: var(--text);
 }
 
 /* ---- Rooms ---------------------------------------------------------- */

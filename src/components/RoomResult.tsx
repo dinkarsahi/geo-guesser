@@ -35,7 +35,10 @@ export default function RoomResult({ match, room }: RoomResultProps) {
         </p>
       ) : (
         <>
-          <Standings results={board} you={match.player} />
+          {/* A duel keeps its clock, and so keeps its column of times: a room
+              is a race, level scores are settled on it, and the line below
+              says so out loud. */}
+          <Standings results={board} you={match.player} timed />
 
           {leader && !alone && (
             <p className="match-verdict match-verdict-result">

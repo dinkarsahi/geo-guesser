@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Match } from "../lib/match";
-import { cleanName, formatDuration, modeTitle } from "../lib/match";
+import { cleanName, modeTitle } from "../lib/match";
 import { publishResult, type Board } from "../lib/leaderboard";
 import { saveName } from "../lib/playerName";
 import { hasRemote } from "../lib/supabase";
@@ -83,10 +83,12 @@ export default function MatchResult({ match, score, ms }: MatchResultProps) {
 
   return (
     <div className="match-result">
-      <p className="match-line">
-        <span className="match-line-label">Your time</span>
-        <span className="match-line-value">{formatDuration(ms)}</span>
-      </p>
+      {/* No time at the top of this any more. Today's round isn't played
+          against a clock, so how long it took is not something the player was
+          marked on — printed beside the score it read as though it were. It is
+          still filed with the score, where it does one quiet job: two people on
+          the same mark have to be ranked in some order, and the one who got
+          there sooner is a better order than none. */}
 
       {/* The game rather than the code: everyone who played today's {mode} is
           on this one table however they chose to draw the map, and the code

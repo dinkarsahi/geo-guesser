@@ -153,11 +153,22 @@ so being roughly right is much easier there than it is anywhere else.
 
 ### The match clock
 
-Only in head-to-head play. `matchPoints` in `src/lib/match.ts`: the first
-`MATCH_GRACE_MS` (10 s) of a round are free, after which sitting on it costs up
-to `SPEED_PENALTY` (30%) of what the guess was worth. Taken **off** the accuracy
-rather than added on, so a match is marked out of the same 100 as everything
+**Duels only** — `matchOptions` hands out `roundLimitMs` and `adjustScore` when
+`kind === "room"` and withholds both otherwise. A room cannot do without a
+clock, because its rounds turn over on everyone's screen at once and so have to
+end at a moment rather than when the player is ready. Today's round is played
+alone whenever it suits you, so it has no clock, no `MATCH_ROUND_MS` limit and
+no speed penalty: nothing is on screen counting down, and the mark is the guess.
+
+In a duel, `matchPoints` in `src/lib/match.ts`: the first `MATCH_GRACE_MS`
+(10 s) of a round are free, after which sitting on it costs up to
+`SPEED_PENALTY` (30%) of what the guess was worth. Taken **off** the accuracy
+rather than added on, so a duel is marked out of the same 100 as everything
 else, and a fast wrong answer still loses to a slow right one.
+
+A daily result is still filed with the milliseconds it took, and `rankResults`
+still settles level scores on them. It just isn't shown anywhere: `Standings`
+draws its Time column only when passed `timed`, which only `RoomResult` does.
 
 `RoundResult` keeps `accuracy` (the guess alone) and `score` (once timed)
 separately, and the result panel shows the subtraction. A player who pointed
@@ -176,7 +187,8 @@ from the game and the local calendar date, so it is never handed around: anyone
 who opens today's game is already on it. One game a day for the whole world,
 chosen by `gameOfDay` — a shuffled permutation of all seven per block of seven
 days, so every game gets exactly one day in seven and none can turn up twice in
-a week. Needs no server to work; falls back to a device-local table.
+a week. No clock on a round — see above. Needs no server to work; falls back to
+a device-local table.
 
 **Duel a Friend** (`kind: "room"`, code letter `V`). A drawn code, a lobby, and
 a moment when it starts. That moment is the only thing that travels — after it,

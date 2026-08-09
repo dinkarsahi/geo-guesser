@@ -4,10 +4,8 @@ import {
   dailyCode,
   gameOfDay,
   parseMatchCode,
-  MATCH_GRACE_MS,
   MATCH_MODES,
   MATCH_ROUNDS,
-  MATCH_ROUND_MS,
   modeTitle,
   type Match,
 } from "../lib/match";
@@ -15,11 +13,13 @@ import { checkEntry } from "../lib/leaderboard";
 import { loadName, saveName } from "../lib/playerName";
 import Leaderboard from "../components/Leaderboard";
 
-const RULES = `${MATCH_ROUNDS} rounds, ${Math.round(
-  MATCH_ROUND_MS / 1000,
-)} seconds each, marked out of 100 a round as usual and averaged into one mark out of 100. The first ${Math.round(
-  MATCH_GRACE_MS / 1000,
-)} seconds of a round are free — after that, sitting on it costs you up to 30% of what it was worth. One game a day and one go at it, for everyone, everywhere.`;
+/**
+ * No clock in it any more. A duel is a race because everybody is playing at
+ * once; today's round is people all over the world getting to the same five
+ * questions whenever their day allows, and a countdown there was rushing them
+ * through the one thing the table is meant to measure.
+ */
+const RULES = `${MATCH_ROUNDS} rounds, marked out of 100 a round as usual and averaged into one mark out of 100. No clock — take as long over each one as you like. One game a day and one go at it, for everyone, everywhere.`;
 
 interface HeadToHeadProps {
   onBack: () => void;

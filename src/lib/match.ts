@@ -57,7 +57,13 @@ export interface Match extends MatchCode {
 /** Rounds in a match. Fixed, so that two players always play the same game. */
 export const MATCH_ROUNDS = 5;
 
-/** How long a player has to answer each round. */
+/**
+ * How long a player has to answer each round of a duel.
+ *
+ * Duels only. A room turns its rounds over on everyone's screen at once, so a
+ * round there has to end at a moment rather than when its player is ready, and
+ * that moment is this. Today's round has no clock at all — see `matchOptions`.
+ */
 export const MATCH_ROUND_MS = 30_000;
 
 /**
@@ -68,7 +74,8 @@ export const MATCH_ROUND_MS = 30_000;
 export const MATCH_REVEAL_MS = 10_000;
 
 /**
- * The clock costs nothing for the first ten seconds of a round.
+ * The clock costs nothing for the first ten seconds of a round. Duels only,
+ * like the clock it discounts.
  *
  * Somebody who knows where Lima is takes a couple of seconds to find it on a
  * globe they still have to spin, and taking that off them was marking dexterity
@@ -348,9 +355,9 @@ export const describeCode = (code: MatchCode): string =>
   `${modeTitle(code.mode)} · ${MATCH_ROUNDS} rounds`;
 
 /**
- * A round's score once the clock is counted. Both players answer the same
- * question with the same time, so this needs no state — only how good the
- * guess was and how long it took.
+ * A round's score once the clock is counted, in a duel. Every player answers
+ * the same question with the same time, so this needs no state — only how good
+ * the guess was and how long it took.
  */
 export function matchPoints(accuracy: number, elapsedMs: number): number {
   const over = Math.max(0, elapsedMs - MATCH_GRACE_MS);
@@ -362,27 +369,36 @@ export function matchPoints(accuracy: number, elapsedMs: number): number {
 export interface MatchGameOptions {
   rounds: number;
   seed: number;
-  roundLimitMs: number;
-  adjustScore: (score: number, elapsedMs: number) => number;
+  roundLimitMs?: number;
+  adjustScore?: (score: number, elapsedMs: number) => number;
   schedule?: RoundSchedule;
 }
 
 /**
  * The rules a match imposes on whichever mode it's played in — a fixed five
- * rounds dealt from the code, a clock on each, and a score that pays for
- * speed. Undefined outside a match, so it spreads into the options harmlessly.
+ * rounds dealt from the code, and in a duel a clock on each and a score that
+ * pays for speed. Undefined outside a match, so it spreads into the options
+ * harmlessly.
  *
- * A room adds the timetable: its rounds turn over together on everyone's screen
- * whether or not they've answered, which is the whole of what makes it a race
- * rather than two people playing the same questions apart.
+ * The clock belongs to the duel and not to the daily. A room cannot do without
+ * one: its rounds turn over together on everyone's screen whether or not
+ * they've answered, and that is the whole of what makes it a race rather than
+ * two people playing the same questions apart. Today's round is the opposite
+ * kind of contest — played alone, whenever it suits you, against everybody who
+ * gets to it today — and there thirty seconds only hurried people through a
+ * game they had all day for. What its table is for is who knows the map, so
+ * that is the only thing it now marks.
+ *
+ * A room also adds the timetable it runs to.
  */
 export function matchOptions(match?: Match): MatchGameOptions | undefined {
   if (!match) return undefined;
+  const timed = match.kind === "room";
   return {
     rounds: MATCH_ROUNDS,
     seed: match.seed,
-    roundLimitMs: MATCH_ROUND_MS,
-    adjustScore: matchPoints,
+    roundLimitMs: timed ? MATCH_ROUND_MS : undefined,
+    adjustScore: timed ? matchPoints : undefined,
     schedule:
       match.startAt === undefined
         ? undefined
