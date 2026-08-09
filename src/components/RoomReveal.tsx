@@ -20,6 +20,15 @@ interface RoomRevealProps {
   board: RoomStanding[] | null;
   /** Whose line to pick out. */
   you: string;
+  /**
+   * What this player just scored, from the round itself rather than from the
+   * table. Their own mark is a thing they have already been told at the top of
+   * this panel, and making the line below it wait on a round trip to agree
+   * leaves a player looking at their own name beside a row of dots.
+   */
+  yours: number;
+  /** The table couldn't be reached — so these marks are short a player. */
+  offline: boolean;
 }
 
 /** "Sam", "Sam and Alex", "Sam, Alex and Jo". */
@@ -56,12 +65,15 @@ export default function RoomReveal({
   mode,
   board,
   you,
+  yours,
+  offline,
 }: RoomRevealProps) {
   const left = useCountdown(closesAt);
   const mine = you.trim().toLowerCase();
 
   /** What this player scored on the round being revealed, if they've filed it. */
-  const scored = (s: RoomStanding) => s.scores[round - 1] ?? null;
+  const scored = (s: RoomStanding) =>
+    s.player.toLowerCase() === mine ? yours : s.scores[round - 1] ?? null;
 
   // Who the room is still short of — everyone but you, because your own answer
   // is what put this panel on screen and no reading of the table is allowed to
@@ -144,6 +156,15 @@ export default function RoomReveal({
             ))}
           </ol>
         </>
+      )}
+      {/* Said out loud rather than swallowed. A round that didn't reach the
+          table is a round the others are still waiting on and a mark that
+          won't be in the result at the end, and a player who can see the
+          number on their own screen has no other way of knowing. */}
+      {offline && (
+        <p className="muted room-offline">
+          Couldn't reach the table — this round may not count.
+        </p>
       )}
     </div>
   );

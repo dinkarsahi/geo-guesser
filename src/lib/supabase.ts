@@ -52,8 +52,15 @@ const HEADER_ROUNDING_MS = 500;
  * Only as good as the last response — a second's granularity in the header and
  * however long the reply took to arrive, so call it a second either way. Rounds
  * are thirty seconds with eight between them, which swallows that whole.
+ *
+ * A whole number of milliseconds, like every other clock in the language. Half
+ * a round trip is not one, so the correction below leaves a fraction behind
+ * about half the time, and everything measured against this clock inherits it
+ * — including how long a round took, which is filed in an integer column. A
+ * round that took 3716.5 ms was refused by Postgres outright, so the player's
+ * score never reached the table and their round never closed for anybody else.
  */
-export const serverNow = (): number => Date.now() + skewMs;
+export const serverNow = (): number => Math.round(Date.now() + skewMs);
 
 /** A request that reached Supabase and was refused, with the reason it gave. */
 export class RemoteError extends Error {

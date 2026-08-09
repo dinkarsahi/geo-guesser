@@ -245,7 +245,11 @@ export async function postRound(
   try {
     await rest(SCORES, {
       method: "POST",
-      body: JSON.stringify({ code, player: player.trim(), round, score, ms }),
+      // Whole milliseconds, because the column holds whole milliseconds. The
+      // clock this is measured against is corrected onto the server's and used
+      // to be a fraction of one; a round timed at 3716.5 ms came back 400 and
+      // was dropped on the floor, taking the round's closing with it.
+      body: JSON.stringify({ code, player: player.trim(), round, score, ms: Math.round(ms) }),
     });
   } catch (e) {
     // A round already filed is a re-render or a reload, and the score that's

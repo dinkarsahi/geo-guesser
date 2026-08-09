@@ -113,7 +113,10 @@
       "Bash(npm init *)",
       "Bash(npm i *)",
       "Bash(curl -sL -o tzfull.zip \"https://github.com/evansiroky/timezone-boundary-builder/releases/download/2026c/timezones.geojson.zip\")",
-      "Bash(unzip -o -q tzfull.zip)"
+      "Bash(unzip -o -q tzfull.zip)",
+      "Bash(git commit *)",
+      "Bash(kill 1131)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5199/ --max-time 3)"
     ]
   }
 }

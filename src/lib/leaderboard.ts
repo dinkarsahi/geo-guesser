@@ -89,7 +89,9 @@ const localBoard = (code: string, source: BoardSource): Filing => ({
  * holds however the player got there.
  */
 export async function publishResult(result: SharedResult): Promise<Filing> {
-  const row: Row = { ...result, code: key(result.code) };
+  // Whole milliseconds, because the column holds whole milliseconds — see the
+  // same rounding where a room files its rounds.
+  const row: Row = { ...result, code: key(result.code), ms: Math.round(result.ms) };
   if (!hasRemote) {
     saveResult(row);
     return localBoard(row.code, "local");

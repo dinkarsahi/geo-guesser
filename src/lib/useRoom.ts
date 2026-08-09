@@ -44,8 +44,16 @@ export interface RoomView {
   refresh: () => void;
 }
 
-/** How often the table asks again while it's waiting on somebody else's round. */
+/** How often the table asks again while the round is still being answered. */
 const POLL_MS = 2_000;
+
+/**
+ * And how often once this player has answered, which is when the news actually
+ * matters: their round is over and the only thing left is whether everyone
+ * else's is too. That answer is what ends the round and starts the ten seconds,
+ * so a two-second poll spends up to two of those ten still saying "waiting".
+ */
+const WAITING_POLL_MS = 1_000;
 
 export function useRoom(match: Match | undefined, results: RoundResult[], phase: Phase): RoomView {
   // A daily game has no room behind it, and nothing below should happen for it.
@@ -106,7 +114,7 @@ export function useRoom(match: Match | undefined, results: RoundResult[], phase:
   useEffect(() => {
     if (!code) return;
     if (phase === "done" && settled) return;
-    const id = setInterval(read, POLL_MS);
+    const id = setInterval(read, phase === "result" ? WAITING_POLL_MS : POLL_MS);
     return () => clearInterval(id);
   }, [code, phase, settled, read]);
 

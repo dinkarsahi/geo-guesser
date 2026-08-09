@@ -350,6 +350,8 @@ export default function GameFrame<T>({
               mode={match.mode}
               board={room.board}
               you={match.player}
+              yours={lastResult.score}
+              offline={room.offline}
             />
           ) : (
             <div className="button-row">

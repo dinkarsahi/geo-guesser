@@ -664,6 +664,13 @@
 .room-waiting strong {
   font-size: inherit;
 }
+/* Under the marks rather than over them: it's a note about the table, and the
+   table is still worth reading. */
+.room-offline {
+  margin: 0;
+  font-size: 13px;
+  text-align: center;
+}
 /* What the columns are, said once so they aren't guessed at. */
 .room-live-head {
   width: 100%;
