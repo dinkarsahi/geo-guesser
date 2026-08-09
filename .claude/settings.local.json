@@ -104,7 +104,16 @@
       "Bash(npx prettier *)",
       "Bash(grep -vE \"gameOfDay|ModeId|One go a day|Head to head: pick|spent, setSpent|setSpent\\\\\\(|play = async|setSpent\\\\\\(mode|Pick a game and play|Today's table for any|Set when a player|const play|MATCH_MODES.map|h2h-mode|mode-emoji|m.title|checking|One table a game|modeTitle|Leaderboard$|mode=\\\\{spent|locked=\\\\{spent|player=\\\\{named|/>|\\\\\\)\\\\}|<div|</div|<span|<button|</button\")",
       "Bash(echo \"ESLINT EXIT: $?\")",
-      "Bash(echo \"LINT: $?\")"
+      "Bash(echo \"LINT: $?\")",
+      "Bash(curl -s \"https://registry.npmjs.org/-/v1/search?text=timezone+geojson&size=20\")",
+      "Bash(python -c ' *)",
+      "Bash(curl -s \"https://api.github.com/repos/evansiroky/timezone-boundary-builder/releases/latest\")",
+      "Bash(curl -sL -o tz.zip \"https://github.com/evansiroky/timezone-boundary-builder/releases/download/2026c/timezones-now.geojson.zip\")",
+      "Bash(unzip -o -q tz.zip)",
+      "Bash(npm init *)",
+      "Bash(npm i *)",
+      "Bash(curl -sL -o tzfull.zip \"https://github.com/evansiroky/timezone-boundary-builder/releases/download/2026c/timezones.geojson.zip\")",
+      "Bash(unzip -o -q tzfull.zip)"
     ]
   }
 }

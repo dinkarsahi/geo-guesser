@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Globe, { type GlobeMethods } from "react-globe.gl";
-import type { GuessMapProps } from "./mapTypes";
+import type { GuessMapProps, MapHighlight } from "./mapTypes";
 import { countryAt, useWorldShapes, type CountryFeature } from "../lib/worldShapes";
 import { DAY_TEXTURE, GREY_TEXTURE } from "../lib/textures";
 import MapZoomControls from "./MapZoomControls";
@@ -23,7 +23,18 @@ interface GlobeMapProps extends GuessMapProps {
    * country being asked about, but a currency lights up everywhere it's spent.
    */
   highlightCodes?: string[] | null;
+  /**
+   * Shapes to paint once the answer is out, for a mode whose answer isn't a
+   * place. Given these, the globe reveals by colouring the world in rather
+   * than by dropping pins: no markers, no arc between them, and it settles far
+   * enough out to see the whole band rather than diving at one end of it.
+   */
+  highlights?: MapHighlight[] | null;
 }
+
+/** Green for the clock that was asked about, red for the one picked instead. */
+const TONE_CAP = { right: "rgba(34,197,94,0.5)", wrong: "rgba(225,29,72,0.5)" };
+const TONE_LINE = { right: "#22c55e", wrong: "#fb7185" };
 
 /** Minimal shape of the three OrbitControls we touch (three ships no types here). */
 interface OrbitLike {
@@ -48,7 +59,10 @@ export default function GlobeMap({
   night = false,
   borders = false,
   highlightCodes = null,
+  highlights = null,
 }: GlobeMapProps) {
+  // Painting the answer on rather than pinning it: see `highlights`.
+  const painted = !!highlights?.length;
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const shapes = useWorldShapes();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -93,22 +107,25 @@ export default function GlobeMap({
     g.pointOfView({ altitude }, 350);
   };
 
-  // Fly to the true location when the answer is revealed.
+  // Fly to the true location when the answer is revealed — and, where the
+  // answer is painted across half the world rather than pinned to one spot,
+  // hang back far enough to take it in.
   useEffect(() => {
     if (answer && globeRef.current) {
       globeRef.current.pointOfView(
-        { lat: answer.lat, lng: answer.lng, altitude: 1.6 },
+        { lat: answer.lat, lng: answer.lng, altitude: painted ? 2.4 : 1.6 },
         1200,
       );
     }
-  }, [answer]);
+  }, [answer, painted]);
 
   const points = useMemo<PointDatum[]>(() => {
     const pts: PointDatum[] = [];
+    if (painted) return pts;
     if (guess) pts.push({ lat: guess.lat, lng: guess.lng, color: "#e11d48" });
     if (answer) pts.push({ lat: answer.lat, lng: answer.lng, color: "#22c55e" });
     return pts;
-  }, [guess, answer]);
+  }, [guess, answer, painted]);
 
   // Country outlines: every country when borders are on, plus the answer's own
   // country picked out once the round is scored.
@@ -131,19 +148,41 @@ export default function GlobeMap({
    * you drag. Re-styling the whole world several times a second is what was
    * stamping on the flight out to the answer.
    */
+  // Which of the polygons in the scene are painted patches rather than
+  // countries, and in which colour. Keyed by the feature object itself, which
+  // the mode keeps still between renders for exactly this reason.
+  const toneOf = useMemo(() => {
+    const map = new Map<object, "right" | "wrong">();
+    for (const h of highlights ?? []) map.set(h.feature, h.tone);
+    return map;
+  }, [highlights]);
+
   const polygonCap = useCallback(
-    (d: object) =>
-      lit.has(codeOf(d as CountryFeature)) ? "rgba(34,197,94,0.45)" : "rgba(0,0,0,0)",
-    [lit],
+    (d: object) => {
+      const tone = toneOf.get(d);
+      if (tone) return TONE_CAP[tone];
+      return lit.has(codeOf(d as CountryFeature)) ? "rgba(34,197,94,0.45)" : "rgba(0,0,0,0)";
+    },
+    [lit, toneOf],
   );
   const polygonStroke = useCallback(
-    (d: object) =>
-      lit.has(codeOf(d as CountryFeature))
+    (d: object) => {
+      const tone = toneOf.get(d);
+      if (tone) return TONE_LINE[tone];
+      return lit.has(codeOf(d as CountryFeature))
         ? "#22c55e"
         : borders
           ? night ? "#9aa3ae" : "#f8fafc"
-          : "",
-    [lit, borders, night],
+          : "";
+    },
+    [lit, borders, night, toneOf],
+  );
+  // A hair above the countries they were cut out of, so the two don't fight
+  // over the same pixels — and still flat enough that a click at a shallow
+  // angle lands where the cursor is.
+  const polygonAltitude = useCallback(
+    (d: object) => (toneOf.has(d) ? 0.004 : 0.002),
+    [toneOf],
   );
 
   // Every country is always in the scene: the polygons are what makes land
@@ -151,12 +190,16 @@ export default function GlobeMap({
   // whether they're *drawn* is just a matter of their stroke colour below.
   // Drawn from the coarse copy — at full 1:50m detail the globe is a slideshow,
   // and the scoring never looks at these anyway.
-  const polygons = useMemo<CountryFeature[]>(
-    () => (shapes ? shapes.globeFeatures : []),
-    [shapes],
+  const polygons = useMemo<object[]>(
+    () => [
+      ...(shapes ? shapes.globeFeatures : []),
+      ...(highlights ?? []).map((h) => h.feature),
+    ],
+    [shapes, highlights],
   );
 
   const arcs = useMemo(() => {
+    if (painted) return [];
     if (guess && answer) {
       return [
         {
@@ -168,7 +211,7 @@ export default function GlobeMap({
       ];
     }
     return [];
-  }, [guess, answer]);
+  }, [guess, answer, painted]);
 
   return (
     <div
@@ -208,10 +251,11 @@ export default function GlobeMap({
         // Kept as flat to the surface as the stroke allows: the polygons are
         // what you click, so the further they float the further a click at a
         // shallow angle lands from the spot under the cursor. One height for
-        // every country, including the revealed one — lifting it was a rebuild
-        // of its geometry at exactly the moment the camera starts moving, and
-        // the green wash marks it perfectly well without.
-        polygonAltitude={0.002}
+        // every country, revealed or not — lifting the revealed one was a
+        // rebuild of its geometry at exactly the moment the camera starts
+        // moving, and the green wash marks it perfectly well without. Only the
+        // painted patches sit higher, and only because they overlap.
+        polygonAltitude={polygonAltitude}
         polygonCapColor={polygonCap}
         polygonSideColor={noSide}
         // An empty colour draws no outline at all, which is how the invisible

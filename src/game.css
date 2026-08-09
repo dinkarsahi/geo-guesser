@@ -75,14 +75,6 @@
   box-shadow: var(--shadow);
   transform: translateY(-2px);
 }
-/* The two ways of playing against other people, on the screen that offers only
-   those two — same card, tinted, because there's nothing else on it to be
-   picked out from. On the menu proper the head-to-head door is a plain card
-   like the six games beside it. */
-.mode-card-social {
-  border-color: var(--accent-border);
-  background: var(--accent-bg);
-}
 .mode-emoji {
   font-size: 44px;
   line-height: 1;

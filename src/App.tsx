@@ -225,7 +225,7 @@ function HeadToHeadMenu({
       </h1>
       <p className="muted menu-sub">Play the world, or play someone you know.</p>
       <div className="mode-grid mode-grid-pair">
-        <button className="mode-card mode-card-social" onClick={() => onPick("daily")}>
+        <button className="mode-card" onClick={() => onPick("daily")}>
           <WorldDuelMark />
           <span className="mode-title">Today's Round</span>
           <span className="muted mode-blurb">
@@ -233,7 +233,7 @@ function HeadToHeadMenu({
             {modeTitle(gameOfDay())} — and everyone gets the same five rounds, once.
           </span>
         </button>
-        <button className="mode-card mode-card-social" onClick={() => onPick("room")}>
+        <button className="mode-card" onClick={() => onPick("room")}>
           <DuelMark />
           <span className="mode-title">Duel a Friend</span>
           <span className="muted mode-blurb">

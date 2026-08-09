@@ -8,7 +8,7 @@ import {
 } from "react-simple-maps";
 import { geoEquirectangular, geoPath } from "d3-geo";
 import type { Coord } from "../lib/geo";
-import type { GuessMapProps } from "./mapTypes";
+import type { GuessMapProps, MapHighlight } from "./mapTypes";
 import { countryAt, useWorldShapes, type CountryFeature } from "../lib/worldShapes";
 import { DAY_TEXTURE, GREY_TEXTURE } from "../lib/textures";
 import MapZoomControls from "./MapZoomControls";
@@ -65,6 +65,14 @@ interface WorldMapProps extends GuessMapProps {
    * country being asked about, but a currency lights up everywhere it's spent.
    */
   highlightCodes?: string[] | null;
+  /**
+   * Shapes to paint once the answer is out, for a mode whose answer isn't a
+   * place. Given these, the map reveals by colouring the world in rather than
+   * by dropping pins: no markers, no line between them, and it draws back to
+   * the whole map instead of flying in on a point — the answer is spread
+   * across it, and there's nothing to fly to.
+   */
+  highlights?: MapHighlight[] | null;
 }
 
 interface Position {
@@ -80,13 +88,17 @@ export default function WorldMap({
   night = false,
   borders = true,
   highlightCodes = null,
+  highlights = null,
 }: WorldMapProps) {
   const shapes = useWorldShapes();
+  // Painting the answer on rather than pinning it: see `highlights`.
+  const painted = !!highlights?.length;
 
   const theme = night
     ? {
         sea: "#000000", border: "rgba(226,232,240,0.75)",
         highlight: "rgba(74,222,128,0.35)", highlightLine: "#6ee7a8",
+        wrong: "rgba(244,63,94,0.4)", wrongLine: "#fb7185",
       }
     : {
         // The land is the satellite image, so the only colours left to pick
@@ -96,6 +108,7 @@ export default function WorldMap({
         // out the map has no edge to speak of.
         sea: "#050c22", border: "rgba(255,255,255,0.85)",
         highlight: "rgba(74,222,128,0.35)", highlightLine: "#4ade80",
+        wrong: "rgba(225,29,72,0.4)", wrongLine: "#fb7185",
       };
 
   // Plate carrée: longitude and latitude map straight onto x and y, which is
@@ -197,9 +210,13 @@ export default function WorldMap({
    * dropped when the next round resets the view above.
    */
   useEffect(() => {
-    if (answer) flyTo({ coordinates: [answer.lng, answer.lat], zoom: REVEAL_ZOOM });
-    else stopFlight();
-  }, [answer, flyTo, stopFlight]);
+    if (!answer) return stopFlight();
+    // A painted answer is everywhere the clock is kept, which is a band right
+    // round the world. Flying in on one end of it would hide the rest, so the
+    // map pulls back to the whole thing instead — the same journey, outward.
+    if (painted) flyTo({ coordinates: defaultCenter, zoom: 1 });
+    else flyTo({ coordinates: [answer.lng, answer.lat], zoom: REVEAL_ZOOM });
+  }, [answer, painted, defaultCenter, flyTo, stopFlight]);
 
   const k = position.zoom;
   const anchor = useMemo(
@@ -248,8 +265,13 @@ export default function WorldMap({
   };
 
   const project = (c: Coord) => projection([c.lng, c.lat]) as Pt | null;
-  const guessPt = guess ? project(guess) : null;
-  const answerPt = answer ? project(answer) : null;
+  const guessPt = painted || !guess ? null : project(guess);
+  const answerPt = painted || !answer ? null : project(answer);
+
+  // The painted shapes, turned into svg the same way the countries under them
+  // are: through this map's own projection, so they land inside the group the
+  // zoom moves and travel with it.
+  const toPath = useMemo(() => geoPath(projection), [projection]);
 
   // Keyed by value, not by the array's identity, so a caller building the list
   // inline doesn't rebuild the set on every render.
@@ -339,6 +361,25 @@ export default function WorldMap({
               }
             </Geographies>
           )}
+
+          {/* Where the clock is kept, and where the player looked for it. Over
+              the country outlines rather than among them: a piece is part of a
+              country, so its own border has to sit on top of the one it was
+              cut out of. */}
+          {highlights?.map(({ key, feature, tone }) => {
+            const right = tone === "right";
+            return (
+              <path
+                key={key}
+                d={toPath(feature) ?? undefined}
+                fill={right ? theme.highlight : theme.wrong}
+                stroke={right ? theme.highlightLine : theme.wrongLine}
+                strokeWidth={sz(1.4)}
+                strokeLinejoin="round"
+                pointerEvents="none"
+              />
+            );
+          })}
 
           {/* Guess to answer: the arc the globe throws between the two, bowed
               and with its dashes running along it. The stroke doesn't scale

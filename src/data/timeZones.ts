@@ -96,6 +96,13 @@ function clockFormat(zone: string): Intl.DateTimeFormat {
 }
 
 /**
+ * Where one zone's clock stands, as a position on the 24-hour face. What
+ * `countryClocks` reads for a whole country, read for a single part of one.
+ */
+export const zoneClock = (zone: string, at: number): number =>
+  mod(zoneOffset(zone, at), DAY);
+
+/**
  * Where a country's clocks stand — usually one position, eleven for Russia.
  * Empty for a country the zone table has never heard of, which takes it out of
  * the game rather than putting it on the wrong clock.
