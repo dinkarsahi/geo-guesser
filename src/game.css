@@ -1288,6 +1288,59 @@ body:has(.game-play) {
 .result-panel.hud .result-distance {
   color: #f3f4f6;
 }
+/* Everything the panel says, held together so that folding it away is one
+   element going and not eight. */
+.result-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+/* The panel covers the middle of the map, which on a close reveal is precisely
+   where the answer is, so it folds. The toggle sits on its own line hard right
+   rather than floating in the corner: over the top of the panel it would land
+   on the picked line, whose detail is set flush right and can be long. */
+.result-fold-toggle {
+  align-self: flex-end;
+  margin: -6px -8px -2px 0;
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #d1d5db;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.result-fold-toggle:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+/* Folded: a bar no wider than it needs, holding the mark and the way out of
+   the round. The button travels with the fold because it is the only way on —
+   a panel that hid it would strand the player behind a map they can't leave. */
+.result-panel.hud.is-folded {
+  flex-direction: row;
+  align-items: center;
+  width: auto;
+  max-width: calc(100% - 20px);
+  gap: 14px;
+  padding: 8px 12px;
+}
+.result-panel.hud.is-folded .result-fold-toggle {
+  align-self: center;
+  margin: 0;
+  order: 3;
+}
+.result-panel.hud.is-folded .result-points {
+  font-size: 18px;
+}
+.result-panel.hud.is-folded .btn {
+  font-size: 14px;
+  padding: 6px 12px;
+}
 .result-panel.hud .fact-panel {
   width: 100%;
   box-sizing: border-box;

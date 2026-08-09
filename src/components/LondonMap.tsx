@@ -395,13 +395,11 @@ export default function LondonMap({
   }));
   /** Name of the station under the pointer, if the pointer is on one. */
   const [hovered, setHovered] = useState<string | null>(null);
-  // Eleven lines is a lot of corner to give up on a phone, where the map has
-  // little enough room as it is — so there the key starts folded away.
-  const [keyOpen, setKeyOpen] = useState(
-    () =>
-      typeof window === "undefined" ||
-      !window.matchMedia?.("(max-width: 700px)").matches,
-  );
+  // Folded away to begin with, everywhere. Eleven lines is a lot of corner to
+  // give up, and the key answers a question most rounds never ask — the station
+  // is named in the prompt, and the colours only matter once you're hunting for
+  // a line by eye. Whoever wants it can open it, and it stays open.
+  const [keyOpen, setKeyOpen] = useState(false);
 
   // The fly-out runs outside React's render loop, so it reads the live view
   // through a ref rather than closing over a stale one.

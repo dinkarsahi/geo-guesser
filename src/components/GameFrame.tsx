@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { Coord } from "../lib/geo";
 import { finalScore, formatDistance, MAX_ROUND_SCORE } from "../lib/geo";
 import type { Match } from "../lib/match";
@@ -113,6 +113,12 @@ export default function GameFrame<T>({
   // Called for every game, room or not — it does nothing outside one, and a
   // hook can't be asked for halfway down a component.
   const room = useRoom(match, results, phase);
+  // The result panel stands over the middle of the map, which is often exactly
+  // where the answer is — so it can be folded down to a bar. Kept across rounds
+  // rather than reset with each one: a player who wants the reveal uncovered
+  // wants it uncovered every time, and having to press it again each round is
+  // the thing they were trying to get away from.
+  const [panelFolded, setPanelFolded] = useState(false);
   // A room runs to a timetable, which is what everything below tests for: no
   // "next round" button, a countdown in its place, and its own results screen.
   const timetabled = match?.startAt !== undefined;
@@ -297,87 +303,118 @@ export default function GameFrame<T>({
         // picked, what it actually was, and only then how that scored. The
         // number last, because it means nothing until you've read the two
         // places it was measured between.
-        <div className="result-panel hud">
-          {/* Full marks and a miss take the same row, so the verdict is always
-              the first thing read and always in the same place. Nothing needs
-              naming after "Spot on!" — the answer is named in full directly
-              below it, and that's near enough the place just clicked.
-
-              On the mark rather than on the hit, because a click can be worth
-              full marks without landing on the answer: a city has a radius
-              round it, and thirty kilometres from the centre of one is still
-              knowing where it is. Read off the accuracy so that a match, where
-              the clock takes its cut afterwards, still says so — the guess was
-              perfect, and the line below explains what the seconds cost. */}
-          {fullMarks ? (
-            <p className="picked-line">
-              <span className="result-hit result-verdict">Spot on!</span>
-              {nearNote && <span className="result-near">{nearNote}</span>}
-            </p>
-          ) : (
-            picked && (
-              <p className="picked-line">
-                <span className="picked-label">You picked</span>
-                <span className="picked-name">{picked.name}</span>
-                {picked.detail && <span className="picked-detail">{picked.detail}</span>}
-              </p>
-            )
-          )}
-          {renderResultExtra && (
-            <div className="fact-panel">{renderResultExtra(target)}</div>
-          )}
-          <div className="result-headline">
-            {/* The verdict has been given at the top; all this line owes is how
-                far out the guess was, and what it scored — and not even that
-                where the verdict has already said it, which is the one case
-                the distance is part of the good news rather than the bad. */}
-            {!lastResult.hit && !nearNote && (
-              <span className="result-distance">
-                {lastResult.label ?? `${formatDistance(lastResult.distanceKm)} away`}
-              </span>
-            )}
+        <div className={`result-panel hud${panelFolded ? " is-folded" : ""}`}>
+          {/* The way out of a round travels with the fold, because folding the
+              panel away must never fold away the only button in it. A room has
+              no such button — its rounds turn over on the clock — so folded, it
+              is just the mark and the way back. */}
+          <button
+            type="button"
+            className="result-fold-toggle"
+            aria-expanded={!panelFolded}
+            aria-controls="result-body"
+            onClick={() => setPanelFolded((folded) => !folded)}
+          >
+            {panelFolded ? "Show result ▴" : "Hide ▾"}
+          </button>
+          {panelFolded && (
             <span className="result-points">
               +{lastResult.score.toLocaleString()} pts
             </span>
-          </div>
-          {/* Where the clock took some of it, the sum is shown rather than the
-              answer alone. A player who pointed straight at the place and was
-              handed 70 has been marked on two things and told about one of
-              them, and reads it as a worse guess than they made. */}
-          {timeCost > 0 && (
-            <p className="result-timecost">
-              <span className="result-timecost-sum">
-                {lastResult.accuracy.toLocaleString()} for the guess
-                {" − "}
-                {timeCost.toLocaleString()} for the clock
-              </span>
-              <span className="muted result-timecost-note">
-                Every round is free for its first{" "}
-                {Math.round(MATCH_GRACE_MS / 1000)} seconds, then costs you
-                slowly.
-              </span>
-            </p>
           )}
-          {/* In a room there is nothing to press: the round turns over for
-              everybody at once, so what goes here is who it's still waiting on
-              and what the question just answered was worth to each of them. */}
-          {timetabled && match && roundClosesAt !== null ? (
-            <RoomReveal
-              code={match.code}
-              closesAt={roundClosesAt}
-              round={roundIndex + 1}
-              lastRound={lastRound}
-              mode={match.mode}
-              board={room.board}
-              you={match.player}
-              yours={lastResult.score}
-              offline={room.offline}
-            />
-          ) : (
-            <div className="button-row">
-              <button className="btn btn-primary" onClick={next}>
-                {lastRound ? "See results" : "Next round →"}
-              </button>
+          {panelFolded && !timetabled && (
+            <button className="btn btn-primary" onClick={next}>
+              {lastRound ? "See results" : "Next round →"}
+            </button>
+          )}
+          {!panelFolded && (
+            <div id="result-body" className="result-body">
+              {/* Full marks and a miss take the same row, so the verdict is
+                  always the first thing read and always in the same place.
+                  Nothing needs naming after "Spot on!" — the answer is named in
+                  full directly below it, and that's near enough the place just
+                  clicked.
+
+                  On the mark rather than on the hit, because a click can be
+                  worth full marks without landing on the answer: a city has a
+                  radius round it, and thirty kilometres from the centre of one
+                  is still knowing where it is. Read off the accuracy so that a
+                  match, where the clock takes its cut afterwards, still says so
+                  — the guess was perfect, and the line below explains what the
+                  seconds cost. */}
+              {fullMarks ? (
+                <p className="picked-line">
+                  <span className="result-hit result-verdict">Spot on!</span>
+                  {nearNote && <span className="result-near">{nearNote}</span>}
+                </p>
+              ) : (
+                picked && (
+                  <p className="picked-line">
+                    <span className="picked-label">You picked</span>
+                    <span className="picked-name">{picked.name}</span>
+                    {picked.detail && <span className="picked-detail">{picked.detail}</span>}
+                  </p>
+                )
+              )}
+              {renderResultExtra && (
+                <div className="fact-panel">{renderResultExtra(target)}</div>
+              )}
+              <div className="result-headline">
+                {/* The verdict has been given at the top; all this line owes is
+                    how far out the guess was, and what it scored — and not even
+                    that where the verdict has already said it, which is the one
+                    case the distance is part of the good news rather than the
+                    bad. */}
+                {!lastResult.hit && !nearNote && (
+                  <span className="result-distance">
+                    {lastResult.label ?? `${formatDistance(lastResult.distanceKm)} away`}
+                  </span>
+                )}
+                <span className="result-points">
+                  +{lastResult.score.toLocaleString()} pts
+                </span>
+              </div>
+              {/* Where the clock took some of it, the sum is shown rather than
+                  the answer alone. A player who pointed straight at the place
+                  and was handed 70 has been marked on two things and told about
+                  one of them, and reads it as a worse guess than they made. */}
+              {timeCost > 0 && (
+                <p className="result-timecost">
+                  <span className="result-timecost-sum">
+                    {lastResult.accuracy.toLocaleString()} for the guess
+                    {" − "}
+                    {timeCost.toLocaleString()} for the clock
+                  </span>
+                  <span className="muted result-timecost-note">
+                    Every round is free for its first{" "}
+                    {Math.round(MATCH_GRACE_MS / 1000)} seconds, then costs you
+                    slowly.
+                  </span>
+                </p>
+              )}
+              {/* In a room there is nothing to press: the round turns over for
+                  everybody at once, so what goes here is who it's still waiting
+                  on and what the question just answered was worth to each of
+                  them. */}
+              {timetabled && match && roundClosesAt !== null ? (
+                <RoomReveal
+                  code={match.code}
+                  closesAt={roundClosesAt}
+                  round={roundIndex + 1}
+                  lastRound={lastRound}
+                  mode={match.mode}
+                  board={room.board}
+                  you={match.player}
+                  yours={lastResult.score}
+                  offline={room.offline}
+                />
+              ) : (
+                <div className="button-row">
+                  <button className="btn btn-primary" onClick={next}>
+                    {lastRound ? "See results" : "Next round →"}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
