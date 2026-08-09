@@ -185,10 +185,10 @@ function WorldDuelMark() {
 /**
  * Two gloves meeting in the middle.
  *
- * One emoji again, made of two: the second flipped so they face each other
- * rather than both pointing the same way, and turned blue so the pair reads as
- * two people rather than one person's kit. Drawn overlapping, because gloves
- * that don't touch are gloves waiting to be worn.
+ * One emoji again, made of two: the second flipped and both turned on their
+ * side so they come at each other rather than standing upright, and the second
+ * one blue so the pair reads as two people rather than one person's kit. Drawn
+ * overlapping, because gloves that don't touch are gloves waiting to be worn.
  */
 function DuelMark() {
   return (

@@ -114,17 +114,19 @@
   line-height: 1;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
 }
-/* Thrown rather than held: each leans into the other, and they overlap where
-   they meet. */
+/* Thrown at each other, not held up. The glove is drawn standing on its cuff,
+   so a pair of them side by side is two people holding their kit; turned
+   through most of a right angle, each one is a punch on its way across and the
+   two meet in the middle. */
 .duel-mark-red {
-  transform: rotate(-14deg);
+  transform: rotate(72deg);
 }
 .duel-mark-blue {
-  /* Mirrored so the two face each other, then turned from crimson to blue —
-     the glove is drawn red, so the rotation is measured from there. */
-  transform: scaleX(-1) rotate(-14deg);
+  /* Mirrored so the two come from opposite sides, then turned from crimson to
+     blue — the glove is drawn red, so the rotation is measured from there. */
+  transform: scaleX(-1) rotate(72deg);
   filter: hue-rotate(230deg) saturate(1.25) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
-  margin-left: -0.46em;
+  margin-left: -0.34em;
 }
 
 /* Two cards where the menu has seven: given a little more room each, since
@@ -539,16 +541,18 @@
 }
 .standing {
   display: grid;
-  grid-template-columns: 24px 1fr auto 76px;
+  /* Both figure columns fixed rather than sized to their contents: every row is
+     its own grid, so only a width they all share can hold them in a line — and
+     the time column has to be wide enough for a heading of four words over a
+     value of four characters. */
+  grid-template-columns: 24px 1fr 130px 76px;
   align-items: baseline;
   gap: 10px;
   padding: 7px 10px;
   border-radius: 8px;
   font-size: 15px;
 }
-/* Today's round has no clock, so no column of times. The score column keeps its
-   fixed width in both shapes: every row is its own grid, and only a width they
-   all share can hold the marks in a line. */
+/* Today's round has no clock, so no column of times. */
 .standing.is-untimed {
   grid-template-columns: 24px 1fr 76px;
 }
@@ -573,11 +577,25 @@
   color: var(--text);
 }
 .standing-time {
+  /* Left, like every other column: the page around this table is centred, and
+     without saying so the times drifted into the middle of their column while
+     the names either side of them read down one edge. */
+  text-align: left;
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
+/* Four words over a four-character figure: the heading is the only thing in
+   this table that needs two lines, and it may take them. */
+.standing-head .standing-time {
+  white-space: normal;
+  line-height: 1.25;
+}
+/* Left like everything else on the row. A column of marks read down its left
+   edge sits directly under the word naming it, which is worth more here than
+   the tidy right edge — the marks are all two or three digits anyway, and each
+   now carries what it is out of. */
 .standing-score {
-  text-align: right;
+  text-align: left;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--text-h);
@@ -1382,8 +1400,9 @@ body:has(.game-play) {
 .picked-line {
   display: flex;
   align-items: baseline;
-  /* Wraps rather than squeezing: on a phone the verdict and the note it
-     explains would otherwise share one line by breaking both of them. */
+  /* Wraps rather than squeezing: a country named in a whole clause — "Nigeria,
+     where the local time is 21:29" — would otherwise break its own line and
+     the figure beside it to stay on one row. */
   flex-wrap: wrap;
   gap: 2px 10px;
   width: 100%;
@@ -1398,17 +1417,12 @@ body:has(.game-play) {
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
-/* Full marks, and the whole of that row: bigger and heavier than the label it
-   stands in for, since it's a verdict rather than a heading for something. */
-.result-verdict {
-  font-size: 18px;
-  font-weight: 800;
-}
-/* Why full marks were full, on the same line as the verdict and quieter than
+/* Why full marks were full: its own line under the verdict, and quieter than
    it — it explains the green rather than adding to it. */
 .result-near {
   font-size: 14px;
   color: var(--text);
+  text-align: center;
 }
 .result-panel.hud .result-near {
   color: #d1d5db;
@@ -1466,15 +1480,21 @@ body:has(.game-play) {
   font-weight: 700;
   color: #16a34a;
 }
+/* The verdict stands where the distance would have been, so it takes that
+   line's size — and a little more weight, since it is a verdict rather than a
+   measurement. */
+.result-distance.result-hit {
+  font-weight: 800;
+}
 @media (prefers-color-scheme: dark) {
   .result-hit {
     color: #4ade80;
   }
 }
 /* On the panel it's always the dark-background green, and it has to outrank
-   the label colour set for everything else in that row. */
+   the colour the distance is otherwise set in. */
 .result-panel.hud .result-hit,
-.result-panel.hud .picked-label.result-hit {
+.result-panel.hud .result-distance.result-hit {
   color: #4ade80;
 }
 .result-extra {
@@ -1507,28 +1527,32 @@ body:has(.game-play) {
   font-weight: 400;
 }
 /* The round, what it was, how close you got, what that paid.
-   Right-aligned throughout: three of the four columns end in a figure, and a
-   column of figures is read up its right-hand edge. `table-layout: auto` lets
-   the answer take the room that's going, since it's the column with words in
-   it, and every heading sits over its own column by construction. */
+   Left-aligned throughout, heading and figure alike: every column then begins
+   at one edge, and the eye runs straight down from the word to the numbers it
+   names instead of crossing a gap to find them. `table-layout: auto` lets the
+   answer take the room that's going, since it's the column with words in it,
+   and every heading sits over its own column by construction. */
 .summary-table {
   width: 100%;
   margin: 24px 0;
   border-collapse: collapse;
-  text-align: right;
+  text-align: left;
 }
 .summary-table th,
 .summary-table td {
-  padding: 10px 0 10px 16px;
+  padding: 10px 16px 10px 0;
   border-bottom: 1px solid var(--border);
   vertical-align: baseline;
   font-weight: 400;
-  text-align: right;
+  text-align: left;
 }
 .summary-table th:first-child,
 .summary-table td:first-child {
-  padding-left: 0;
   white-space: nowrap;
+}
+.summary-table th:last-child,
+.summary-table td:last-child {
+  padding-right: 0;
 }
 .summary-table thead th {
   padding-bottom: 4px;

@@ -170,6 +170,13 @@ A daily result is still filed with the milliseconds it took, and `rankResults`
 still settles level scores on them. It just isn't shown anywhere: `Standings`
 draws its Time column only when passed `timed`, which only `RoomResult` does.
 
+**`ms` means two different things**, and the column heading is the giveaway.
+On a daily result it is the whole game. On a `RoomStanding` it is the player's
+**average round** — `fetchRoomBoard` divides by the rounds they have filed,
+because a room table is read mid-match, where a total says more about how far
+somebody has got than about how long they take. The room's ranking settles
+level scores on that average.
+
 `RoundResult` keeps `accuracy` (the guess alone) and `score` (once timed)
 separately, and the result panel shows the subtraction. A player who pointed
 straight at the place and was handed 70 has been marked on two things and must

@@ -237,13 +237,24 @@ function TimeZoneGame({
       // What time it is where you pointed, which is the whole lesson of a miss.
       // Being told the answer was 14:30 teaches nothing on its own; being told
       // you picked Brazil, and that Brazil is on 10:30, is the round.
+      //
+      // Said in the same breath as the country rather than set out to the right
+      // as a figure. A clock is only about the place it belongs to, and read as
+      // a sentence — "Nigeria, where the local time is 21:29" — it says whose
+      // 21:29 that is. Out on its own it was a second number on a screen that
+      // already had one, with nothing to say which country it answered for.
       pickedLabel={(click) => {
         const here = clocksAt(shapes, pieces, click, now);
         if (!here) return null;
         if (!here.clocks.length) return { name: here.name };
+        const clocks = here.clocks.map((c) => clockLabel(clockNow(c, now)));
         return {
-          name: here.name,
-          detail: `${here.clocks.map((c) => clockLabel(clockNow(c, now))).join(" / ")} there`,
+          name:
+            clocks.length > 1
+              ? // Russia keeps eleven of them, and "the local time is" would be
+                // claiming one clock for a country that has never had one.
+                `${here.name}, where the local times are ${clocks.join(" / ")}`
+              : `${here.name}, where the local time is ${clocks[0]}`,
         };
       }}
       hint="Click a country where it's that time right now."

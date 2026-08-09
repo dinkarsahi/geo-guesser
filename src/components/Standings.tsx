@@ -35,7 +35,10 @@ export default function Standings({ results, you, timed = false }: StandingsProp
       <div className={`${shape} standing-head`} aria-hidden="true">
         <span className="standing-place" />
         <span className="standing-name">Player</span>
-        {timed && <span className="standing-time">Time</span>}
+        {/* Per round, not for the game: a room read mid-match holds players who
+            have answered three rounds beside players who have answered five,
+            and a total makes the one who has barely started look quick. */}
+        {timed && <span className="standing-time">Average time per round</span>}
         <span className="standing-score">Score</span>
       </div>
       <ol className="standings">

@@ -299,10 +299,16 @@ export default function GameFrame<T>({
       )}
 
       {isResult && lastResult && (
-        // Read top to bottom it's the round in the order it happened: what you
-        // picked, what it actually was, and only then how that scored. The
-        // number last, because it means nothing until you've read the two
-        // places it was measured between.
+        // Read top to bottom it's the verdict and then the working behind it:
+        // how far out the guess was and what that paid, then the place that was
+        // pointed at, then the place it should have been and something worth
+        // knowing about it.
+        //
+        // The mark leads because it is the thing being waited for. Told the
+        // story in the order it happened — you picked this, it was that, here's
+        // your score — a player looking for the number had to read a paragraph
+        // to find it, every round, and the panel is on screen for as long as it
+        // takes to press the button.
         <div className={`result-panel hud${panelFolded ? " is-folded" : ""}`}>
           {/* The way out of a round travels with the fold, because folding the
               panel away must never fold away the only button in it. A room has
@@ -329,43 +335,22 @@ export default function GameFrame<T>({
           )}
           {!panelFolded && (
             <div id="result-body" className="result-body">
-              {/* Full marks and a miss take the same row, so the verdict is
-                  always the first thing read and always in the same place.
-                  Nothing needs naming after "Spot on!" — the answer is named in
-                  full directly below it, and that's near enough the place just
-                  clicked.
+              {/* How far out, and what that paid — the two halves of the mark,
+                  on one line and first.
 
-                  On the mark rather than on the hit, because a click can be
-                  worth full marks without landing on the answer: a city has a
+                  Full marks take the same row rather than a line of their own,
+                  so the verdict is always in the same place whatever it says.
+                  Read off the accuracy and not off the hit, because a click can
+                  be worth full marks without landing on the answer: a city has a
                   radius round it, and thirty kilometres from the centre of one
-                  is still knowing where it is. Read off the accuracy so that a
-                  match, where the clock takes its cut afterwards, still says so
-                  — the guess was perfect, and the line below explains what the
-                  seconds cost. */}
-              {fullMarks ? (
-                <p className="picked-line">
-                  <span className="result-hit result-verdict">Spot on!</span>
-                  {nearNote && <span className="result-near">{nearNote}</span>}
-                </p>
-              ) : (
-                picked && (
-                  <p className="picked-line">
-                    <span className="picked-label">You picked</span>
-                    <span className="picked-name">{picked.name}</span>
-                    {picked.detail && <span className="picked-detail">{picked.detail}</span>}
-                  </p>
-                )
-              )}
-              {renderResultExtra && (
-                <div className="fact-panel">{renderResultExtra(target)}</div>
-              )}
+                  is still knowing where it is. Off the accuracy also means a
+                  duel, where the clock takes its cut afterwards, still says
+                  "spot on" — the guess was perfect, and the sum further down
+                  explains what the seconds cost. */}
               <div className="result-headline">
-                {/* The verdict has been given at the top; all this line owes is
-                    how far out the guess was, and what it scored — and not even
-                    that where the verdict has already said it, which is the one
-                    case the distance is part of the good news rather than the
-                    bad. */}
-                {!lastResult.hit && !nearNote && (
+                {fullMarks ? (
+                  <span className="result-distance result-hit">Spot on!</span>
+                ) : (
                   <span className="result-distance">
                     {lastResult.label ?? `${formatDistance(lastResult.distanceKm)} away`}
                   </span>
@@ -374,6 +359,20 @@ export default function GameFrame<T>({
                   +{lastResult.score.toLocaleString()} pts
                 </span>
               </div>
+              {/* Under the mark it explains: full marks with a distance beside
+                  them looks like something was rounded in the player's favour
+                  and won't say what. */}
+              {nearNote && <p className="result-near">{nearNote}</p>}
+              {picked && !fullMarks && (
+                <p className="picked-line">
+                  <span className="picked-label">You picked</span>
+                  <span className="picked-name">{picked.name}</span>
+                  {picked.detail && <span className="picked-detail">{picked.detail}</span>}
+                </p>
+              )}
+              {renderResultExtra && (
+                <div className="fact-panel">{renderResultExtra(target)}</div>
+              )}
               {/* Where the clock took some of it, the sum is shown rather than
                   the answer alone. A player who pointed straight at the place
                   and was handed 70 has been marked on two things and told about

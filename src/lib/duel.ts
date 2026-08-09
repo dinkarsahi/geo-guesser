@@ -309,7 +309,13 @@ export async function postRound(
   }
 }
 
-/** One player's room, as the table at the end reads it. */
+/**
+ * One player's room, as the table at the end reads it.
+ *
+ * `ms` here is their **average round**, not the time the game took them — the
+ * table is read mid-match as often as after it, where a total says more about
+ * how far somebody has got than about how long they take.
+ */
 export interface RoomStanding extends SharedResult {
   /** Rounds they've filed so far, so the board can be read mid-game. */
   rounds: number;
@@ -399,6 +405,13 @@ export async function fetchRoomBoard(code: string): Promise<RoomStanding[]> {
   const standings = [...byName.values()].map((s) => ({
     ...s,
     score: Math.round(s.score / played),
+    // The average round rather than the sum of them, which is what the column
+    // above it now says. Divided by this player's own rounds and not by the
+    // room's furthest, because a total spread over rounds somebody hasn't
+    // played yet reads as speed — the slowest player in the room would top the
+    // column by being a round behind. Level scores are settled on this, and an
+    // average is the fairer thing to settle them on for the same reason.
+    ms: s.rounds > 0 ? Math.round(s.ms / s.rounds) : 0,
   }));
   return standings.sort((a, b) => b.score - a.score || a.ms - b.ms);
 }
