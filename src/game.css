@@ -112,21 +112,32 @@
 .duel-mark-blue {
   font-size: 0.82em;
   line-height: 1;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
 }
-/* Thrown at each other, not held up. The glove is drawn standing on its cuff,
-   so a pair of them side by side is two people holding their kit; turned
-   through most of a right angle, each one is a punch on its way across and the
-   two meet in the middle. */
-.duel-mark-red {
-  transform: rotate(72deg);
-}
+/* A fist bump: two gloves laid flat, knuckles together, thumbs uppermost.
+
+   The glove is drawn standing on its cuff with the thumb low, so getting there
+   takes both a turn and a flip. Laid over on its side alone it is a punch with
+   the thumb underneath, which is a punch nobody throws — the vertical flip puts
+   the thumb back on top without moving where the fist points, since mirroring
+   top to bottom leaves left and right alone.
+
+   Blue leads from the left and red comes back at it, so the two are mirror
+   images: the second flip is the only difference between them. The drop shadow
+   is thrown upwards in the rule because the flip turns it over again, and a
+   shadow above a glove reads as a glove hanging rather than one held out. */
 .duel-mark-blue {
-  /* Mirrored so the two come from opposite sides, then turned from crimson to
-     blue — the glove is drawn red, so the rotation is measured from there. */
-  transform: scaleX(-1) rotate(72deg);
-  filter: hue-rotate(230deg) saturate(1.25) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
-  margin-left: -0.34em;
+  transform: scaleY(-1) rotate(88deg);
+  /* Turned from crimson to blue — the glove is drawn red, so the pair costs
+     one hue rotation rather than two emoji. */
+  filter: hue-rotate(230deg) saturate(1.25) drop-shadow(0 -1px 2px rgba(0, 0, 0, 0.45));
+}
+.duel-mark-red {
+  transform: scaleY(-1) scaleX(-1) rotate(88deg);
+  filter: drop-shadow(0 -1px 2px rgba(0, 0, 0, 0.45));
+  /* Pulled in until the knuckles meet, because two gloves with daylight
+     between them are two gloves waiting to be worn. On the second of the two,
+     whichever colour that is. */
+  margin-left: -0.5em;
 }
 
 /* Two cards where the menu has seven: given a little more room each, since

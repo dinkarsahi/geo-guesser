@@ -183,18 +183,18 @@ function WorldDuelMark() {
 }
 
 /**
- * Two gloves meeting in the middle.
+ * Two gloves meeting in the middle: a fist bump rather than a pair of gloves.
  *
- * One emoji again, made of two: the second flipped and both turned on their
- * side so they come at each other rather than standing upright, and the second
- * one blue so the pair reads as two people rather than one person's kit. Drawn
- * overlapping, because gloves that don't touch are gloves waiting to be worn.
+ * One emoji again, made of two — laid on their sides facing each other, and one
+ * of them turned blue so the pair reads as two people rather than one person's
+ * kit. Blue comes first because it stands on the left, and the turning that
+ * gets each of them there is in the stylesheet.
  */
 function DuelMark() {
   return (
     <span className="mode-emoji duel-mark" aria-hidden="true">
-      <span className="duel-mark-red">🥊</span>
       <span className="duel-mark-blue">🥊</span>
+      <span className="duel-mark-red">🥊</span>
     </span>
   );
 }

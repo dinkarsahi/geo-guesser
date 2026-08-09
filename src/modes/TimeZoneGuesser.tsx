@@ -100,13 +100,16 @@ function clocksAt(
   pieces: ZonePieces,
   click: Coord,
   at: number,
-): { name: string; clocks: number[] } | null {
+): { name: string; clocks: number[]; ofPiece: boolean } | null {
   const feature = countryAt(shapes, click);
   if (!feature) return null;
   const code = codeOf(feature);
   const piece = pieceAt(pieces, code, click);
   const clocks = piece ? [zoneClock(piece.zone, at)] : countryClocks(code, at);
-  return { name: nameOf(feature), clocks };
+  // Whether that one clock is the clock of a *place* or of a whole country.
+  // The difference is the difference between "it is 21:47 where you pressed"
+  // and "it is 21:47 in Nigeria", and only the first is worth claiming.
+  return { name: nameOf(feature), clocks, ofPiece: piece !== null };
 }
 
 /** How far the clock of whatever was clicked is from the one asked about. */
@@ -243,18 +246,36 @@ function TimeZoneGame({
       // a sentence — "Nigeria, where the local time is 21:29" — it says whose
       // 21:29 that is. Out on its own it was a second number on a screen that
       // already had one, with nothing to say which country it answered for.
+      //
+      // One time, always. A country keeping several of them was answered with
+      // the lot, which is the one thing this game must never do: "Australia,
+      // 21:47 / 22:47 / 23:47" is three answers where the player gave one, and
+      // it hides the one they actually gave. So where the country is cut up the
+      // sentence names the part's clock and says so — the whole reason those
+      // parts exist is that a press on Perth is a press on Perth.
       pickedLabel={(click) => {
         const here = clocksAt(shapes, pieces, click, now);
         if (!here) return null;
         if (!here.clocks.length) return { name: here.name };
-        const clocks = here.clocks.map((c) => clockLabel(clockNow(c, now)));
+        const reads = (clock: number) => clockLabel(clockNow(clock, now));
+        if (here.ofPiece) {
+          return {
+            name: `${here.name}, where the local time is ${reads(here.clocks[0])} in the part you clicked`,
+          };
+        }
+        if (here.clocks.length === 1) {
+          return { name: `${here.name}, where the local time is ${reads(here.clocks[0])}` };
+        }
+        // Several clocks and no parts to tell them apart: Ukraine, which the
+        // boundary file doesn't divide, and every divided country if that file
+        // failed to download. The round was marked against whichever of them
+        // came closest, so that is the one named — a sentence quoting a clock
+        // the score didn't use is a panel arguing with itself.
+        const nearest = here.clocks.reduce((best, c) =>
+          clockGap(c, game.target.clockOffset) < clockGap(best, game.target.clockOffset) ? c : best,
+        );
         return {
-          name:
-            clocks.length > 1
-              ? // Russia keeps eleven of them, and "the local time is" would be
-                // claiming one clock for a country that has never had one.
-                `${here.name}, where the local times are ${clocks.join(" / ")}`
-              : `${here.name}, where the local time is ${clocks[0]}`,
+          name: `${here.name}, which keeps more than one clock — the nearest reads ${reads(nearest)}`,
         };
       }}
       hint="Click a country where it's that time right now."

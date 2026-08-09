@@ -120,7 +120,13 @@ lets the pool be *every* country rather than the ones someone got round to.
 - **Time zone** must read a *live* clock (`serverNow`, ticking every second) —
   the answer can't be a screenshot of a minute that has passed. Countries that
   keep several clocks are cut into pieces (`src/lib/zoneShapes.ts`), so a press
-  on Perth answers Perth's clock and not Sydney's.
+  on Perth answers Perth's clock and not Sydney's, and the reveal says so: "in
+  the part you clicked". **Not quite every one of them is cut** — the pieces
+  file holds 20 countries and Ukraine keeps two clocks without being in it, so
+  the "several clocks, no parts" path is real code and not just the
+  failed-download case. There the round is marked against whichever of the
+  country's clocks came closest, and the reveal names that same one; a sentence
+  quoting a clock the score didn't use is a panel arguing with itself.
 - **Tube** treats whichever station's patch of the map you clicked as your
   answer, and charges you the ride from there.
 
