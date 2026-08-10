@@ -137,22 +137,24 @@ lets the pool be *every* country rather than the ones someone got round to.
 
 `Tube Station User Scoring Test Version` — `src/modes/TubeScoringTest.tsx`, with
 the rule it tries out in `src/data/tubeNearby.ts`. A copy of the tube game for
-judging a way of marking it: from zone 3 outwards every station gets a reach
-(1.2 km at zone 3, +0.4 km a zone, capped at 2.4 — roughly the median gap
-between adjacent stations out there, which the data agrees with: 1.26 km in
-zone 3, 1.48 in zone 4, 1.99 in zone 6). Where the clicked station's reach
-covers the answer, the ride is replaced by **how crowded that reach is**: one
-stop for the answer, plus one for every other station in reach. Membership is
-circle *touching* circle, not centre-inside-circle. The kinder of the two counts,
-so the rule can never cost a round.
+judging a way of marking it: from zone 3 outwards every station gets a circle
+(radius 1.2 km at zone 3, +0.4 km a zone, capped at 2.4 — about one station's
+gap, which the data agrees with: neighbours joined by track sit 1.26 km apart in
+zone 3, 1.48 in zone 4, 1.99 in zone 6). Where the clicked station's circle
+covers the answer, the ride is replaced by **how crowded the circle is**: one
+stop for the answer, plus one for every other station inside it. The kinder of
+the two counts, so the rule can never cost a round. Northwick Park's circle
+holds three stations, so a click there for Kenton — 18 stops by train — is
+marked 4 stops: nothing today, 64 under this.
 
-**What the bench has already shown:** the crowding term swamps it. Circle-touch
-membership means an effective 3.2 km catchment for two zone-4 stations, so
-Kenton catches 13 neighbours and Kenton → Northwick Park (387 m apart, 18 stops)
-is marked 14 stops — still nothing. Centre-inside membership gives 4 stops (64),
-and ranking the answer by distance within the circle gives 1 stop (97). Those
-are the knobs; the panel prints the count so the failure is visible rather than
-inferred.
+**The trap, and it cost a round trip:** membership is the station's dot inside
+the circle, and it has to stay something a tester can *count off the screen*.
+Reading "a station whose circle touches" as the station's own reach circle put
+13 stations in Kenton's count instead of the 3 visibly inside it; a 150 m
+tolerance for dots straddling the edge then let in Preston Road, 1.74 km from a
+1.6 km circle. Both made the printed number disagree with the picture, which is
+the one thing the bench cannot afford. If the test ever grows a tolerance again,
+the circle on the map has to grow with it.
 
 It opens on a bench rather than a game — both ends of a round are chosen by
 whoever is testing, and the panel puts the two rules in adjacent columns with

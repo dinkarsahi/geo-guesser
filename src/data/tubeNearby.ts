@@ -1,4 +1,4 @@
-import { formatDistance, haversineKm } from "../lib/geo";
+import { haversineKm } from "../lib/geo";
 import {
   formatStops,
   scoreFromStops,
@@ -34,18 +34,19 @@ export const NEARBY_FROM_ZONE = 3;
 /**
  * The reach at zone 3, and what each zone further out adds.
  *
- * BASE_KM is a stop's worth of ground: adjacent stations are about 1.2 km apart
- * out there, so a click inside the reach is at most about one stop's walk from
- * the answer, which is exactly the near miss the rule exists to pay for. It
- * grows because the stops themselves do — the gaps are better than twice that
- * by zone 6, so a fixed radius would be generous at Amersham and mean at
- * Turnham Green. The cap is roughly half an hour on foot, past which "near"
- * has stopped describing anything.
+ * Sized off the map rather than off anything a person would do with it: the
+ * circle is meant to hold the stations that could plausibly have been meant by
+ * the click, which is the ones next along. Measured over stations actually
+ * joined by track, the gap between neighbours runs 1.26 km at zone 3, 1.48 at
+ * zone 4 and 1.99 at zone 6, so a reach of one gap covers the immediate
+ * neighbours and stops there. It grows outwards because the network does; a
+ * fixed radius would swallow half of zone 3 or nothing at all at Amersham,
+ * depending which end it was set for.
  *
- * The size matters less than it looks, because of how the reach is used below:
- * a bigger circle catches more stations and so charges more stops. Widen it and
- * the rule pays out more often but pays less each time, which is the right way
- * round for a number nobody can pick exactly.
+ * The exact figure matters less than it looks, because of how the reach is used
+ * below: a bigger circle holds more stations and therefore charges more stops.
+ * Widen it and the rule pays out more often but pays less each time, which is
+ * the right way round for a number nobody can pick exactly.
  */
 const BASE_KM = 1.2;
 const PER_ZONE_KM = 0.4;
@@ -54,6 +55,18 @@ const MAX_KM = 2.4;
 /** What a zone adds to the reach, for a screen that has to say so out loud. */
 export const NEARBY_STEP_KM = PER_ZONE_KM;
 
+/**
+ * A station is in when its dot is in, and by nothing wider than that.
+ *
+ * There was a tolerance here for markers straddling the edge, and it went the
+ * way of the reading before it: the dot on screen is worth about 150 m of
+ * ground zoomed out, which let Preston Road — 1.74 km from Northwick Park,
+ * plainly outside a 1.6 km circle — into the count, and the figure on the panel
+ * stopped agreeing with what anyone could see in the circle. The rule is read
+ * off the drawing, so the test has to be the one that can be checked against
+ * the drawing: centre inside, and that's all.
+ */
+
 /** How far a station's reach extends, or null for one too far in to have one. */
 export function nearbyRadiusKm(station: TubeStation): number | null {
   if (station.zone < NEARBY_FROM_ZONE) return null;
@@ -61,23 +74,19 @@ export function nearbyRadiusKm(station: TubeStation): number | null {
   return Math.min(MAX_KM, BASE_KM + beyond * PER_ZONE_KM);
 }
 
-/** Two stations are in reach of each other when their circles meet at all. */
-const inReach = (a: TubeStation, b: TubeStation, radiusA: number) =>
-  haversineKm(a, b) <= radiusA + (nearbyRadiusKm(b) ?? 0);
-
 /** Worked out once per station — the bench asks for this on every render. */
 const reachOf = new Map<string, TubeStation[]>();
 
 /**
- * Every other station within reach of this one.
+ * Every other station inside this one's circle — the ones you can see in it.
  *
- * "Within reach" is circle meeting circle rather than centre falling inside
- * circle: a station whose own reach so much as touches this one is counted, not
- * only one sitting well inside it. Being on the edge of somewhere is still
- * being there, and a hard boundary would put two stations either side of a line
- * a hundred metres apart into different worlds.
+ * The whole rule is read off the drawing, so the test is the one the eye makes:
+ * a station is in if its dot falls within the circle. Nothing about the
+ * station's own circle enters into it — that was an earlier reading of
+ * "touching", and it counted thirteen stations around a circle with three
+ * visibly inside it.
  *
- * Empty for a station too far in to have a reach at all.
+ * Empty for a station too far in to have a circle at all.
  */
 export function stationsInReach(clicked: TubeStation): TubeStation[] {
   const cached = reachOf.get(clicked.name);
@@ -86,7 +95,9 @@ export function stationsInReach(clicked: TubeStation): TubeStation[] {
   const found =
     radius === null
       ? []
-      : tubeStations.filter((s) => s.name !== clicked.name && inReach(clicked, s, radius));
+      : tubeStations.filter(
+          (s) => s.name !== clicked.name && haversineKm(clicked, s) <= radius,
+        );
   reachOf.set(clicked.name, found);
   return found;
 }
@@ -120,14 +131,14 @@ export interface NearbyMark {
 /**
  * Mark a click under the test rules.
  *
- * Where the reach covers the answer, the ride is replaced by how crowded the
- * reach is: one stop for the answer itself, plus one for every other station
- * whose circle the click's circle meets. That is the rule doing its own
- * calibration. A reach out at Chesham holds almost nothing, so landing in it
- * really does mean knowing where the place is and is paid like a near miss; a
- * reach over a busy corner of zone 3 holds half a dozen stations, and landing
- * in it narrows the answer down to one of six — worth something, but not worth
- * what pointing at the station itself is worth.
+ * Where the circle covers the answer, the ride is replaced by how crowded the
+ * circle is: one stop for the answer itself, plus one for every other station
+ * inside. That is the rule doing its own calibration, in the units the game is
+ * already marked in. A circle out at Chesham holds almost nothing, so landing
+ * in it really does mean knowing where the place is and is paid like a near
+ * miss; a circle over a busy corner of zone 3 holds three or four stations, and
+ * landing in it narrows the answer to one of those — worth something, but not
+ * worth what pointing at the station itself is worth.
  *
  * The reach belongs to the station the player clicked, not to the answer,
  * because it's the player's click the circle is drawn around: what's on screen
@@ -156,11 +167,13 @@ export function markNearby(clicked: TubeStation, answer: TubeStation): NearbyMar
     eased,
     score: scoreFromStops(countedStops),
     todayScore: scoreFromStops(stops),
-    // Where the reach did the work, the ride is named as well as the mark:
-    // "2 stops away" over a journey the player can see is eighteen looks like
-    // the game has lost count of its own network.
+    // Where the circle did the work, the ride is named as well as the mark:
+    // "4 stops away" over a journey the player can see is eighteen looks like
+    // the game has lost count of its own network. Both in stops, because stops
+    // are what the game marks in — the metres are how the circle is built, not
+    // what the answer is worth.
     label: eased
-      ? `${formatDistance(km)} away — counted as ${formatStops(countedStops)}`
+      ? `${formatStops(countedStops)} — the ride is ${stops}`
       : formatStops(stops),
   };
 }

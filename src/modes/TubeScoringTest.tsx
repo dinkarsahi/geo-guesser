@@ -270,34 +270,31 @@ function ScoringBench({
               {mark.radiusKm === null ? (
                 <>
                   {clicked.name} is in {zoneLabel(clicked.zone)}, too far in to have a
-                  reach — inside zone {NEARBY_FROM_ZONE} the stations are a few hundred
-                  metres apart and being near one means nothing. So the ride stands.
+                  circle — inside zone {NEARBY_FROM_ZONE} the stations sit on top of one
+                  another and being near one narrows nothing down. So the ride stands.
                 </>
               ) : (
                 <>
-                  {clicked.name} is in {zoneLabel(clicked.zone)}, so its reach is{" "}
-                  <strong>{mark.radiusKm.toFixed(1)} km</strong> — about one stop’s walk
-                  at that distance out, growing {PER_ZONE_KM_LABEL} a zone because the
-                  stops do.{" "}
+                  {clicked.name} is in {zoneLabel(clicked.zone)}, so its circle has a
+                  radius of <strong>{mark.radiusKm.toFixed(1)} km</strong> — about one
+                  station’s gap on this part of the map, so it holds the stations that
+                  could plausibly have been meant and stops there. It widens{" "}
+                  {PER_ZONE_KM_LABEL} a zone because the gaps do.{" "}
                   {mark.covered ? (
                     <>
                       {mark.neighbours === 0
-                        ? "Nothing else is in reach of it"
+                        ? "No other station is inside it"
                         : `${mark.neighbours} other ${
                             mark.neighbours === 1 ? "station is" : "stations are"
-                          } in reach of it`}
-                      , counting any whose own circle touches, so an answer inside counts
-                      as <strong>{mark.reachStops}</strong>{" "}
+                          } inside it`}
+                      , so an answer inside counts as <strong>{mark.reachStops}</strong>{" "}
                       {mark.reachStops === 1 ? "stop" : "stops"} — and{" "}
                       {mark.countedStops === mark.reachStops
                         ? "that beats the ride."
                         : "the ride was already better."}
                     </>
                   ) : (
-                    <>
-                      {answer.name} is {formatDistance(mark.km)} away, outside it, so the
-                      ride stands.
-                    </>
+                    <>{answer.name} falls outside it, so the ride stands.</>
                   )}
                 </>
               )}
