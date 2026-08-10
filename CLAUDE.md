@@ -62,7 +62,8 @@ Three of them, all satisfying `GuessMapProps` in `src/components/mapTypes.ts`:
 - **`GlobeMap.tsx`** — `react-globe.gl` (three.js). Draws from a **coarsened**
   copy of the country shapes; at full 1:50m detail the globe is a slideshow.
   Never score against the coarse copy.
-- **`LondonMap.tsx`** — bespoke SVG of the tube network.
+- **`LondonMap.tsx`** — bespoke SVG of the tube network. Also takes `rings` and
+  `autoView`, for the scoring bench — see below.
 
 Reveal colouring comes in two flavours, and they are not interchangeable:
 
@@ -84,6 +85,8 @@ for, so it can never cost anyone a round.
 ---
 
 ## The seven games
+
+(Seven on the menu, plus a test bench that isn't one of them — see below.)
 
 | Game | `ModeId` | Question | Marked on |
 |---|---|---|---|
@@ -129,6 +132,35 @@ lets the pool be *every* country rather than the ones someone got round to.
   quoting a clock the score didn't use is a panel arguing with itself.
 - **Tube** treats whichever station's patch of the map you clicked as your
   answer, and charges you the ride from there.
+
+### The eighth card: the tube scoring bench
+
+`Tube Station User Scoring Test Version` — `src/modes/TubeScoringTest.tsx`, with
+the rule it tries out in `src/data/tubeNearby.ts`. A copy of the tube game for
+judging a way of marking it: from zone 3 outwards every station gets a reach
+(1.2 km at zone 3, +0.4 km a zone, capped at 2.4), and an answer inside a
+clicked station's reach counts as one stop from the middle of it and two from
+the edge, instead of the ride it really is. Kenton to Northwick Park is 387 m on
+foot and eighteen stops by train: nothing today, 97 under this.
+
+It opens on a bench rather than a game — both ends of a round are chosen by
+whoever is testing, and the panel shows the mark both ways with the difference
+named. Five rounds of it can be played from the same screen.
+
+**It is deliberately not a `ModeId`.** Making it one would enter it in
+`MATCH_MODES`, and so in the daily rota — a rota of eight, one day in eight
+being an experiment shown to everybody — and would need a mode letter and a
+re-run of `schema.sql`. It's a `tubeTest` flag in `App.tsx` instead, and nothing
+in `match.ts`, `duel.ts` or the database knows it exists. Keep it that way
+unless the rule graduates, at which point it should replace the tube game's
+scoring rather than stand beside it.
+
+Two `LondonMap` props came in with it, both optional and both off by default:
+`rings` (circles measured in kilometres of ground, drawn under the network — the
+array's identity must be stable, since the map re-projects the lot whenever it's
+handed a new one) and `autoView` (false stops the map flying back to the whole
+network when the answer changes, which on the bench would yank the view away
+every time a station is named).
 
 ---
 

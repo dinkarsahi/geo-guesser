@@ -9,6 +9,7 @@ import PlayFriend from "./modes/PlayFriend";
 import PopulationGuesser from "./modes/PopulationGuesser";
 import TimeZoneGuesser from "./modes/TimeZoneGuesser";
 import TubeGuesser from "./modes/TubeGuesser";
+import TubeScoringTest, { TUBE_TEST_TITLE } from "./modes/TubeScoringTest";
 import type { GameSettings, ModeId, ModeProps } from "./modes/ModeProps";
 
 type Mode = ModeId;
@@ -267,19 +268,24 @@ export default function App() {
   // open — today's round against the world, or a room of people you know.
   const [social, setSocial] = useState<"hub" | "daily" | "room" | null>(null);
   const [match, setMatch] = useState<Match | null>(null);
+  // The tube scoring bench. Not a `Mode`: it's a copy of one game kept aside to
+  // try a rule out on, and making it a mode would enter it in the daily rota
+  // and in duel codes, which is the last place an experiment belongs.
+  const [tubeTest, setTubeTest] = useState(false);
 
   const toMenu = () => {
     setMode(null);
     setStarted(false);
     setSocial(null);
     setMatch(null);
+    setTubeTest(false);
   };
   const toggleNight = () => setNight((n) => !n);
   const modeProps = { onExit: toMenu, night, onToggleNight: toggleNight, settings };
 
   // A running game gets the whole window: the menu's fixed-width shell and its
   // side rules would otherwise pen the map in well short of the screen edges.
-  const playing = (mode !== null && started) || match !== null;
+  const playing = (mode !== null && started) || match !== null || tubeTest;
   useEffect(() => {
     document.body.classList.toggle("playing", playing);
     return () => document.body.classList.remove("playing");
@@ -299,6 +305,8 @@ export default function App() {
         match={match}
       />
     );
+
+  if (tubeTest) return <TubeScoringTest {...modeProps} />;
 
   // Back from either game goes to the pair of them rather than all the way out:
   // a player who opened the wrong one of the two wanted the other one.
@@ -357,6 +365,17 @@ export default function App() {
           <span className="muted mode-blurb">
             Play the world at today's round, or duel a friend on the same rounds at the
             same time.
+          </span>
+        </button>
+        {/* A copy of the tube game kept aside to try a way of marking it on.
+            Last in the grid and named for what it is, so nobody comes to it
+            expecting their score to count for anything. */}
+        <button className="mode-card" onClick={() => setTubeTest(true)}>
+          <span className="mode-emoji">🧪</span>
+          <span className="mode-title">{TUBE_TEST_TITLE}</span>
+          <span className="muted mode-blurb">
+            Try out marking a near miss by how far the walk is rather than by the ride:
+            set both ends of a round and see what each would pay.
           </span>
         </button>
       </div>

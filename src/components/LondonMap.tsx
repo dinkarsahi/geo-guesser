@@ -116,8 +116,38 @@ const stripedConnections = (() => {
   return out;
 })();
 
+/**
+ * A circle of real ground drawn on the map — a radius in kilometres around a
+ * point, not a fixed number of pixels. Used by the tube scoring test to show
+ * how far each station's reach extends; it grows and shrinks with the map like
+ * the network does, because that is what it's a measurement of.
+ */
+export interface MapRing {
+  /** Stable across renders, so React keeps the circle it already drew. */
+  key: string;
+  lat: number;
+  lng: number;
+  /** Radius on the ground, in kilometres. */
+  km: number;
+  /** The one being talked about: drawn bright and solid against the rest. */
+  strong?: boolean;
+}
+
+/** Kilometres to a degree of latitude. Constant enough across London. */
+const KM_PER_DEG_LAT = 110.574;
+
 interface LondonMapProps extends GuessMapProps {
   night?: boolean;
+  /** Ground circles to draw under the network. */
+  rings?: MapRing[];
+  /**
+   * Let the map move itself: back to the whole network when a round resets,
+   * and out to it again when the answer is revealed. True for a game, where
+   * each round is a fresh look at the map. False where the answer is something
+   * the player set themselves and the view is theirs to keep — being yanked
+   * back to zoom 1 every time you name a station makes the map unusable.
+   */
+  autoView?: boolean;
 }
 
 interface Position {
@@ -246,6 +276,8 @@ export default function LondonMap({
   answer,
   disabled = false,
   night = false,
+  rings,
+  autoView = true,
 }: LondonMapProps) {
   // White, TfL-style palette in day mode; a dark variant for night mode.
   const theme = night
@@ -384,6 +416,22 @@ export default function LondonMap({
     return { bands, labels, landmarks, thames, dots };
   }, [projection]);
 
+  /**
+   * The rings in un-zoomed map pixels. Their radius is measured by projecting a
+   * point due north of each centre: Mercator is conformal, so a small circle on
+   * the ground is still a circle here, and the north-south step is its radius.
+   */
+  const ringLayout = useMemo(
+    () =>
+      (rings ?? []).flatMap((r) => {
+        const at = projection([r.lng, r.lat]);
+        const north = projection([r.lng, r.lat + r.km / KM_PER_DEG_LAT]);
+        if (!at || !north) return [];
+        return [{ key: r.key, at: at as Pt, r: Math.abs(at[1] - north[1]), strong: !!r.strong }];
+      }),
+    [rings, projection],
+  );
+
   const defaultCenter = useMemo(
     () => projection.invert!([WIDTH / 2, mapHeight / 2]) as [number, number],
     [projection, mapHeight],
@@ -463,7 +511,7 @@ export default function LondonMap({
   const [prevAnswer, setPrevAnswer] = useState(answer);
   if (answer !== prevAnswer) {
     setPrevAnswer(answer);
-    if (!answer) setPosition({ coordinates: defaultCenter, zoom: 1 });
+    if (!answer && autoView) setPosition({ coordinates: defaultCenter, zoom: 1 });
   }
 
   /**
@@ -473,9 +521,10 @@ export default function LondonMap({
    * round resets the view above.
    */
   useEffect(() => {
+    if (!autoView) return;
     if (answer) flyTo({ coordinates: defaultCenter, zoom: 1 });
     else stopFlight();
-  }, [answer, defaultCenter, flyTo, stopFlight]);
+  }, [answer, autoView, defaultCenter, flyTo, stopFlight]);
 
   const k = position.zoom;
   const s = spreadFor(k);
@@ -651,6 +700,29 @@ export default function LondonMap({
                 }
               </Geographies>
             </g>
+
+            {/* Ground circles, where a caller has asked for them. Under
+                everything the map is actually made of — a hundred-odd circles
+                over the network would bury it — and scaled by the spread
+                rather than by `sz`, because this is a distance on the ground
+                and not a piece of furniture. */}
+            {ringLayout.map((r) => {
+              const q = sp(r.at);
+              return (
+                <circle
+                  key={r.key}
+                  cx={q[0]}
+                  cy={q[1]}
+                  r={r.r * s}
+                  fill={theme.hoverRing}
+                  fillOpacity={r.strong ? 0.18 : 0.05}
+                  stroke={theme.hoverRing}
+                  strokeOpacity={r.strong ? 0.95 : 0.32}
+                  strokeWidth={szStroke(r.strong ? 1.6 : 0.7)}
+                  strokeDasharray={r.strong ? undefined : `${szStroke(3)} ${szStroke(3)}`}
+                />
+              );
+            })}
 
             {/* River Thames ribbon. */}
             {thamesPoints && (

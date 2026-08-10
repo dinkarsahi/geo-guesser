@@ -868,6 +868,77 @@ body:has(.game-play) {
   font-weight: 600;
 }
 
+/* ---- Tube scoring bench --------------------------------------------- */
+/* The one screen whose title is a sentence. It wraps and sits small rather
+   than pushing the station boxes off the middle of the bar. */
+.lab-title {
+  white-space: normal;
+  max-width: 190px;
+  font-size: 14px;
+  line-height: 1.25;
+}
+/* Both ends of a round, side by side, because the whole exercise is comparing
+   one against the other. */
+.lab-picks {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+}
+.lab-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.lab-input {
+  width: 200px;
+  max-width: 32vw;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 15px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+}
+.lab-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.lab-actions {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+/* The comparison, under the mark it explains: the same click marked the other
+   way, and what the difference between them was. */
+.lab-compare {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 14px;
+  margin: 0;
+  font-size: 14px;
+  color: #d1d5db;
+}
+.lab-compare strong {
+  color: #f3f4f6;
+  font-variant-numeric: tabular-nums;
+}
+.lab-delta {
+  color: #9ca3af;
+}
+.lab-delta.is-up {
+  color: #4ade80;
+  font-weight: 600;
+}
+@media (max-width: 900px) {
+  .lab-title {
+    display: none;
+  }
+}
+
 /* ---- Prompt --------------------------------------------------------- */
 .prompt {
   margin-bottom: 12px;
