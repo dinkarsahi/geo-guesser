@@ -26,9 +26,10 @@ export const TUBE_TEST_TITLE = "Tube Station User Scoring Test Version";
  * argued about in particular cases: this pair of stations, that mark. So both
  * ends of a round are the tester's to choose — name the station being asked
  * for, then click stations around it and watch what each one would have paid,
- * under the new rule and under the one in the game today. Every station's reach
- * is drawn on the map at the same time, so the shape of the rule is visible
- * before a single guess is made.
+ * under the new rule and under the one in the game today. The reach is drawn
+ * around the station that was pressed and around no other — it is a claim about
+ * one click, and a hundred discs across outer London showed the rule without
+ * showing the round.
  *
  * Five rounds of it can be played from the same screen, for the part a table of
  * numbers can't answer: whether it feels fairer.
@@ -45,18 +46,24 @@ export default function TubeScoringTest(props: Omit<ModeProps, "match">) {
   );
 }
 
+/** Nothing to draw, as one array rather than a fresh one each render. */
+const NO_RINGS: MapRing[] = [];
+
 /**
- * Every reach on the map, worked out once.
+ * The reach of the station that was pressed, and only that one.
  *
- * Module-level rather than inside the component, and the strong ring layered on
- * top of it by identity below: the map re-projects the whole set whenever the
- * array it's handed is a new one, and the component re-renders every time the
- * pointer crosses a station.
+ * Every station's circle drawn at once was the shape of the rule but not the
+ * shape of a round: a hundred-odd overlapping discs across the whole of outer
+ * London, with the one actually being scored somewhere in the middle of them.
+ * A radius is a claim about a particular click, so it's drawn when there's a
+ * click to make it about.
  */
-const REACHES: MapRing[] = tubeStations.flatMap((s) => {
-  const km = nearbyRadiusKm(s);
-  return km === null ? [] : [{ key: s.name, lat: s.lat, lng: s.lng, km }];
-});
+function reachRing(station: TubeStation): MapRing[] {
+  const km = nearbyRadiusKm(station);
+  return km === null
+    ? NO_RINGS
+    : [{ key: station.name, lat: station.lat, lng: station.lng, km, strong: true }];
+}
 
 const byName = new Map(tubeStations.map((s) => [s.name.toLowerCase(), s]));
 
@@ -110,15 +117,10 @@ function ScoringBench({
     setClickedText("");
   };
 
-  // The reach belonging to the station that was pressed, picked out of the
-  // hundred-odd faint ones, since it's the only one doing any work.
-  const rings = useMemo(
-    () =>
-      clicked === null
-        ? REACHES
-        : REACHES.map((r) => (r.key === clicked.name ? { ...r, strong: true } : r)),
-    [clicked],
-  );
+  // Held across renders rather than rebuilt: the map re-projects every circle
+  // it's handed a new array of, and this component draws again whenever the
+  // pointer crosses a station.
+  const rings = useMemo(() => (clicked === null ? NO_RINGS : reachRing(clicked)), [clicked]);
 
   const mark = answer && clicked ? markNearby(clicked, answer) : null;
 
@@ -194,9 +196,9 @@ function ScoringBench({
       {!mark && (
         <p className="hint muted hud">
           {answer
-            ? `Now click the station a player might have pressed instead of ${answer.name}.`
+            ? `Now click the station a player might have pressed instead of ${answer.name} — its reach is drawn around it.`
             : "Click the station a round would ask for — then click what a player might press instead."}
-          {" "}Every circle is a station's reach from zone {NEARBY_FROM_ZONE} outwards.
+          {" "}Stations from zone {NEARBY_FROM_ZONE} outwards have a reach.
         </p>
       )}
 
@@ -278,6 +280,13 @@ function TestGame({ onExit, night, onToggleNight, settings }: Omit<ModeProps, "m
     },
   });
 
+  // The reach of whatever was just pressed, and nothing before that: in a round
+  // the circle is there to explain the mark, so it arrives with the mark.
+  const rings = useMemo(
+    () => (game.currentGuess ? reachRing(nearestStation(game.currentGuess)) : NO_RINGS),
+    [game.currentGuess],
+  );
+
   return (
     <GameFrame
       title={TUBE_TEST_TITLE}
@@ -306,7 +315,7 @@ function TestGame({ onExit, night, onToggleNight, settings }: Omit<ModeProps, "m
       )}
       answerLabel={(station) => station.name}
       renderResultExtra={(station) => <FactCard title={station.name} fact={station.fact} />}
-      renderMap={(props) => <LondonMap {...props} night={night} rings={REACHES} />}
+      renderMap={(props) => <LondonMap {...props} night={night} rings={rings} />}
     />
   );
 }
