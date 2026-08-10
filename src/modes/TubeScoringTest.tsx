@@ -12,6 +12,7 @@ import {
 import {
   markNearby,
   nearbyRadiusKm,
+  NEARBY_BOUNDARY_KM,
   NEARBY_FROM_ZONE,
   NEARBY_STEP_KM,
 } from "../data/tubeNearby";
@@ -74,6 +75,9 @@ const byName = new Map(tubeStations.map((s) => [s.name.toLowerCase(), s]));
 
 /** How much a zone adds to the reach, as the panel says it: "400 m". */
 const PER_ZONE_KM_LABEL = formatDistance(NEARBY_STEP_KM);
+
+/** And what a boundary station gives up for being half in the inner zone. */
+const BOUNDARY_LABEL = formatDistance(NEARBY_BOUNDARY_KM);
 
 /** "18 stops", "1 stop" — a count for a table cell, where the unit has to travel with it. */
 const stopCount = (stops: number) =>
@@ -270,8 +274,9 @@ function ScoringBench({
               {mark.radiusKm === null ? (
                 <>
                   {clicked.name} is in {zoneLabel(clicked.zone)}, too far in to have a
-                  circle — inside zone {NEARBY_FROM_ZONE} the stations sit on top of one
-                  another and being near one narrows nothing down. So the ride stands.
+                  circle — inside the zone {NEARBY_FROM_ZONE - 1}/{NEARBY_FROM_ZONE}
+                  {" "}boundary the stations sit on top of one another and being near one
+                  narrows nothing down. So the ride stands.
                 </>
               ) : (
                 <>
@@ -279,7 +284,11 @@ function ScoringBench({
                   radius of <strong>{mark.radiusKm.toFixed(1)} km</strong> — about one
                   station’s gap on this part of the map, so it holds the stations that
                   could plausibly have been meant and stops there. It widens{" "}
-                  {PER_ZONE_KM_LABEL} a zone because the gaps do.{" "}
+                  {PER_ZONE_KM_LABEL} a zone because the gaps do
+                  {Number.isInteger(clicked.zone)
+                    ? ""
+                    : `, and a boundary station takes the outer zone's circle less ${BOUNDARY_LABEL} for being only half in it`}
+                  .{" "}
                   {mark.covered ? (
                     <>
                       {mark.neighbours === 0

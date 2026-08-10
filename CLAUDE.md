@@ -140,7 +140,12 @@ the rule it tries out in `src/data/tubeNearby.ts`. A copy of the tube game for
 judging a way of marking it: from zone 3 outwards every station gets a circle
 (radius 1.2 km at zone 3, +0.4 km a zone, capped at 2.4 — about one station's
 gap, which the data agrees with: neighbours joined by track sit 1.26 km apart in
-zone 3, 1.48 in zone 4, 1.99 in zone 6). Where the clicked station's circle
+zone 3, 1.48 in zone 4, 1.99 in zone 6). A station billed for two zones is sized
+off the **outer** of them and docked 100 m for being only half in it, so 2/3 is
+1.1 km, 3/4 is 1.5 and 5/6 is 2.3. That also brings the ten zone 2/3 stations
+into the rule, which rounding down left with no circle at all despite their
+sitting on the same sparse stretches of map as the zone 3 ones beside them.
+Where the clicked station's circle
 covers the answer, the ride is replaced by **how crowded the circle is**: one
 stop for the answer, plus one for every other station inside it. The kinder of
 the two counts, so the rule can never cost a round. Northwick Park's circle

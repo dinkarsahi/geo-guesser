@@ -28,7 +28,10 @@ import {
  * closeness to mean something, and sparse enough for the ride to be silly.
  */
 
-/** The innermost zone that gets a reach. Zone 2/3 boundary stations don't. */
+/**
+ * The innermost whole zone that gets a circle. Boundary stations one step in —
+ * the zone 2/3 ones — get one too, at the reduced size below.
+ */
 export const NEARBY_FROM_ZONE = 3;
 
 /**
@@ -56,6 +59,24 @@ const MAX_KM = 2.4;
 export const NEARBY_STEP_KM = PER_ZONE_KM;
 
 /**
+ * What a station on a zone boundary gives up against the outer of its two.
+ *
+ * A station billed as zone 3/4 is out where zone 4 is, near enough — the fares
+ * say as much — so it takes zone 4's circle rather than zone 3's, and pays a
+ * hundred metres for being only half in it. Which puts the boundaries at 1.1 km
+ * for 2/3, 1.5 for 3/4, 1.9 for 4/5 and 2.3 for 5/6, stepping between the whole
+ * zones instead of rounding down onto the inner one and sitting on top of it.
+ *
+ * It also brings the 2/3 boundary inside the rule at 1.1 km, where rounding
+ * down left it with no circle at all — and those stations are on the same
+ * sparse stretches of map as the zone 3 ones next to them.
+ */
+const BOUNDARY_KM = 0.1;
+
+/** The boundary discount, for a screen that has to say so out loud. */
+export const NEARBY_BOUNDARY_KM = BOUNDARY_KM;
+
+/**
  * A station is in when its dot is in, and by nothing wider than that.
  *
  * There was a tolerance here for markers straddling the edge, and it went the
@@ -67,11 +88,22 @@ export const NEARBY_STEP_KM = PER_ZONE_KM;
  * the drawing: centre inside, and that's all.
  */
 
-/** How far a station's reach extends, or null for one too far in to have one. */
+/**
+ * How far a station's circle extends, or null for one too far in to have one.
+ *
+ * A boundary station is sized off the outer of its two zones and then docked
+ * `BOUNDARY_KM`, so it lands between the whole zones either side of it rather
+ * than on top of one of them. Rounding down did the latter, which made a zone
+ * 3/4 station indistinguishable from a zone 3 one and gave the 2/3 stations
+ * nothing at all.
+ */
 export function nearbyRadiusKm(station: TubeStation): number | null {
-  if (station.zone < NEARBY_FROM_ZONE) return null;
-  const beyond = Math.floor(station.zone) - NEARBY_FROM_ZONE;
-  return Math.min(MAX_KM, BASE_KM + beyond * PER_ZONE_KM);
+  const whole = Number.isInteger(station.zone);
+  // The outer of the two for a boundary station, which is where it really sits.
+  const zone = whole ? station.zone : Math.ceil(station.zone);
+  if (zone < NEARBY_FROM_ZONE) return null;
+  const reach = BASE_KM + (zone - NEARBY_FROM_ZONE) * PER_ZONE_KM - (whole ? 0 : BOUNDARY_KM);
+  return Math.min(MAX_KM, reach);
 }
 
 /** Worked out once per station — the bench asks for this on every render. */
