@@ -39,6 +39,18 @@ const RULES = `${MATCH_ROUNDS} rounds, ${Math.round(
 /** How often the lobby asks whether anyone else has arrived, or it's started. */
 const POLL_MS = 1_500;
 
+/**
+ * What a code that's already in play says, and a code that has been played.
+ *
+ * One sentence for both, because from outside the room they're the same event:
+ * the duel went ahead without you, and this code isn't a way in any more. What
+ * the player wants next isn't an explanation of round timing — it's the two
+ * things that would get them a game, which is why they're what it ends on.
+ */
+const SHUT =
+  "Too slow. This duel started without you and it's a bit awkward now. Join " +
+  "another duel with a new code or set up your own duel.";
+
 interface PlayFriendProps {
   onBack: () => void;
   /** Off to the game — the mode and the timetable take it from here. */
@@ -116,7 +128,7 @@ export default function PlayFriend({ onBack, onStart }: PlayFriendProps) {
         return;
       }
       if (roomPhase(found) === "over") {
-        setProblem("That room has finished. Rooms are one game, and then they're done.");
+        setProblem(SHUT);
         return;
       }
       saveName(player);
@@ -132,10 +144,7 @@ export default function PlayFriend({ onBack, onStart }: PlayFriendProps) {
       // filed, so they cost the room nothing and go straight back to it.
       if (roomPhase(found) !== "waiting") {
         if (!joinedHere(found.code, player)) {
-          setProblem(
-            "That duel has already started, so the code is closed. Ask them for a " +
-              "new one — a room takes its players before it starts, not during.",
-          );
+          setProblem(SHUT);
           return;
         }
         setRoom(found);
@@ -153,10 +162,7 @@ export default function PlayFriend({ onBack, onStart }: PlayFriendProps) {
       // Started while this was being typed: the room's own answer, and later
       // than the one fetched a moment ago.
       if (joined === "started") {
-        setProblem(
-          "That duel started just as you were joining, so the code is closed. Ask " +
-            "them for a new one.",
-        );
+        setProblem(SHUT);
         return;
       }
       setRoom(found);
