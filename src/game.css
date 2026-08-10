@@ -911,27 +911,81 @@ body:has(.game-play) {
   justify-content: flex-end;
   gap: 8px;
 }
-/* The comparison, under the mark it explains: the same click marked the other
-   way, and what the difference between them was. */
-.lab-compare {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px 14px;
+/* Which two stations are being compared, over the columns comparing them. */
+.lab-pair {
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
+  text-align: center;
   color: #d1d5db;
 }
-.lab-compare strong {
-  color: #f3f4f6;
+.lab-pair strong {
+  color: #fff;
+}
+/* The same click marked both ways, a column each. A real table, so the figures
+   stay under the heading that names which rule they came from. */
+.lab-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+.lab-table th,
+.lab-table td {
+  padding: 6px 10px;
+  text-align: right;
   font-variant-numeric: tabular-nums;
 }
+.lab-table thead th {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+.lab-table tbody th {
+  text-align: left;
+  font-weight: 600;
+  color: #d1d5db;
+}
+.lab-table td {
+  color: #e5e7eb;
+  width: 34%;
+}
+.lab-points {
+  font-size: 19px;
+  font-weight: 700;
+}
+.lab-table .is-up {
+  color: #4ade80;
+}
 .lab-delta {
+  font-size: 13px;
+  font-weight: 600;
+}
+/* The working behind the right-hand column: how wide the reach is, why that
+   wide, and what it caught. Quieter than the figures it explains. */
+.lab-working {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
   color: #9ca3af;
 }
-.lab-delta.is-up {
-  color: #4ade80;
-  font-weight: 600;
+.lab-working strong {
+  color: #e5e7eb;
+  font-variant-numeric: tabular-nums;
+}
+/* For a heading a screen reader needs and the eye doesn't — the empty corner
+   of the comparison table. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 @media (max-width: 900px) {
   .lab-title {

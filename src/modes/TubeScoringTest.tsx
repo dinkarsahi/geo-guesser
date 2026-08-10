@@ -9,7 +9,12 @@ import {
   zoneLabel,
   type TubeStation,
 } from "../data/tube";
-import { markNearby, nearbyRadiusKm, NEARBY_FROM_ZONE } from "../data/tubeNearby";
+import {
+  markNearby,
+  nearbyRadiusKm,
+  NEARBY_FROM_ZONE,
+  NEARBY_STEP_KM,
+} from "../data/tubeNearby";
 import { formatDistance, type Coord } from "../lib/geo";
 import { useGame } from "../lib/useGame";
 import type { ModeProps } from "./ModeProps";
@@ -66,6 +71,13 @@ function reachRing(station: TubeStation): MapRing[] {
 }
 
 const byName = new Map(tubeStations.map((s) => [s.name.toLowerCase(), s]));
+
+/** How much a zone adds to the reach, as the panel says it: "400 m". */
+const PER_ZONE_KM_LABEL = formatDistance(NEARBY_STEP_KM);
+
+/** "18 stops", "1 stop" — a count for a table cell, where the unit has to travel with it. */
+const stopCount = (stops: number) =>
+  Number.isFinite(stops) ? `${stops} ${stops === 1 ? "stop" : "stops"}` : "off the network";
 
 /** The list every station box picks from, spelled the way the map spells them. */
 const STATION_NAMES = tubeStations.map((s) => s.name).sort((a, b) => a.localeCompare(b));
@@ -205,54 +217,90 @@ function ScoringBench({
       {mark && answer && clicked && (
         <div className="result-panel hud">
           <div className="result-body">
-            <div className="result-headline">
-              <span className="result-distance">{mark.label}</span>
-              <span className="result-points">{mark.score.toLocaleString()} pts</span>
-            </div>
+            <p className="lab-pair">
+              <strong>{clicked.name}</strong> clicked, <strong>{answer.name}</strong> wanted
+              <span className="muted"> · {formatDistance(mark.km)} apart</span>
+            </p>
 
             {/* The whole point of the bench: the same click marked both ways,
-                and the difference between them named rather than left to be
-                worked out from two numbers on different lines. */}
-            <p className="lab-compare">
-              <span>
-                Today’s scoring: <strong>{mark.todayScore.toLocaleString()}</strong>
-              </span>
-              <span className={mark.eased ? "lab-delta is-up" : "lab-delta"}>
-                {mark.eased
-                  ? `+${(mark.score - mark.todayScore).toLocaleString()} from the radius`
-                  : "the radius changed nothing here"}
-              </span>
-            </p>
+                side by side, so the two are read against each other rather
+                than found on two different lines. A real table, because the
+                columns have to line up with the heading that names them. */}
+            <table className="lab-table">
+              <thead>
+                <tr>
+                  <th scope="col">
+                    <span className="sr-only">Measure</span>
+                  </th>
+                  <th scope="col">Today’s rule</th>
+                  <th scope="col">Test rule</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Stops</th>
+                  <td>{stopCount(mark.stops)}</td>
+                  <td className={mark.eased ? "is-up" : undefined}>
+                    {stopCount(mark.countedStops)}
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Points</th>
+                  <td className="lab-points">{mark.todayScore.toLocaleString()}</td>
+                  {/* Green on the marks, not on the stops: a rule that took
+                      fourteen stops off the ride and left the score where it
+                      was has changed nothing worth colouring. */}
+                  <td className={`lab-points${mark.score > mark.todayScore ? " is-up" : ""}`}>
+                    {mark.score.toLocaleString()}
+                    {mark.score > mark.todayScore && (
+                      <span className="lab-delta">
+                        {" "}
+                        +{(mark.score - mark.todayScore).toLocaleString()}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
 
-            <p className="picked-line">
-              <span className="picked-label">Clicked</span>
-              <span className="picked-name">{clicked.name}</span>
-              <span className="picked-detail">
-                {zoneLabel(clicked.zone)} ·{" "}
-                {mark.radiusKm === null
-                  ? "no radius — too far in"
-                  : `reach ${mark.radiusKm.toFixed(1)} km`}
-              </span>
-            </p>
-            <p className="picked-line">
-              <span className="picked-label">To find</span>
-              <span className="picked-name">{answer.name}</span>
-              <span className="picked-detail">
-                {zoneLabel(answer.zone)} · {formatDistance(mark.km)} away
-              </span>
-            </p>
-            <p className="picked-line">
-              <span className="picked-label">The ride</span>
-              <span className="picked-name">
-                {Number.isFinite(mark.stops)
-                  ? `${mark.stops} ${mark.stops === 1 ? "stop" : "stops"}`
-                  : "off the network"}
-              </span>
-              <span className="picked-detail">
-                {mark.eased
-                  ? `inside the reach, so it counts as ${mark.countedStops}`
-                  : "counted as it stands"}
-              </span>
+            {/* How the right-hand column got its number, in words, including
+                how big the reach is and why that size — the two questions the
+                figure raises the moment it differs from the one beside it. */}
+            <p className="lab-working">
+              {mark.radiusKm === null ? (
+                <>
+                  {clicked.name} is in {zoneLabel(clicked.zone)}, too far in to have a
+                  reach — inside zone {NEARBY_FROM_ZONE} the stations are a few hundred
+                  metres apart and being near one means nothing. So the ride stands.
+                </>
+              ) : (
+                <>
+                  {clicked.name} is in {zoneLabel(clicked.zone)}, so its reach is{" "}
+                  <strong>{mark.radiusKm.toFixed(1)} km</strong> — about one stop’s walk
+                  at that distance out, growing {PER_ZONE_KM_LABEL} a zone because the
+                  stops do.{" "}
+                  {mark.covered ? (
+                    <>
+                      {mark.neighbours === 0
+                        ? "Nothing else is in reach of it"
+                        : `${mark.neighbours} other ${
+                            mark.neighbours === 1 ? "station is" : "stations are"
+                          } in reach of it`}
+                      , counting any whose own circle touches, so an answer inside counts
+                      as <strong>{mark.reachStops}</strong>{" "}
+                      {mark.reachStops === 1 ? "stop" : "stops"} — and{" "}
+                      {mark.countedStops === mark.reachStops
+                        ? "that beats the ride."
+                        : "the ride was already better."}
+                    </>
+                  ) : (
+                    <>
+                      {answer.name} is {formatDistance(mark.km)} away, outside it, so the
+                      ride stands.
+                    </>
+                  )}
+                </>
+              )}
             </p>
           </div>
         </div>

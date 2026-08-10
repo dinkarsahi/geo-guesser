@@ -138,14 +138,25 @@ lets the pool be *every* country rather than the ones someone got round to.
 `Tube Station User Scoring Test Version` — `src/modes/TubeScoringTest.tsx`, with
 the rule it tries out in `src/data/tubeNearby.ts`. A copy of the tube game for
 judging a way of marking it: from zone 3 outwards every station gets a reach
-(1.2 km at zone 3, +0.4 km a zone, capped at 2.4), and an answer inside a
-clicked station's reach counts as one stop from the middle of it and two from
-the edge, instead of the ride it really is. Kenton to Northwick Park is 387 m on
-foot and eighteen stops by train: nothing today, 97 under this.
+(1.2 km at zone 3, +0.4 km a zone, capped at 2.4 — roughly the median gap
+between adjacent stations out there, which the data agrees with: 1.26 km in
+zone 3, 1.48 in zone 4, 1.99 in zone 6). Where the clicked station's reach
+covers the answer, the ride is replaced by **how crowded that reach is**: one
+stop for the answer, plus one for every other station in reach. Membership is
+circle *touching* circle, not centre-inside-circle. The kinder of the two counts,
+so the rule can never cost a round.
+
+**What the bench has already shown:** the crowding term swamps it. Circle-touch
+membership means an effective 3.2 km catchment for two zone-4 stations, so
+Kenton catches 13 neighbours and Kenton → Northwick Park (387 m apart, 18 stops)
+is marked 14 stops — still nothing. Centre-inside membership gives 4 stops (64),
+and ranking the answer by distance within the circle gives 1 stop (97). Those
+are the knobs; the panel prints the count so the failure is visible rather than
+inferred.
 
 It opens on a bench rather than a game — both ends of a round are chosen by
-whoever is testing, and the panel shows the mark both ways with the difference
-named. Five rounds of it can be played from the same screen.
+whoever is testing, and the panel puts the two rules in adjacent columns with
+the working under them. Five rounds of it can be played from the same screen.
 
 **It is deliberately not a `ModeId`.** Making it one would enter it in
 `MATCH_MODES`, and so in the daily rota — a rota of eight, one day in eight
