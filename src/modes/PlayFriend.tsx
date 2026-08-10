@@ -4,6 +4,7 @@ import {
   createRoom,
   fetchPlayers,
   fetchRoom,
+  joinedHere,
   joinRoom,
   roomPhase,
   roomProblem,
@@ -33,7 +34,7 @@ const RULES = `${MATCH_ROUNDS} rounds, ${Math.round(
   MATCH_REVEAL_MS / 1000,
 )} seconds after each answer goes up. The first ${Math.round(
   MATCH_GRACE_MS / 1000,
-)} seconds of a round are free; after that the clock starts costing you. One table at the end, and then the code's done.`;
+)} seconds of a round are free; after that the clock starts costing you. The room shuts the moment the host starts it, so latecomers wait for the next code. One table at the end, and then the code's done.`;
 
 /** How often the lobby asks whether anyone else has arrived, or it's started. */
 const POLL_MS = 1_500;
@@ -119,9 +120,43 @@ export default function PlayFriend({ onBack, onStart }: PlayFriendProps) {
         return;
       }
       saveName(player);
-      if ((await joinRoom(found.code, player)) === "name-taken") {
+
+      // A room that's under way is closed, and the code with it. Everyone in a
+      // duel answers the same round at the same moment, so somebody arriving at
+      // round three isn't behind — they're a player the other three wait the
+      // full thirty seconds for, every round, because a round only closes early
+      // once everyone in the room has answered it.
+      //
+      // The exception is somebody who was already in: a locked phone, a
+      // reloaded tab, a back button. They're on the list and their rounds are
+      // filed, so they cost the room nothing and go straight back to it.
+      if (roomPhase(found) !== "waiting") {
+        if (!joinedHere(found.code, player)) {
+          setProblem(
+            "That duel has already started, so the code is closed. Ask them for a " +
+              "new one — a room takes its players before it starts, not during.",
+          );
+          return;
+        }
+        setRoom(found);
+        setPlayers(await fetchPlayers(found.code));
+        setScreen("lobby");
+        return;
+      }
+
+      const joined = await joinRoom(found.code, player);
+      if (joined === "name-taken") {
         setProblem(`Somebody in that room is already ${player}. Try another name.`);
         setScreen("pick");
+        return;
+      }
+      // Started while this was being typed: the room's own answer, and later
+      // than the one fetched a moment ago.
+      if (joined === "started") {
+        setProblem(
+          "That duel started just as you were joining, so the code is closed. Ask " +
+            "them for a new one.",
+        );
         return;
       }
       setRoom(found);
@@ -408,9 +443,9 @@ export default function PlayFriend({ onBack, onStart }: PlayFriendProps) {
                 </button>
               </div>
               <p className="muted h2h-code-hint">
-                Read the code out, and press go once they're on the list. Everyone starts
-                on the same round at the same second — anyone still typing the code in
-                misses the rounds that have gone.
+                Read the code out, and press go once they're all on the list. Starting
+                shuts the room: everyone plays the same round at the same second, and
+                anyone still typing the code in is too late for this one.
               </p>
             </>
           ) : (

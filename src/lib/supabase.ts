@@ -43,6 +43,18 @@ export const UNIQUE_VIOLATION = "23505";
 export const CHECK_VIOLATION = "23514";
 
 /**
+ * Postgres' "you aren't allowed to write that row" — a policy the row didn't
+ * satisfy.
+ *
+ * There is one write here the policies turn down as a matter of course rather
+ * than as a fault: joining a room that has already started. The door is shut in
+ * the database as well as on the screen, because the screen's copy of the room
+ * is up to a poll and a half old, and two people pressing Join and Start in the
+ * same second must not both get their way.
+ */
+export const POLICY_VIOLATION = "42501";
+
+/**
  * How far this device's clock is from the server's, in milliseconds.
  *
  * Nobody sets their phone by hand any more, but they are still seconds apart,

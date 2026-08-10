@@ -10,6 +10,7 @@ import { setRoundClosings } from "./roomClock";
 import {
   CHECK_VIOLATION,
   hasRemote,
+  POLICY_VIOLATION,
   rest,
   RemoteError,
   serverNow,
@@ -31,8 +32,9 @@ import {
  * as they always have. So there is no live connection to drop, no lobby to
  * stay in, and a phone that locks mid-game rejoins the room where the room is.
  *
- * A room's code is dead once its rounds are: there is one table at the end
- * saying who won, and no standings that go on afterwards.
+ * A room's code stops letting people in the moment the host starts it, and is
+ * dead altogether once its rounds are: there is one table at the end saying who
+ * won, and no standings that go on afterwards.
  */
 export interface Room {
   code: string;
@@ -123,6 +125,18 @@ function readMine(): Mine {
 }
 
 const nameHere = (code: string) => readMine()[code];
+
+/**
+ * Whether this device is already in a room under this name.
+ *
+ * A room's door shuts the moment it starts, and that has to shut it on people
+ * arriving rather than on people coming back: a phone that locked, a tab that
+ * was reloaded, a player who pressed back. They are already on the list and
+ * already have rounds filed, so letting them in costs the room nothing — and
+ * keeping them out would cost them their game.
+ */
+export const joinedHere = (code: string, player: string) =>
+  nameHere(code) === player.trim().toLowerCase();
 
 function rememberName(code: string, player: string) {
   const mine = readMine();
@@ -224,8 +238,22 @@ export async function fetchRoom(code: string): Promise<Room | null> {
 }
 
 /** Whether a name can be taken in a room, and taking it if so. */
-export type Joined = "ok" | "name-taken";
+export type Joined = "ok" | "name-taken" | "started";
 
+/**
+ * Puts a name on a room's list, if the room will still have it.
+ *
+ * A room stops taking names the moment it starts, and the database is what
+ * says so — see the insert policy on `duel_players`. It has to be said there
+ * and not only on the screen, because the screen is working from a room it
+ * fetched up to a poll and a half ago: somebody pressing Join in the second the
+ * host presses Start would otherwise be let in on a stale answer.
+ *
+ * Why it matters more than "one player too many": a room's rounds turn over
+ * when everyone in it has answered, so a player who arrives at round three and
+ * cannot answer rounds one and two is a player everybody else waits the full
+ * thirty seconds for, every round, to the end of the game.
+ */
 export async function joinRoom(code: string, player: string): Promise<Joined> {
   try {
     await rest(PLAYERS, {
@@ -237,6 +265,10 @@ export async function joinRoom(code: string, player: string): Promise<Joined> {
       // Ours if this device holds it — a reload, or the host joining the room
       // it just opened. Somebody else's otherwise, and they had it first.
       if (nameHere(code) !== player.trim().toLowerCase()) return "name-taken";
+    } else if (e instanceof RemoteError && e.code === POLICY_VIOLATION) {
+      // The only write the policies refuse in the ordinary run of things: the
+      // room started between this player reading it and answering.
+      return "started";
     } else {
       throw e;
     }

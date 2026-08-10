@@ -101,8 +101,9 @@
 }
 /* Two gloves thrown at each other. The second is flipped to face the first and
    hue-turned to blue, so the pair reads as two people rather than one person's
-   kit, and they overlap by a third — gloves with air between them are gloves in
-   a cupboard. Sized to sit in the same box as every other icon on the grid. */
+   kit, with a sliver of daylight between the knuckles — close enough to be one
+   mark, apart enough to be two gloves. Sized to sit in the same box as every
+   other icon on the grid. */
 .duel-mark {
   display: inline-flex;
   align-items: center;
@@ -134,10 +135,12 @@
 .duel-mark-red {
   transform: scaleY(-1) scaleX(-1) rotate(88deg);
   filter: drop-shadow(0 -1px 2px rgba(0, 0, 0, 0.45));
-  /* Pulled in until the knuckles meet, because two gloves with daylight
-     between them are two gloves waiting to be worn. On the second of the two,
-     whichever colour that is. */
-  margin-left: -0.5em;
+  /* Held a hair apart rather than overlapping: two gloves squashed into each
+     other read as one lump at icon size, and the gap is what shows there are
+     two of them and that they're about to meet. Still a negative margin, since
+     the glyphs are turned on their sides and most of each em box is air. On the
+     second of the two, whichever colour that is. */
+  margin-left: -0.28em;
 }
 
 /* Two cards where the menu has seven: given a little more room each, since

@@ -208,6 +208,18 @@ a moment when it starts. That moment is the only thing that travels — after it
 every device works out which round should be on screen from the shared clock, so
 there is no connection to lose. Rooms need Supabase outright.
 
+**A room takes its players before it starts, and never during.** Pressing start
+shuts the code: `PlayFriend`'s join screen refuses anything whose `roomPhase`
+isn't `waiting`, and the insert policy on `duel_players` refuses it again in the
+database, because the join screen is working from a room it fetched up to a poll
+and a half ago. This is not tidiness — a round only closes early once *everyone
+in the room* has filed it (`fetchRoomBoard`), so a player who arrives at round
+three is two rounds nobody can close, and the rest of the room sits out the full
+thirty seconds of every remaining round waiting on answers that aren't coming.
+The one way back in is `joinedHere` in `duel.ts`: a name this device already
+holds for that code is a locked phone or a reloaded tab, and it goes straight to
+the round in progress without inserting anything.
+
 Code layout is `[mode letter][kind letter][5 chars]`. Mode letters: `C` city,
 `F` flag, `M` currency, `H` company, `P` population, `T` tube, `Z` timezone.
 **Adding a game means adding a letter here**, and it must be unique.
@@ -238,6 +250,12 @@ Spotter was unplayable as a duel for exactly this reason.
 So: **after adding a mode, re-run `supabase/schema.sql` against the live
 project.** It is written to be safe to re-run, and it drops and re-adds the mode
 CHECK precisely so that re-running fixes drift.
+
+The same goes for the policies, which is the other thing in that file that
+changes. `duel_players` has its own insert policy — a room that has started
+takes no more names — where `duel_rooms` and `duel_scores` share the open one.
+Until the file is re-run, a live project keeps whatever it was last given, and
+the door is only shut on the join screen.
 
 `roomProblem` in `src/lib/duel.ts` now separates the three ways a room screen
 can fail — refused by the server, given up on by us, never answered — because

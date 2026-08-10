@@ -132,11 +132,34 @@ begin
     execute format('drop policy if exists "read the room" on public.%I', t);
     execute format(
       'create policy "read the room" on public.%I for select to anon, authenticated using (true)', t);
+    -- Dropped on all three, re-made on two: the list of players is the one
+    -- insert here with a condition on it, and it is written out below.
     execute format('drop policy if exists "join the room" on public.%I', t);
+  end loop;
+  foreach t in array array['duel_rooms', 'duel_scores'] loop
     execute format(
       'create policy "join the room" on public.%I for insert to anon, authenticated with check (true)', t);
   end loop;
 end $$;
+
+-- A room takes its players before it starts, and not during.
+--
+-- A duel's rounds turn over on everyone's screen at once, and a round closes
+-- early only when every player in the room has answered it. So somebody who
+-- types the code in at round three isn't merely behind: they are two rounds
+-- nobody can close, and the other players sit out the full thirty seconds of
+-- every remaining round waiting for answers that aren't coming.
+--
+-- Said here rather than only on the join screen because that screen is working
+-- from a room it fetched up to a poll and a half ago. Join and Start pressed in
+-- the same second are decided by the row, which is the only thing both devices
+-- can see.
+create policy "join the room"
+  on public.duel_players for insert
+  to anon, authenticated
+  with check (exists (
+    select 1 from public.duel_rooms r
+    where r.code = duel_players.code and r.starts_at is null));
 
 -- Starting a room is the one update anything here is allowed to make, and only
 -- on a room that hasn't started: once a moment is written down, four people are
