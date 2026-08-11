@@ -21,7 +21,7 @@ export interface TubeStation extends Coord {
  * words in all three places, which is what makes it the game's rather than a
  * joke made once.
  */
-export const TUBE_TAGLINE = "See it, Say it, Spot it!";
+export const TUBE_TAGLINE = "See it. Say it. Spot it.";
 
 /**
  * Screen colours per line. Pushed further apart than the muted dataset values
