@@ -131,7 +131,7 @@ function ModeSetup({
       <h1>
         <span className="mode-emoji">{mode.emoji}</span> {mode.title}
       </h1>
-      {mode.tagline && <p className="mode-tagline setup-tagline">{mode.tagline}</p>}
+      {mode.tagline && <p className="muted menu-sub mode-tagline">{mode.tagline}</p>}
       <p className="muted menu-sub">{mode.blurb}</p>
 
       <div className="setup-panel">
@@ -363,7 +363,7 @@ export default function App() {
           <button key={m.id} className="mode-card" onClick={() => setMode(m.id)}>
             <span className="mode-emoji">{m.emoji}</span>
             <span className="mode-title">{m.title}</span>
-            {m.tagline && <span className="mode-tagline">{m.tagline}</span>}
+            {m.tagline && <span className="muted mode-blurb">{m.tagline}</span>}
             <span className="muted mode-blurb">{m.blurb}</span>
           </button>
         ))}

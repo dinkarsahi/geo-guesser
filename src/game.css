@@ -226,19 +226,12 @@
 .mode-blurb {
   font-size: 15px;
 }
-/* A game's own line, under its title on the card and again on the way in.
-   Coloured and italic rather than muted like the blurb beneath it, because it
-   isn't a description of the game — it's what the game is called after, and set
-   in the same grey it would read as a second, shorter blurb. */
+/* A game's own line, on the setup screen: set exactly like the blurb under it,
+   which is why it borrows that blurb's classes and changes only the gap. The
+   blurb's 32px is the whole space down to the panel, and both lines carrying
+   it would leave the tagline stranded between the title and the sentence it
+   belongs with. */
 .mode-tagline {
-  font-size: 15px;
-  font-weight: 700;
-  font-style: italic;
-  color: var(--accent);
-}
-/* On the setup screen the blurb below carries the whole gap to the panel, so
-   the tagline only needs enough room not to sit on top of it. */
-.setup-tagline {
   margin-bottom: 8px;
 }
 
