@@ -24,6 +24,14 @@ export interface TubeStation extends Coord {
 export const TUBE_TAGLINE = "See it. Say it. Spot it.";
 
 /**
+ * The same line, paid out: the one place it earns an exclamation mark, because
+ * the menu is naming the game and the reveal is congratulating you. Derived
+ * from the tagline rather than written out again, so the words can only be
+ * changed in one place and the punctuation is the only thing that differs.
+ */
+export const TUBE_SPOT_ON = TUBE_TAGLINE.replace(/\.$/, "!");
+
+/**
  * Screen colours per line. Pushed further apart than the muted dataset values
  * so each line reads as its own hue at map scale — the raw "Central" was an
  * orange easily confused with Bakerloo brown.

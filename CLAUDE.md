@@ -136,9 +136,11 @@ lets the pool be *every* country rather than the ones someone got round to.
   it.". It is printed under the title on the menu card and again on the setup
   screen (a `tagline` on the `MODES` entry in `App.tsx`, which only the tube
   sets — seven slogans would be no emphasis), and it replaces "Spot on!" on a
-  round worth full marks, via `GameFrame`'s `fullMarksLabel`. Keep the three
-  the same string: the card promises it and the reveal pays it out. Only the
-  wording moves — what counts as full marks is still scoring's business.
+  round worth full marks, via `GameFrame`'s `fullMarksLabel`. The reveal uses
+  `TUBE_SPOT_ON`, which is the tagline with its last full stop turned into an
+  exclamation mark — **derived, not written out again**, so the words stay in
+  one place and only the punctuation differs. Only the wording moves — what
+  counts as full marks is still scoring's business.
 
 ### The eighth card: the tube scoring bench
 
