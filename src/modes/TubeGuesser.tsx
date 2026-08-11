@@ -6,6 +6,7 @@ import {
   nearestStation,
   scoreFromStops,
   stopsBetween,
+  TUBE_TAGLINE,
   tubeStations,
   zoneLabel,
   type TubeStation,
@@ -43,6 +44,9 @@ export default function TubeGuesser({
       night={night}
       onToggleNight={onToggleNight}
       match={match}
+      // The right station gets the announcement rather than "Spot on!" — the
+      // same words the card and the setup screen promised, paid out.
+      fullMarksLabel={TUBE_TAGLINE}
       // The station whose patch was clicked — the same one the round was
       // scored against, so "6 stops away" below finally says from where.
       pickedLabel={(click) => {

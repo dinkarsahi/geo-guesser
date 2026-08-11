@@ -56,6 +56,13 @@ interface GameFrameProps<T> {
    * what you were close enough to.
    */
   targetNoun?: string;
+  /**
+   * What a round worth full marks is called. "Spot on!" everywhere by default;
+   * the tube answers to its own line instead, which is the whole reason a mode
+   * can say. Only the wording moves — what counts as full marks is scoring's
+   * business and stays here.
+   */
+  fullMarksLabel?: string;
   /** Set when this is a head-to-head match: adds the clock and the code. */
   match?: Match;
 }
@@ -89,6 +96,7 @@ export default function GameFrame<T>({
   hint = "Click the map to place your guess.",
   measureLabel = "Distance to destination",
   targetNoun = "place",
+  fullMarksLabel = "Spot on!",
   match,
 }: GameFrameProps<T>) {
   const {
@@ -349,7 +357,7 @@ export default function GameFrame<T>({
                   explains what the seconds cost. */}
               <div className="result-headline">
                 {fullMarks ? (
-                  <span className="result-distance result-hit">Spot on!</span>
+                  <span className="result-distance result-hit">{fullMarksLabel}</span>
                 ) : (
                   <span className="result-distance">
                     {lastResult.label ?? `${formatDistance(lastResult.distanceKm)} away`}

@@ -131,7 +131,14 @@ lets the pool be *every* country rather than the ones someone got round to.
   country's clocks came closest, and the reveal names that same one; a sentence
   quoting a clock the score didn't use is a panel arguing with itself.
 - **Tube** treats whichever station's patch of the map you clicked as your
-  answer, and charges you the ride from there.
+  answer, and charges you the ride from there. It is also the one game with a
+  line of its own — `TUBE_TAGLINE` in `data/tube.ts`, "See it, Say it, Spot
+  it!". It is printed under the title on the menu card and again on the setup
+  screen (a `tagline` on the `MODES` entry in `App.tsx`, which only the tube
+  sets — seven slogans would be no emphasis), and it replaces "Spot on!" on a
+  round worth full marks, via `GameFrame`'s `fullMarksLabel`. Keep the three
+  the same string: the card promises it and the reveal pays it out. Only the
+  wording moves — what counts as full marks is still scoring's business.
 
 ### The eighth card: the tube scoring bench
 

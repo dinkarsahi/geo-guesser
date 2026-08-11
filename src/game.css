@@ -226,6 +226,21 @@
 .mode-blurb {
   font-size: 15px;
 }
+/* A game's own line, under its title on the card and again on the way in.
+   Coloured and italic rather than muted like the blurb beneath it, because it
+   isn't a description of the game — it's what the game is called after, and set
+   in the same grey it would read as a second, shorter blurb. */
+.mode-tagline {
+  font-size: 15px;
+  font-weight: 700;
+  font-style: italic;
+  color: var(--accent);
+}
+/* On the setup screen the blurb below carries the whole gap to the panel, so
+   the tagline only needs enough room not to sit on top of it. */
+.setup-tagline {
+  margin-bottom: 8px;
+}
 
 /* ---- Head to head --------------------------------------------------- */
 /* Three doors — make, join, or just read the table — and nothing else on the

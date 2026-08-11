@@ -15,6 +15,15 @@ export interface TubeStation extends Coord {
 }
 
 /**
+ * The tube game's own line, borrowed from the announcement every passenger on
+ * the network has heard. It stands on the menu card, under the title on the way
+ * in, and in place of "Spot on!" when the right station is picked — the same
+ * words in all three places, which is what makes it the game's rather than a
+ * joke made once.
+ */
+export const TUBE_TAGLINE = "See it, Say it, Spot it!";
+
+/**
  * Screen colours per line. Pushed further apart than the muted dataset values
  * so each line reads as its own hue at map scale — the raw "Central" was an
  * orange easily confused with Bakerloo brown.

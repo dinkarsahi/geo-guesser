@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { TUBE_TAGLINE } from "./data/tube";
 import { gameOfDay, modeTitle, type Match } from "./lib/match";
 import CityLocator from "./modes/CityLocator";
 import CompanyGuesser from "./modes/CompanyGuesser";
@@ -14,7 +15,16 @@ import type { GameSettings, ModeId, ModeProps } from "./modes/ModeProps";
 
 type Mode = ModeId;
 
-const MODES: { id: Mode; title: string; blurb: string; emoji: string }[] = [
+// `tagline` is a line the game is known by, printed between its title and its
+// blurb. Only the tube has one — a slogan on every card would be seven slogans
+// and no emphasis.
+const MODES: {
+  id: Mode;
+  title: string;
+  blurb: string;
+  emoji: string;
+  tagline?: string;
+}[] = [
   {
     id: "city",
     title: "City Spotter",
@@ -48,6 +58,7 @@ const MODES: { id: Mode; title: string; blurb: string; emoji: string }[] = [
   {
     id: "tube",
     title: "Tube Station Spotter",
+    tagline: TUBE_TAGLINE,
     blurb: "Pinpoint a London Underground station on a zoomed-in map.",
     emoji: "🚇",
   },
@@ -120,6 +131,7 @@ function ModeSetup({
       <h1>
         <span className="mode-emoji">{mode.emoji}</span> {mode.title}
       </h1>
+      {mode.tagline && <p className="mode-tagline setup-tagline">{mode.tagline}</p>}
       <p className="muted menu-sub">{mode.blurb}</p>
 
       <div className="setup-panel">
@@ -351,6 +363,7 @@ export default function App() {
           <button key={m.id} className="mode-card" onClick={() => setMode(m.id)}>
             <span className="mode-emoji">{m.emoji}</span>
             <span className="mode-title">{m.title}</span>
+            {m.tagline && <span className="mode-tagline">{m.tagline}</span>}
             <span className="muted mode-blurb">{m.blurb}</span>
           </button>
         ))}
