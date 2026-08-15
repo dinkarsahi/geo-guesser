@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import FactCard from "../components/FactCard";
 import GameFrame from "../components/GameFrame";
-import LondonMap, { type MapRing } from "../components/LondonMap";
+import LondonMap from "../components/LondonMap";
 import NightToggle from "../components/NightToggle";
 import {
   nearestStation,
@@ -17,28 +17,33 @@ import {
   NEARBY_STEP_KM,
 } from "../data/tubeNearby";
 import { formatDistance, type Coord } from "../lib/geo";
+import { NO_RINGS, reachNote, reachRing } from "../lib/tubeReach";
 import { useGame } from "../lib/useGame";
 import type { ModeProps } from "./ModeProps";
 
-/** What this version is called wherever it's named. */
-export const TUBE_TEST_TITLE = "Tube Station User Scoring Test Version";
+/** What this bench is called wherever it's named. */
+export const GAME_MAKER_TITLE = "Game Maker Test Version";
 
 /**
- * A copy of Tube Station Spotter for trying out a different way of marking it,
- * and nothing the real game touches — see `src/data/tubeNearby.ts` for the rule
- * and why it exists.
+ * The workshop where a way of marking a game is tried out on particular cases
+ * before it is let anywhere near a score — see `src/data/tubeNearby.ts` for the
+ * rule it was built for and why that rule exists.
  *
- * It opens on the bench rather than on a game, because a scoring change is
- * argued about in particular cases: this pair of stations, that mark. So both
- * ends of a round are the tester's to choose — name the station being asked
- * for, then click stations around it and watch what each one would have paid,
- * under the new rule and under the one in the game today. The reach is drawn
- * around the station that was pressed and around no other — it is a claim about
- * one click, and a hundred discs across outer London showed the rule without
- * showing the round.
+ * That rule has since graduated into Tube Station Spotter, so the two columns
+ * are no longer a proposal against the status quo: they are the ride on its own
+ * against what the game now charges, which is the comparison that shows what
+ * the circle is buying. The bench outlives the argument it settled because the
+ * working is the useful part — any later change to the marking is argued here
+ * first, on this pair of stations and that mark.
+ *
+ * So both ends of a round are the tester's to choose: name the station being
+ * asked for, then click stations around it and watch what each one pays. The
+ * reach is drawn around the station that was pressed and around no other — it
+ * is a claim about one click, and a hundred discs across outer London showed
+ * the rule without showing the round.
  *
  * Five rounds of it can be played from the same screen, for the part a table of
- * numbers can't answer: whether it feels fairer.
+ * numbers can't answer: whether it feels fair.
  */
 export default function TubeScoringTest(props: Omit<ModeProps, "match">) {
   const [view, setView] = useState<"bench" | "play">("bench");
@@ -50,25 +55,6 @@ export default function TubeScoringTest(props: Omit<ModeProps, "match">) {
   ) : (
     <ScoringBench {...props} onPlay={() => setView("play")} />
   );
-}
-
-/** Nothing to draw, as one array rather than a fresh one each render. */
-const NO_RINGS: MapRing[] = [];
-
-/**
- * The reach of the station that was pressed, and only that one.
- *
- * Every station's circle drawn at once was the shape of the rule but not the
- * shape of a round: a hundred-odd overlapping discs across the whole of outer
- * London, with the one actually being scored somewhere in the middle of them.
- * A radius is a claim about a particular click, so it's drawn when there's a
- * click to make it about.
- */
-function reachRing(station: TubeStation): MapRing[] {
-  const km = nearbyRadiusKm(station);
-  return km === null
-    ? NO_RINGS
-    : [{ key: station.name, lat: station.lat, lng: station.lng, km, strong: true }];
 }
 
 const byName = new Map(tubeStations.map((s) => [s.name.toLowerCase(), s]));
@@ -148,7 +134,7 @@ function ScoringBench({
             ← Menu
           </button>
           <NightToggle night={night} onToggle={onToggleNight} />
-          <h2 className="lab-title">{TUBE_TEST_TITLE}</h2>
+          <h2 className="lab-title">{GAME_MAKER_TITLE}</h2>
         </div>
 
         <div className="prompt lab-picks">
@@ -229,15 +215,19 @@ function ScoringBench({
             {/* The whole point of the bench: the same click marked both ways,
                 side by side, so the two are read against each other rather
                 than found on two different lines. A real table, because the
-                columns have to line up with the heading that names them. */}
+                columns have to line up with the heading that names them.
+
+                The left column is the ride on its own — what the game charged
+                before the circle, and still the fallback wherever the circle
+                doesn't reach. The right is what it charges now. */}
             <table className="lab-table">
               <thead>
                 <tr>
                   <th scope="col">
                     <span className="sr-only">Measure</span>
                   </th>
-                  <th scope="col">Today’s rule</th>
-                  <th scope="col">Test rule</th>
+                  <th scope="col">Ride alone</th>
+                  <th scope="col">With the circle</th>
                 </tr>
               </thead>
               <tbody>
@@ -250,16 +240,16 @@ function ScoringBench({
                 </tr>
                 <tr>
                   <th scope="row">Points</th>
-                  <td className="lab-points">{mark.todayScore.toLocaleString()}</td>
+                  <td className="lab-points">{mark.rideScore.toLocaleString()}</td>
                   {/* Green on the marks, not on the stops: a rule that took
                       fourteen stops off the ride and left the score where it
                       was has changed nothing worth colouring. */}
-                  <td className={`lab-points${mark.score > mark.todayScore ? " is-up" : ""}`}>
+                  <td className={`lab-points${mark.score > mark.rideScore ? " is-up" : ""}`}>
                     {mark.score.toLocaleString()}
-                    {mark.score > mark.todayScore && (
+                    {mark.score > mark.rideScore && (
                       <span className="lab-delta">
                         {" "}
-                        +{(mark.score - mark.todayScore).toLocaleString()}
+                        +{(mark.score - mark.rideScore).toLocaleString()}
                       </span>
                     )}
                   </td>
@@ -316,13 +306,15 @@ function ScoringBench({
 }
 
 /**
- * The game itself, played under the test rules — the same five rounds Tube
- * Station Spotter deals, marked by `markNearby` instead of by stops alone, with
- * every station's reach drawn on so a player can see what they're being given.
+ * The game itself — the same five rounds Tube Station Spotter deals, marked the
+ * same way, with the pressed station's reach drawn on so a player can see what
+ * they're being given.
  *
- * Deliberately not a `ModeId`: it is a copy for judging a rule by, and putting
- * it in the list of games would put it in the daily rota and in duel codes,
- * where half the world would be handed an experiment as their round of the day.
+ * It is a copy rather than the game, so the next rule to be tried can be tried
+ * on it without anybody's score depending on the answer. Deliberately not a
+ * `ModeId`: putting it in the list of games would put it in the daily rota and
+ * in duel codes, where half the world would be handed an experiment as their
+ * round of the day.
  */
 function TestGame({ onExit, night, onToggleNight, settings }: Omit<ModeProps, "match">) {
   const game = useGame<TubeStation>(tubeStations, (s) => s, 1.2, {
@@ -343,7 +335,7 @@ function TestGame({ onExit, night, onToggleNight, settings }: Omit<ModeProps, "m
 
   return (
     <GameFrame
-      title={TUBE_TEST_TITLE}
+      title={GAME_MAKER_TITLE}
       game={game}
       onExit={onExit}
       night={night}
@@ -359,6 +351,12 @@ function TestGame({ onExit, night, onToggleNight, settings }: Omit<ModeProps, "m
               : `${zoneLabel(station.zone)} · reach ${km.toFixed(1)} km`,
         };
       }}
+      // The same sentence the game gives, since this is meant to be the game:
+      // a bench whose rounds explain themselves differently is a bench that
+      // can't be trusted about the thing it's a copy of.
+      renderScoreNote={(station, result) =>
+        result.click && !result.hit ? reachNote(result.click, station) : null
+      }
       hint="Click a station to place your guess."
       measureLabel="Stops to destination"
       renderPrompt={(station) => (

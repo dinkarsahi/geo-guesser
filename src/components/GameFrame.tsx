@@ -3,7 +3,7 @@ import type { Coord } from "../lib/geo";
 import { finalScore, formatDistance, MAX_ROUND_SCORE } from "../lib/geo";
 import type { Match } from "../lib/match";
 import { MATCH_GRACE_MS, MATCH_ROUND_MS } from "../lib/match";
-import type { Game, Phase } from "../lib/useGame";
+import type { Game, Phase, RoundResult } from "../lib/useGame";
 import { useRoom } from "../lib/useRoom";
 import MatchResult from "./MatchResult";
 import type { GuessMapProps } from "./mapTypes";
@@ -30,6 +30,17 @@ interface GameFrameProps<T> {
    * have been moved to stand for the country as a whole.
    */
   pickedLabel?: (click: Coord) => PickedGuess | null;
+  /**
+   * Where the mark came from, in a sentence, for a mode whose sum the map
+   * can't be read for. The tube pays for a click near the answer by how
+   * crowded the circle round it is, so a round the player can see is eighteen
+   * stops long is marked four — a figure that contradicts the map has to say
+   * why, or it reads as the game having lost count of its own network.
+   *
+   * Return null on a round with nothing to explain: this is the working, not a
+   * running commentary, and printed every round it stops being read.
+   */
+  renderScoreNote?: (target: T, result: RoundResult) => ReactNode;
   /**
    * What a round was, in a few words, for the list at the end: "Argentina",
    * "Baker Street", "Buenos Aires, Argentina".
@@ -92,6 +103,7 @@ export default function GameFrame<T>({
   renderMap,
   renderResultExtra,
   pickedLabel,
+  renderScoreNote,
   answerLabel,
   hint = "Click the map to place your guess.",
   measureLabel = "Distance to destination",
@@ -227,6 +239,10 @@ export default function GameFrame<T>({
     isResult && lastResult && !lastResult.hit && lastResult.click
       ? pickedLabel?.(lastResult.click)
       : null;
+  // Why the mark is the mark, for the modes that owe an explanation. Offered
+  // the whole result rather than the click, because what wants explaining is
+  // usually the difference between the two numbers in it.
+  const scoreNote = isResult && lastResult ? renderScoreNote?.(target, lastResult) : null;
   // What the clock took off this round. Always zero outside a match, where
   // there's no clock on a round to take anything.
   const timeCost = lastResult ? lastResult.accuracy - lastResult.score : 0;
@@ -378,6 +394,10 @@ export default function GameFrame<T>({
                   {picked.detail && <span className="picked-detail">{picked.detail}</span>}
                 </p>
               )}
+              {/* Under the station that was picked, because it is that pick
+                  the sum is about: the circle drawn on the map belongs to it,
+                  and the sentence reads on from the name. */}
+              {scoreNote && <p className="result-working">{scoreNote}</p>}
               {renderResultExtra && (
                 <div className="fact-panel">{renderResultExtra(target)}</div>
               )}

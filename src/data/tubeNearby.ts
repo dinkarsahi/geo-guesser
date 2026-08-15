@@ -8,9 +8,8 @@ import {
 } from "./tube";
 
 /**
- * An experimental way of marking the tube game, kept apart from the one that
- * counts. Nothing in `Tube Station Spotter` reads this file — see
- * `src/modes/TubeScoringTest.tsx`, which is the whole of what does.
+ * The circle round a station, and half of how Tube Station Spotter marks a
+ * guess. The other half is the ride — see `scoreFromStops` in `tube.ts`.
  *
  * The complaint it answers: out in the suburbs two stations can be a few
  * minutes' walk apart and eighteen stops apart, because the only train between
@@ -26,6 +25,11 @@ import {
  * everything, and a radius would hand out marks for knowing roughly where the
  * middle of London is. It's the outer network that is sparse enough for
  * closeness to mean something, and sparse enough for the ride to be silly.
+ *
+ * It arrived as an experiment on a bench of its own and was judged there before
+ * being let anywhere near a score. Having graduated it *replaced* the ride
+ * rather than standing beside it — there is one tube rule, and the bench
+ * (`src/modes/TubeScoringTest.tsx`) now exists to show its working.
  */
 
 /**
@@ -134,11 +138,11 @@ export function stationsInReach(clicked: TubeStation): TubeStation[] {
   return found;
 }
 
-/** A guess marked under the test rules, with the working left in. */
+/** A marked guess, with the working left in. */
 export interface NearbyMark {
-  /** The ride, as the network actually is — what the game charges today. */
+  /** The ride, as the network actually is. */
   stops: number;
-  /** What the test rule charges: the ride, or the reach, whichever is kinder. */
+  /** What the game charges: the ride, or the reach, whichever is kinder. */
   countedStops: number;
   /** How far apart the two stations are on the ground. */
   km: number;
@@ -152,16 +156,16 @@ export interface NearbyMark {
   reachStops: number | null;
   /** The reach is what the mark came from, rather than the ride. */
   eased: boolean;
-  /** The mark under the test rules. */
+  /** The mark. */
   score: number;
-  /** And under the ones the game uses today, so the two can be compared. */
-  todayScore: number;
-  /** How a result panel words the test rule's verdict. */
+  /** What the ride alone would have paid, so the bench can show both. */
+  rideScore: number;
+  /** How the result panel words the verdict. */
   label: string;
 }
 
 /**
- * Mark a click under the test rules.
+ * Mark a click.
  *
  * Where the circle covers the answer, the ride is replaced by how crowded the
  * circle is: one stop for the answer itself, plus one for every other station
@@ -198,7 +202,7 @@ export function markNearby(clicked: TubeStation, answer: TubeStation): NearbyMar
     reachStops,
     eased,
     score: scoreFromStops(countedStops),
-    todayScore: scoreFromStops(stops),
+    rideScore: scoreFromStops(stops),
     // Where the circle did the work, the ride is named as well as the mark:
     // "4 stops away" over a journey the player can see is eighteen looks like
     // the game has lost count of its own network. Both in stops, because stops

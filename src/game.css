@@ -143,11 +143,12 @@
   margin-left: -0.28em;
 }
 
-/* Two cards where the menu has seven: given a little more room each, since
-   they're a choice being made rather than a list being scanned, but still held
-   to the middle rather than stretched into a pair of banners. */
-.mode-grid-pair {
-  max-width: 640px;
+/* The home page's three doors, where the shelf behind one of them has eight
+   cards: given more room each, since they're a choice being made rather than a
+   list being scanned, and wide enough that all three sit in one row on a
+   desktop rather than leaving the third stranded on its own. */
+.mode-grid-trio {
+  max-width: 900px;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
@@ -1564,6 +1565,30 @@ body:has(.game-play) {
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
+/* Where the mark came from, when the mark and the map disagree: the tube pays
+   a click near the answer by how crowded the circle round it is, so a round
+   the player can see is eighteen stops long is marked four. Set like the
+   bench's working, which is the same sentence about the same circle, and kept
+   quieter than the figures it explains. */
+.result-working {
+  margin: 0;
+  max-width: 640px;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--text);
+}
+.result-working strong {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-h);
+}
+.result-panel.hud .result-working {
+  color: #9ca3af;
+}
+.result-panel.hud .result-working strong {
+  color: #e5e7eb;
+}
+
 /* Why full marks were full: its own line under the verdict, and quieter than
    it — it explains the green rather than adding to it. */
 .result-near {

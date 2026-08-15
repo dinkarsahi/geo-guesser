@@ -53,6 +53,15 @@ options or in `GameFrame`'s props instead.
   the same rounds without talking to each other. Seeded games deliberately skip
   the "recently seen" memory, which differs per device.
 
+### A `GameFrame` prop worth knowing
+
+**`renderScoreNote`** — a sentence under the mark saying where the mark came
+from, given the target and the whole `RoundResult`. Only the tube has one, and
+only because its number can contradict the map: a click one stop's walk from the
+answer is marked 4 stops over a ride the player can see is 18, and a figure that
+disagrees with the picture has to explain itself. Return null on a round with
+nothing to explain — printed every round it stops being read.
+
 ### The maps
 
 Three of them, all satisfying `GuessMapProps` in `src/components/mapTypes.ts`:
@@ -62,8 +71,9 @@ Three of them, all satisfying `GuessMapProps` in `src/components/mapTypes.ts`:
 - **`GlobeMap.tsx`** — `react-globe.gl` (three.js). Draws from a **coarsened**
   copy of the country shapes; at full 1:50m detail the globe is a slideshow.
   Never score against the coarse copy.
-- **`LondonMap.tsx`** — bespoke SVG of the tube network. Also takes `rings` and
-  `autoView`, for the scoring bench — see below.
+- **`LondonMap.tsx`** — bespoke SVG of the tube network. Also takes `rings` —
+  the circle a tube guess is marked against, drawn by the game and by the bench
+  from the same `src/lib/tubeReach.tsx` — and `autoView`; see below.
 
 Reveal colouring comes in two flavours, and they are not interchangeable:
 
@@ -84,9 +94,24 @@ for, so it can never cost anyone a round.
 
 ---
 
+## The way in
+
+The home page asks one question — **who are you playing** — and answers it with
+three cards: `Today's Round`, `Duel a Friend`, and `All Games`. The games
+themselves are behind the third of those, on a shelf with the bench at the end
+of it. They used to be the home page, with the two contests tacked on as an
+eighth card; seven games in front of the question answered it before it was
+asked, and the contests read as two more games.
+
+All of it is `App.tsx`. `browsing` says which menu is underneath everything
+(`"home"` or `"games"`) and is **deliberately untouched by `toMenu`** — coming
+out of Flag Spotter lands back on the shelf it was picked off, where coming out
+of today's round lands home, which is where that player came from. `social` is
+whichever contest is open, and no longer has a hub of its own.
+
 ## The seven games
 
-(Seven on the menu, plus a test bench that isn't one of them — see below.)
+(Seven on the shelf, plus a test bench that isn't one of them — see below.)
 
 | Game | `ModeId` | Question | Marked on |
 |---|---|---|---|
@@ -95,7 +120,7 @@ for, so it can never cost anyone a round.
 | Currency Spotter | `currency` | Code + symbol | Any country that spends it, else distance |
 | Corporate HQ Spotter | `company` | A company logo | Right country, else distance |
 | Population Spotter | `population` | A population figure | Ratio of populations — **not** distance |
-| Tube Station Spotter | `tube` | A station name | Stops between, **not** metres |
+| Tube Station Spotter | `tube` | A station name | Stops between, or how crowded the clicked station's circle is — **not** metres |
 | Time Zone Spotter | `timezone` | A live clock face | Hours off that clock, **not** distance |
 
 Data lives in `src/data/`. Countries, currencies, populations and time zones are
@@ -131,9 +156,16 @@ lets the pool be *every* country rather than the ones someone got round to.
   country's clocks came closest, and the reveal names that same one; a sentence
   quoting a clock the score didn't use is a panel arguing with itself.
 - **Tube** treats whichever station's patch of the map you clicked as your
-  answer, and charges you the ride from there. It is also the one game with a
+  answer, and charges you the ride from there — **unless the answer is inside
+  that station's own circle**, where the ride is replaced by how crowded the
+  circle is. The circle, its sizes and the reason for both are in
+  `src/data/tubeNearby.ts`; it is drawn on the map by `src/lib/tubeReach.tsx`
+  and explained in the result panel by `reachNote` from the same file, which is
+  shared with the bench so the two can never say different things about the
+  same click. The kinder of the ride and the circle counts, so the rule can
+  only ever help. It is also the one game with a
   line of its own — `TUBE_TAGLINE` in `data/tube.ts`, "See it. Say it. Spot
-  it.". It is printed under the title on the menu card and again on the setup
+  it.". It is printed under the title on its All Games card and again on the setup
   screen (a `tagline` on the `MODES` entry in `App.tsx`, which only the tube
   sets — seven slogans would be no emphasis), and it replaces "Spot on!" on a
   round worth full marks, via `GameFrame`'s `fullMarksLabel`. The reveal uses
@@ -142,11 +174,12 @@ lets the pool be *every* country rather than the ones someone got round to.
   one place and only the punctuation differs. Only the wording moves — what
   counts as full marks is still scoring's business.
 
-### The eighth card: the tube scoring bench
+### The eighth card: the scoring bench
 
-`Tube Station User Scoring Test Version` — `src/modes/TubeScoringTest.tsx`, with
-the rule it tries out in `src/data/tubeNearby.ts`. A copy of the tube game for
-judging a way of marking it: from zone 3 outwards every station gets a circle
+`Game Maker Test Version` — `GAME_MAKER_TITLE` in
+`src/modes/TubeScoringTest.tsx`, with the rule it was built for in
+`src/data/tubeNearby.ts`. A copy of the tube game for judging a way of marking
+it: from zone 3 outwards every station gets a circle
 (radius 1.2 km at zone 3, +0.4 km a zone, capped at 2.4 — about one station's
 gap, which the data agrees with: neighbours joined by track sit 1.26 km apart in
 zone 3, 1.48 in zone 4, 1.99 in zone 6). A station billed for two zones is sized
@@ -159,7 +192,13 @@ covers the answer, the ride is replaced by **how crowded the circle is**: one
 stop for the answer, plus one for every other station inside it. The kinder of
 the two counts, so the rule can never cost a round. Northwick Park's circle
 holds three stations, so a click there for Kenton — 18 stops by train — is
-marked 4 stops: nothing today, 64 under this.
+marked 4 stops: nothing on the ride alone, 64 with the circle.
+
+**That rule has since graduated, and Tube Station Spotter now marks by it.** So
+the bench's two columns are no longer a proposal against the status quo: they
+are `Ride alone` against `With the circle`, which is what the circle is buying.
+The bench outlives the argument it settled because the working is the useful
+part — the next change to the marking gets argued here first.
 
 **The trap, and it cost a round trip:** membership is the station's dot inside
 the circle, and it has to stay something a tester can *count off the screen*.
@@ -171,23 +210,26 @@ the one thing the bench cannot afford. If the test ever grows a tolerance again,
 the circle on the map has to grow with it.
 
 It opens on a bench rather than a game — both ends of a round are chosen by
-whoever is testing, and the panel puts the two rules in adjacent columns with
-the working under them. Five rounds of it can be played from the same screen.
+whoever is testing, and the panel puts the two columns side by side with the
+working under them. Five rounds of it can be played from the same screen, and
+those rounds are marked and explained by exactly what the real game uses, so a
+bench round can never disagree with a game round.
 
 **It is deliberately not a `ModeId`.** Making it one would enter it in
 `MATCH_MODES`, and so in the daily rota — a rota of eight, one day in eight
 being an experiment shown to everybody — and would need a mode letter and a
 re-run of `schema.sql`. It's a `tubeTest` flag in `App.tsx` instead, and nothing
-in `match.ts`, `duel.ts` or the database knows it exists. Keep it that way
-unless the rule graduates, at which point it should replace the tube game's
-scoring rather than stand beside it.
+in `match.ts`, `duel.ts` or the database knows it exists. Keep it that way for
+whatever is tried here next: a rule that graduates should **replace** the tube
+game's scoring rather than stand beside it, which is what happened to this one.
 
 Two `LondonMap` props came in with it, both optional and both off by default:
 `rings` (circles measured in kilometres of ground, drawn under the network — the
 array's identity must be stable, since the map re-projects the lot whenever it's
 handed a new one) and `autoView` (false stops the map flying back to the whole
 network when the answer changes, which on the bench would yank the view away
-every time a station is named).
+every time a station is named). `rings` is no longer bench-only — the game draws
+the same circle, from the same `reachRing`.
 
 ---
 
@@ -211,6 +253,10 @@ scale it's 2 rather than 14.
 | Population ratio | `PopulationGuesser.tsx` | 2 (natural logs) | ×2 → 89, ×5 → 52, ×10 → 27 |
 | Tube stops | `scoreFromStops`, `data/tube.ts` | 6 stops | 1 stop → 97, 4 → 64, 12 → 2 |
 | Clock gap | `scoreFromClockGap`, `data/timeZones.ts` | 3 half-hours | 1 h → 64, 2 h → 17, 3 h → 2 |
+
+The tube's *stops* are the ride or the crowding of the clicked station's circle,
+whichever is fewer — `markNearby` in `data/tubeNearby.ts` decides which, and the
+curve above marks whatever comes out of it.
 
 The clock game is tuned **tighter** than the rest on purpose — there are only
 thirty-five answers in the world and forty-six countries share the busiest one,
@@ -251,8 +297,8 @@ be told about both.
 
 ## Playing other people
 
-Two contests behind one menu door, and the difference is only where the code
-comes from — see `src/lib/match.ts`.
+Two contests, one home-page door each, and the difference between them is only
+where the code comes from — see `src/lib/match.ts`.
 
 **Today's Round** (`kind: "daily"`, code letter `D`). The code is *worked out*
 from the game and the local calendar date, so it is never handed around: anyone

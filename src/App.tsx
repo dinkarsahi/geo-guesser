@@ -10,7 +10,7 @@ import PlayFriend from "./modes/PlayFriend";
 import PopulationGuesser from "./modes/PopulationGuesser";
 import TimeZoneGuesser from "./modes/TimeZoneGuesser";
 import TubeGuesser from "./modes/TubeGuesser";
-import TubeScoringTest, { TUBE_TEST_TITLE } from "./modes/TubeScoringTest";
+import TubeScoringTest, { GAME_MAKER_TITLE } from "./modes/TubeScoringTest";
 import type { GameSettings, ModeId, ModeProps } from "./modes/ModeProps";
 
 type Mode = ModeId;
@@ -213,17 +213,20 @@ function DuelMark() {
 }
 
 /**
- * The two ways of playing against other people, behind one door.
+ * The shelf of games, behind the third door on the home page.
  *
- * They're one thing on the menu because they answer the same wish — I want to
- * play somebody — and two things here because the answer forks on who, and on
- * whether they're free right now.
+ * Seven of them, and the bench at the end. They're a door rather than the home
+ * page itself because the home page has one question to ask — who are you
+ * playing — and seven cards in front of it made the answer "nobody" look like
+ * the only one on offer.
  */
-function HeadToHeadMenu({
+function AllGames({
   onPick,
+  onBench,
   onBack,
 }: {
-  onPick: (which: "daily" | "room") => void;
+  onPick: (mode: Mode) => void;
+  onBench: () => void;
   onBack: () => void;
 }) {
   return (
@@ -233,25 +236,28 @@ function HeadToHeadMenu({
           ← Menu
         </button>
       </div>
-      <h1>
-        <span className="mode-emoji">⚔️</span> Head to Head
-      </h1>
-      <p className="muted menu-sub">Play the world, or play someone you know.</p>
-      <div className="mode-grid mode-grid-pair">
-        <button className="mode-card" onClick={() => onPick("daily")}>
-          <WorldDuelMark />
-          <span className="mode-title">Today's Round</span>
+      <h1>All Games</h1>
+      <p className="muted menu-sub">
+        Pick a game, then choose how long and what to play it on.
+      </p>
+      <div className="mode-grid">
+        {MODES.map((m) => (
+          <button key={m.id} className="mode-card" onClick={() => onPick(m.id)}>
+            <span className="mode-emoji">{m.emoji}</span>
+            <span className="mode-title">{m.title}</span>
+            {m.tagline && <span className="muted mode-blurb">{m.tagline}</span>}
+            <span className="muted mode-blurb">{m.blurb}</span>
+          </button>
+        ))}
+        {/* The workshop where a way of marking a game is tried out before it
+            counts for anything. Last in the grid and named for what it is, so
+            nobody comes to it expecting their score to go anywhere. */}
+        <button className="mode-card" onClick={onBench}>
+          <span className="mode-emoji">🧪</span>
+          <span className="mode-title">{GAME_MAKER_TITLE}</span>
           <span className="muted mode-blurb">
-            Take on everyone playing today. The day picks the game from all seven — it's{" "}
-            {modeTitle(gameOfDay())} — and everyone gets the same five rounds, once.
-          </span>
-        </button>
-        <button className="mode-card" onClick={() => onPick("room")}>
-          <DuelMark />
-          <span className="mode-title">Duel a Friend</span>
-          <span className="muted mode-blurb">
-            Read out a code and play the same rounds at the same time. One table at the
-            end, and the winner takes it.
+            Set both ends of a tube round and watch the marking show its working: the
+            ride on its own, against the ride with the circle the game now allows.
           </span>
         </button>
       </div>
@@ -276,14 +282,19 @@ export default function App() {
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
   // Day (colourful) by default; the toggle switches to the grey night look.
   const [night, setNight] = useState(false);
-  // Head to head: the door itself, or whichever of the two games behind it is
-  // open — today's round against the world, or a room of people you know.
-  const [social, setSocial] = useState<"hub" | "daily" | "room" | null>(null);
+  // Which of the two contests is open — today's round against the world, or a
+  // room of people you know. Both are their own door on the home page now.
+  const [social, setSocial] = useState<"daily" | "room" | null>(null);
   const [match, setMatch] = useState<Match | null>(null);
-  // The tube scoring bench. Not a `Mode`: it's a copy of one game kept aside to
-  // try a rule out on, and making it a mode would enter it in the daily rota
-  // and in duel codes, which is the last place an experiment belongs.
+  // The scoring bench. Not a `Mode`: it's a copy of one game kept aside to try
+  // a rule out on, and making it a mode would enter it in the daily rota and in
+  // duel codes, which is the last place an experiment belongs.
   const [tubeTest, setTubeTest] = useState(false);
+  // Which menu is the one behind everything: the three doors, or the shelf of
+  // games behind the third of them. Deliberately untouched by `toMenu` — a
+  // player who came out of Flag Spotter came from the shelf and wants it back,
+  // where one coming out of today's round never saw it.
+  const [browsing, setBrowsing] = useState<"home" | "games">("home");
 
   const toMenu = () => {
     setMode(null);
@@ -320,20 +331,12 @@ export default function App() {
 
   if (tubeTest) return <TubeScoringTest {...modeProps} />;
 
-  // Back from either game goes to the pair of them rather than all the way out:
-  // a player who opened the wrong one of the two wanted the other one.
-  const toHeadToHead = () => setSocial("hub");
-
   if (social === "daily") {
-    return <HeadToHead onBack={toHeadToHead} onStart={setMatch} />;
+    return <HeadToHead onBack={toMenu} onStart={setMatch} />;
   }
 
   if (social === "room") {
-    return <PlayFriend onBack={toHeadToHead} onStart={setMatch} />;
-  }
-
-  if (social === "hub") {
-    return <HeadToHeadMenu onPick={setSocial} onBack={toMenu} />;
+    return <PlayFriend onBack={toMenu} onStart={setMatch} />;
   }
 
   if (mode && started) {
@@ -347,48 +350,58 @@ export default function App() {
         settings={settings}
         onChange={setSettings}
         onStart={() => setStarted(true)}
-        onBack={toMenu}
+        // Back to the shelf the game was picked off, not out to the home page:
+        // somebody who opened the wrong one of eight wanted a different one.
+        onBack={() => setMode(null)}
       />
     );
   }
 
+  if (browsing === "games") {
+    return (
+      <AllGames
+        onPick={setMode}
+        onBench={() => setTubeTest(true)}
+        onBack={() => setBrowsing("home")}
+      />
+    );
+  }
+
+  // Three doors, and the question they answer between them is who you're
+  // playing: everybody, one person, or nobody. The games themselves are behind
+  // the third of those, because listing all seven here answered the question
+  // before it was asked — the two contests sat at the end of a row of games and
+  // read as two more of them.
+  //
   // No day/night toggle out here — it belongs with the map it changes, so it
   // only appears once a game is running.
   return (
     <div className="menu">
       <h1>SpotOn</h1>
-      <p className="muted menu-sub">Pick a mode, then choose how you want to play.</p>
-      <div className="mode-grid">
-        {MODES.map((m) => (
-          <button key={m.id} className="mode-card" onClick={() => setMode(m.id)}>
-            <span className="mode-emoji">{m.emoji}</span>
-            <span className="mode-title">{m.title}</span>
-            {m.tagline && <span className="muted mode-blurb">{m.tagline}</span>}
-            <span className="muted mode-blurb">{m.blurb}</span>
-          </button>
-        ))}
-        {/* One door for playing other people, rather than two. The seven above
-            are games; this is an opponent, and which opponent is a question
-            for the other side of it. Drawn as one more card all the same — it
-            sits in their grid, and picking it out in colour made it read as
-            the thing you were meant to press rather than the last choice. */}
-        <button className="mode-card" onClick={() => setSocial("hub")}>
-          <span className="mode-emoji">⚔️</span>
-          <span className="mode-title">Head to Head</span>
+      <p className="muted menu-sub">Play the world, play a friend, or just play.</p>
+      <div className="mode-grid mode-grid-trio">
+        <button className="mode-card" onClick={() => setSocial("daily")}>
+          <WorldDuelMark />
+          <span className="mode-title">Today's Round</span>
           <span className="muted mode-blurb">
-            Play the world at today's round, or duel a friend on the same rounds at the
-            same time.
+            Take on everyone playing today. The day picks the game from all seven — it's{" "}
+            {modeTitle(gameOfDay())} — and everyone gets the same five rounds, once.
           </span>
         </button>
-        {/* A copy of the tube game kept aside to try a way of marking it on.
-            Last in the grid and named for what it is, so nobody comes to it
-            expecting their score to count for anything. */}
-        <button className="mode-card" onClick={() => setTubeTest(true)}>
-          <span className="mode-emoji">🧪</span>
-          <span className="mode-title">{TUBE_TEST_TITLE}</span>
+        <button className="mode-card" onClick={() => setSocial("room")}>
+          <DuelMark />
+          <span className="mode-title">Duel a Friend</span>
           <span className="muted mode-blurb">
-            Try out marking a near miss by how far the walk is rather than by the ride:
-            set both ends of a round and see what each would pay.
+            Read out a code and play the same rounds at the same time. One table at the
+            end, and the winner takes it.
+          </span>
+        </button>
+        <button className="mode-card" onClick={() => setBrowsing("games")}>
+          <span className="mode-emoji">🗺️</span>
+          <span className="mode-title">All Games</span>
+          <span className="muted mode-blurb">
+            All seven on your own, at your own pace and for as long as you like — no
+            code, no clock, nobody waiting.
           </span>
         </button>
       </div>
