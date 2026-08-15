@@ -1,11 +1,9 @@
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <rect width="512" height="512" rx="112" fill="#0b1220"/>
-
   <defs>
-    <clipPath id="globeClipL">
+    <clipPath id="globeClipM">
       <circle cx="240" cy="256" r="180"/>
     </clipPath>
-    <radialGradient id="globeShadeL" cx="32%" cy="28%" r="80%">
+    <radialGradient id="globeShadeM" cx="32%" cy="28%" r="80%">
       <stop offset="0%" stop-color="#6fb8f0"/>
       <stop offset="45%" stop-color="#2f7fd6"/>
       <stop offset="80%" stop-color="#123a72"/>
@@ -13,8 +11,8 @@
     </radialGradient>
   </defs>
 
-  <circle cx="240" cy="256" r="180" fill="url(#globeShadeL)"/>
-  <g clip-path="url(#globeClipL)">
+  <circle cx="240" cy="256" r="180" fill="url(#globeShadeM)"/>
+  <g clip-path="url(#globeClipM)">
     <path d="M90 160 Q125 145 155 162 Q185 150 210 168 Q240 158 258 182 L262 220 Q225 205 195 222 Q165 205 135 222 Q110 210 88 220 Z" fill="#3d7a3f"/>
     <path d="M100 250 Q140 238 172 255 Q200 265 232 250 L238 288 Q205 302 175 288 Q148 308 115 292 Z" fill="#4a8c4a"/>
     <path d="M235 145 Q262 138 282 155 L278 185 Q258 195 240 178 Z" fill="#8a7a4a"/>
