@@ -217,16 +217,14 @@ export function markNearby(clicked: TubeStation, answer: TubeStation): NearbyMar
     eased,
     score: scoreFromStops(countedStops),
     rideScore: scoreFromStops(stops),
-    // What the round was charged, and where the charge came from. Marked on the
-    // ride it is a distance — "4 stops away" — and marked on the circle it is a
-    // count of what stands in the circle, which is a different thing said in the
-    // same units, and saying it as a distance was the whole reason the old
-    // headline had to name the ride afterwards to stop looking wrong. Named
-    // rather than described, because a rule the player can put a name to is one
-    // they can expect the next time they land beside the answer.
+    // How far the guess really was, always — and where the marks came from,
+    // where that isn't the same thing. The ride is what the player wants to know
+    // and the only figure the map can be checked against, so it stays on the
+    // headline whatever was charged; what changes is the bracket after it, which
+    // names the rule that paid rather than making the number smaller and leaving
+    // the player to wonder which of the two the game believes.
     label: eased
-      ? `${countedStops} ${countedStops === 1 ? "station" : "stations"} within the ` +
-        `${MIND_THE_GAP} Area`
+      ? `${formatStops(stops)} (${MIND_THE_GAP} benefit)`
       : formatStops(stops),
   };
 }

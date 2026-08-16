@@ -1,7 +1,12 @@
 import type { ReactNode } from "react";
 import type { MapRing } from "../components/LondonMap";
 import { nearestStation, type TubeStation } from "../data/tube";
-import { markNearby, nearbyRadiusKm, MIND_THE_GAP_CALL } from "../data/tubeNearby";
+import {
+  markNearby,
+  nearbyRadiusKm,
+  MIND_THE_GAP,
+  MIND_THE_GAP_CALL,
+} from "../data/tubeNearby";
 import type { Coord } from "./geo";
 
 /**
@@ -65,34 +70,28 @@ export function gapCall(click: Coord, answer: TubeStation): string | null {
 /**
  * Why the mark is kinder than the ride, when it is.
  *
- * Only ever printed on a round the circle paid for, and it says the one thing
- * the player can't work out from the panel: that the ride really was that long
- * and they are being let off some of it. The circle's radius, its population
- * and the arithmetic between them are the bench's business — on a round they
- * are three sentences of workings between the player and the next question, and
- * everything they explain is already drawn on the map.
+ * Only ever printed on a round the circle paid for, and it names the two ends
+ * of the thing the headline has just put in brackets: which station's area was
+ * involved, and that the answer was inside it. **An** area rather than **the**
+ * area — every station out here has one, and the player has landed in one of
+ * them, not in some single feature of the map they were supposed to know about.
+ *
+ * It quotes no numbers. The ride is on the headline, the mark is beside it, and
+ * the radius, the count inside it and the arithmetic between them are the
+ * bench's business — on a round they are three sentences of workings between
+ * the player and the next question.
  *
  * Null on every other round, because there the stops on the headline are the
  * whole story and a note that never varies stops being read.
  */
 export function creditNote(click: Coord, answer: TubeStation): ReactNode {
   const clicked = nearestStation(click);
-  const mark = markNearby(clicked, answer);
-  if (!mark.eased) return null;
-
-  // Two stations can sit a street apart with no train between them at all, and
-  // "You were Infinity stops away" is not the sentence for it.
-  const ride = Number.isFinite(mark.stops) ? (
-    <>
-      You were <strong>{mark.stops}</strong> stops from {answer.name}
-    </>
-  ) : (
-    <>There’s no ride from {clicked.name} to {answer.name} at all</>
-  );
+  if (!markNearby(clicked, answer).eased) return null;
 
   return (
     <>
-      {ride}, but you clicked close by — so we’re giving you some credit!
+      {answer.name} is inside a {MIND_THE_GAP} Area around {clicked.name}, so we’re
+      giving you some credit!
     </>
   );
 }

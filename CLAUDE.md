@@ -66,13 +66,12 @@ every round announces nothing.
 
 **`renderScoreNote`** — a sentence **directly under the mark** saying where the
 mark came from, given the target and the whole `RoundResult`. Only the tube has
-one, and only because its number can contradict the map: a click one stop's walk
-from the answer is marked 4 stops over a ride the player can see is 18, and a
-figure that disagrees with the picture has to explain itself. It sits above "You
-picked", not below it, because it is the mark it answers for and not the pick.
-Return null on a round with nothing to explain — printed every round it stops
-being read, which is why the tube only prints it on the rounds the circle paid
-for.
+one, and only because its marks can contradict its own figures: 37 points for a
+guess the headline says was 22 stops out is generosity that has to account for
+itself. It sits above "You picked", not below it, because it is the mark it
+answers for and not the pick. Return null on a round with nothing to explain —
+printed every round it stops being read, which is why the tube only prints it on
+the rounds the circle paid for.
 
 ### The maps
 
@@ -179,17 +178,22 @@ lets the pool be *every* country rather than the ones someone got round to.
   it always said, "18 stops away", with nothing drawn and nothing explained: a
   circle round a click that got no credit reads as an offer made and then not
   honoured, and a radius printed under every pick is a measurement in search of
-  a reason. On the rounds it did pay, the circle has a name — the **Mind the
-  Gap Area**, `MIND_THE_GAP` in `tubeNearby.ts` — and the panel is that name
-  called over the mark ("MIND THE GAP!"), then the mark itself as a count of
-  what stands in the circle ("4 stations within the Mind the Gap Area"), then
-  the ride the player was let off ("You were 21 stops from Wembley Central, but
-  you clicked close by — so we're giving you some credit!"). Marked on the ride
-  the figure is a distance and reads as one, "15 stops away"; marked on the
-  circle it is a count of stations, and calling that a distance is what used to
-  make the headline name the ride afterwards to stop looking wrong.
-  The radius, the count inside it and the arithmetic between them are the
-  bench's business, not a player's. The kinder of the ride and the circle
+  a reason. On the rounds it did pay, the circle has a name — a **Mind the Gap
+  Area**, `MIND_THE_GAP` in `tubeNearby.ts` — and the panel reads: the name
+  called over the mark ("MIND THE GAP!"), the ride with the rule in brackets
+  after it ("22 stops away (Mind the Gap benefit)  +37 pts"), then which area
+  it was ("Hillingdon is inside a Mind the Gap Area around West Ruislip, so
+  we're giving you some credit!"). **A** Mind the Gap Area, never *the* — every
+  station out there has one, and the player has landed in one of them rather
+  than in some single feature of the map they were meant to know about.
+
+  The headline stays the **ride** even when the ride isn't what was charged: it
+  is the only figure on the panel the map can be checked against, and a headline
+  that quietly shrank to the number the circle charged left the score agreeing
+  with nothing the player could see. What the circle actually charged is the
+  bench's business, along with the radius and the count inside it. The panel's
+  job is to say how far out the guess was and why it was forgiven.
+  The kinder of the ride and the circle
   counts, so the rule can only ever help. It is also the one game with a
   line of its own — `TUBE_TAGLINE` in `data/tube.ts`, "See it. Say it. Spot
   it.". It is printed under the title on its All Games card and again on the setup
