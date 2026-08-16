@@ -17,9 +17,41 @@
  * camera itself); all that's wanted here is where the tiles come from.
  */
 
-/** Where a globe's skin comes from, and how far it can be trusted. */
+/**
+ * The same imagery again, cut for the **flat map** rather than the globe.
+ *
+ * A second scheme and not a second URL, because the two maps are in different
+ * projections and tiles are cut to one or the other. The globe wants Web
+ * Mercator, which is what a slippy map means everywhere on the web. The flat
+ * map is plate carrée — longitude and latitude straight onto x and y — and
+ * Mercator tiles dropped onto it would be stretched further wrong the nearer
+ * they got to the poles. NASA publishes both, which is what makes this
+ * possible at all; a source without a `flat` simply leaves the flat map on its
+ * photograph.
+ */
+export interface FlatTiles {
+  /** One tile, by column, row and level of the grid below. */
+  url: (col: number, row: number, level: number) => string;
+  /**
+   * How many columns the grid has at each level — the index is the level, and
+   * the length is how many levels there are.
+   *
+   * **A table and not a formula, because this grid is not a quadtree.** The
+   * levels go 2, 3, 5, 10, 20… columns: only from the third does it settle into
+   * doubling, and assuming powers of two puts every tile in the wrong place at
+   * the top three. Taken from the service's own capabilities document.
+   *
+   * A tile is `360 / cols` degrees square, laid from the top-left corner of the
+   * world. Where that doesn't divide 180 evenly the bottom row hangs past the
+   * south pole, which costs nothing: it's placed by its own extent and the map
+   * clips what falls off.
+   */
+  cols: number[];
+}
+
+/** Where a map's skin comes from, and how far it can be trusted. */
 export interface TileSource {
-  /** One tile, by slippy-map column, row and zoom level. */
+  /** One tile, by slippy-map column, row and zoom level. Web Mercator. */
   url: (x: number, y: number, level: number) => string;
   /**
    * The deepest level the service actually holds.
@@ -41,6 +73,8 @@ export interface TileSource {
   minAltitude: number;
   /** Printed on the map. Every source here wants it, for its own reasons. */
   credit: string;
+  /** The same imagery cut for the flat map, where the service publishes it. */
+  flat?: FlatTiles;
 }
 
 /**
@@ -72,6 +106,15 @@ const floorFor = (maxLevel: number) =>
   Math.max(0.004, (0.05 * 2 ** (9 - maxLevel)) / OVERZOOM);
 
 const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best";
+/** The same service in plate carrée, for the flat map — see `FlatTiles`. */
+const GIBS_FLAT = "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best";
+
+/**
+ * The column counts of GIBS's plate carrée grids, by level. Checked against the
+ * service's capabilities rather than assumed — see `FlatTiles.cols`.
+ */
+const GIBS_500M_COLS = [2, 3, 5, 10, 20, 40, 80, 160];
+const GIBS_250M_COLS = [...GIBS_500M_COLS, 320];
 
 /**
  * NASA's, and free of everything: public domain imagery, no account, no key, no
@@ -93,6 +136,15 @@ export const NASA_BLUE_MARBLE: TileSource = {
   maxLevel: 8,
   minAltitude: floorFor(8),
   credit: "Imagery courtesy of NASA EOSDIS GIBS",
+  // The flat map's grid reaches further than the globe's: 160 columns of 512
+  // pixels is 82,000 across the world, where the flat map at its deepest zoom
+  // is nearer 23,000. So unlike the globe, the flat map never runs out — the
+  // pictures outlast the zoom rather than the other way round.
+  flat: {
+    url: (col, row, level) =>
+      `${GIBS_FLAT}/BlueMarble_ShadedRelief_Bathymetry/default/500m/${level}/${row}/${col}.jpeg`,
+    cols: GIBS_500M_COLS,
+  },
 };
 
 /**
@@ -117,6 +169,11 @@ export const NASA_TRUE_COLOUR: TileSource = {
   maxLevel: 9,
   minAltitude: floorFor(9),
   credit: "Imagery courtesy of NASA EOSDIS GIBS",
+  flat: {
+    url: (col, row, level) =>
+      `${GIBS_FLAT}/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/${lastFullDay}/250m/${level}/${row}/${col}.jpg`,
+    cols: GIBS_250M_COLS,
+  },
 };
 
 /**
@@ -142,4 +199,6 @@ export const ESRI_WORLD_IMAGERY: TileSource = {
   maxLevel: 17,
   minAltitude: floorFor(17),
   credit: "Imagery © Esri, Maxar, Earthstar Geographics",
+  // No `flat`: this service is cut in Web Mercator only, so choosing it leaves
+  // the flat map on its photograph while the globe goes tiled.
 };

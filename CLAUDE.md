@@ -94,7 +94,9 @@ the ordinary reading, which is what an unanswered one wants.
 Three of them, all satisfying `GuessMapProps` in `src/components/mapTypes.ts`:
 
 - **`WorldMap.tsx`** — flat, plate carrée, `react-simple-maps` + `d3-geo` over a
-  satellite texture.
+  satellite texture. Also takes `tiles`, the same `TileSource` the globe does,
+  and draws the source's `flat` grid over that texture where it has one. Null
+  everywhere but the bench.
 - **`GlobeMap.tsx`** — `react-globe.gl` (three.js). Draws from a **coarsened**
   copy of the country shapes; at full 1:50m detail the globe is a slideshow.
   Never score against the coarse copy. Takes `tiles`, a `TileSource` that skins
@@ -349,22 +351,45 @@ in `CityScrapbook` is the whole of trying another:
 
 | Source | Deepest | Costs |
 |---|---|---|
-| `NASA_BLUE_MARBLE` — **on the bench now** | level 8, ~600 m/px | nothing: public domain, no key, commercial use fine, credit line only |
-| `NASA_TRUE_COLOUR` | level 9, ~300 m/px | same, but it's yesterday's actual satellite pass — real cloud over whichever country it was cloudy over, and a dark polar winter |
-| `ESRI_WORLD_IMAGERY` | level 17, ~1 m/px | the legacy anonymous endpoint, which their terms don't cover commercially. Doing it properly is their keyed service and a bill — and their *tile* meter works out at pennies a game, which no ad-supported game survives, so it would have to be the session meter |
+| `NASA_BLUE_MARBLE` — **on the bench now** | globe 8, flat 7 | nothing: public domain, no key, commercial use fine, credit line only |
+| `NASA_TRUE_COLOUR` | globe 9, flat 8 | same, but it's yesterday's actual satellite pass — real cloud over whichever country it was cloudy over, and a dark polar winter |
+| `ESRI_WORLD_IMAGERY` | globe 17, **no flat** | the legacy anonymous endpoint, which their terms don't cover commercially. Doing it properly is their keyed service and a bill — and their *tile* meter works out at pennies a game, which no ad-supported game survives, so it would have to be the session meter |
 
 NASA is what a shipped game can actually stand on, which is why it's the one
 mounted. Level 8 is still sixteen times sharper than the single photograph, and
 SpotOn asks where a *city* is — a question settled by coastlines and mountain
 ranges rather than by rooftops.
 
-**The trap, and it is the reason `maxLevel` is not optional:** asked for a level
-past its last, every one of these services answers **400**, and the engine draws
-nothing where no tile arrived. So a generous `maxLevel` doesn't buy detail off a
-shallow service — it strips the globe bare the moment you go too close. Each
-source carries the depth it was *checked* to have, and `minAltitude` with it, so
-the zoom stops where the pictures stop instead of magnifying the deepest tiles
-into the same mush this was meant to escape.
+**The flat map is tiled too**, from the same source's `flat` grid. It is a
+second scheme rather than a second URL because **the two maps are in different
+projections and tiles are cut to one or the other**: the globe wants Web
+Mercator, which is what "slippy map" means everywhere on the web, while the flat
+map is plate carrée, and Mercator tiles laid on it would stretch further wrong
+the nearer they got to the poles. NASA publishes both, which is the only reason
+this is possible; Esri's is Mercator alone, so choosing it tiles the globe and
+leaves the flat map on its photograph. That's also why `tiles` is the source and
+not a flag — the source is what decides whether there's anything to draw.
+
+Two traps, both paid for:
+
+- **`maxLevel` is not optional.** Asked for a level past its last, every one of
+  these services answers **400**, and the engine draws nothing where no tile
+  arrived. So a generous `maxLevel` doesn't buy detail off a shallow service —
+  it strips the globe bare the moment you go too close. Each source carries the
+  depth it was *checked* to have, and `minAltitude` with it, so the zoom stops
+  where the pictures stop instead of magnifying the deepest tiles into the same
+  mush this was meant to escape.
+- **The plate carrée grid is not a quadtree.** Its levels go 2, 3, 5, 10, 20…
+  columns, settling into doubling only from the third, so the powers of two that
+  every slippy map teaches you to assume put every tile in the wrong place at
+  the top. `FlatTiles.cols` is a table read off the service's own capabilities
+  document for that reason. A tile is `360 / cols` degrees square; where that
+  doesn't divide 180 the bottom row hangs past the south pole, which costs
+  nothing since each tile is placed by its own extent.
+
+The flat map, unlike the globe, **never runs out**: 160 columns of 512 pixels is
+82,000 across the world where the deepest zoom asks for about 23,000. The
+pictures outlast the zoom rather than the other way round.
 
 Two other things it costs, both seen rather than guessed at:
 

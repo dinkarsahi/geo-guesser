@@ -102,7 +102,12 @@ export default function CityScrapbook({
       // `ESRI_WORLD_IMAGERY` in here is the whole of trying the other two.
       renderMap={(props) =>
         settings.flat ? (
-          <WorldMap {...props} night={night} borders={settings.borders} />
+          <WorldMap
+            {...props}
+            night={night}
+            borders={settings.borders}
+            tiles={NASA_BLUE_MARBLE}
+          />
         ) : (
           <GlobeMap
             {...props}

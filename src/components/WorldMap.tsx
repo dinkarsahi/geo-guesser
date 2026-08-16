@@ -11,9 +11,25 @@ import type { Coord } from "../lib/geo";
 import type { GuessMapProps, MapHighlight } from "./mapTypes";
 import { countryAt, useWorldShapes, type CountryFeature } from "../lib/worldShapes";
 import { DAY_TEXTURE, GREY_TEXTURE } from "../lib/textures";
+import type { FlatTiles, TileSource } from "../lib/mapTiles";
 import MapZoomControls from "./MapZoomControls";
 
 const WIDTH = 1024;
+/** Every tile the services below serve is this square. */
+const TILE_PX = 512;
+/**
+ * How much beyond the window to fetch, so a drag doesn't run off the edge of
+ * what's been loaded before the tiles for the new ground arrive.
+ */
+const VIEW_MARGIN = 1.2;
+/**
+ * A hair of overlap between neighbouring tiles, in map units.
+ *
+ * Tiles are placed at fractional coordinates and scaled by the map's own
+ * transform, and two edges that meet exactly in maths meet with a seam of
+ * background between them on screen once the rounding is done.
+ */
+const SEAM = 0.06;
 const MAX_ZOOM = 12;
 // Below 1 the map is smaller than the window and the backdrop shows around it,
 // which is why the backdrop is the ocean's own colour.
@@ -80,11 +96,92 @@ interface WorldMapProps extends GuessMapProps {
    * across it, and there's nothing to fly to.
    */
   highlights?: MapHighlight[] | null;
+  /**
+   * Draw the map in imagery that resolves as you zoom instead of the one flat
+   * photograph — the flat map's half of the globe's `tiles`. A source that
+   * publishes nothing in this projection leaves the photograph alone, which is
+   * why this is the source and not a flag: it's the source that decides whether
+   * there is anything to draw.
+   */
+  tiles?: TileSource | null;
 }
 
 interface Position {
   coordinates: [number, number];
   zoom: number;
+}
+
+/** One tile of imagery, and the rectangle of map it covers. */
+interface PlacedTile {
+  key: string;
+  href: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * Which tiles cover what's on screen, and where each one belongs.
+ *
+ * Plate carrée is what makes this arithmetic and not projection: longitude and
+ * latitude land on x and y in straight proportion, so a tile's patch of ground
+ * is an upright rectangle wherever it is, the same shape at the pole as at the
+ * equator. On the globe's Mercator grid none of that holds.
+ *
+ * `worldPx` is how wide the whole world would be on this screen at this zoom,
+ * which is the only thing that decides the level: the first grid wide enough to
+ * give the screen a pixel each. Asking for a deeper one buys nothing anybody
+ * can see and fetches four times the tiles to do it.
+ */
+function tilesInView(
+  flat: FlatTiles,
+  centre: [number, number],
+  zoom: number,
+  worldPx: number,
+  mapHeight: number,
+): PlacedTile[] {
+  let level = flat.cols.length - 1;
+  for (let l = 0; l < flat.cols.length; l++) {
+    if (flat.cols[l] * TILE_PX >= worldPx) {
+      level = l;
+      break;
+    }
+  }
+
+  const cols = flat.cols[level];
+  const span = 360 / cols;
+  const rows = Math.ceil(180 / span);
+  const tileW = (span / 360) * WIDTH;
+  const tileH = (span / 180) * mapHeight;
+
+  // The window, in map units, from the centre the map is holding.
+  const cx = ((centre[0] + 180) / 360) * WIDTH;
+  const cy = ((90 - centre[1]) / 180) * mapHeight;
+  const halfW = ((WIDTH / zoom) * VIEW_MARGIN) / 2;
+  const halfH = ((mapHeight / zoom) * VIEW_MARGIN) / 2;
+
+  const first = (v: number, size: number, count: number) =>
+    Math.max(0, Math.min(count - 1, Math.floor(v / size)));
+  const c0 = first(cx - halfW, tileW, cols);
+  const c1 = first(cx + halfW, tileW, cols);
+  const r0 = first(cy - halfH, tileH, rows);
+  const r1 = first(cy + halfH, tileH, rows);
+
+  const out: PlacedTile[] = [];
+  for (let row = r0; row <= r1; row++) {
+    for (let col = c0; col <= c1; col++) {
+      out.push({
+        key: `${level}/${row}/${col}`,
+        href: flat.url(col, row, level),
+        x: col * tileW,
+        y: row * tileH,
+        w: tileW + SEAM,
+        h: tileH + SEAM,
+      });
+    }
+  }
+  return out;
 }
 
 export default function WorldMap({
@@ -97,6 +194,7 @@ export default function WorldMap({
   highlightCodes = null,
   missCode = null,
   highlights = null,
+  tiles = null,
 }: WorldMapProps) {
   const shapes = useWorldShapes();
   // Painting the answer on rather than pinning it: see `highlights`.
@@ -145,6 +243,20 @@ export default function WorldMap({
   }));
   // Land is the only valid guess, so the cursor says so while it's over some.
   const [overLand, setOverLand] = useState(false);
+
+  // How big the map is drawn, which only the tile layer needs: how sharp a
+  // level to ask for depends on how many real pixels the world is being given.
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ w: 1024, h: 512 });
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const update = () => setSize({ w: el.clientWidth, h: el.clientHeight });
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // The flight runs outside React's render loop, so it reads the live view
   // through a ref rather than closing over a stale one.
@@ -292,6 +404,29 @@ export default function WorldMap({
   // Only once the round is over, which the answer's arrival is the sign of.
   const miss = answer ? (missCode ?? "").toLowerCase() : "";
 
+  /**
+   * The imagery under everything, where a source has any for this projection.
+   *
+   * Worked out from the settled view rather than from the live one: the map
+   * only reports where it is when a drag or a zoom *ends*, and that is exactly
+   * what's wanted here. The tiles are placed in map units inside the group that
+   * moves, so they travel with the map for free during the gesture; all that
+   * waits for the end is whether a sharper level, or new ground, is called for.
+   */
+  const flatTiles = useMemo(() => {
+    if (!tiles?.flat) return [];
+    // How wide the world is drawn, in real pixels: the map is scaled to cover
+    // its box, so the bigger of the two ratios is the one doing the covering.
+    const cover = Math.max(size.w / WIDTH, size.h / mapHeight);
+    return tilesInView(
+      tiles.flat,
+      position.coordinates,
+      position.zoom,
+      WIDTH * cover * position.zoom,
+      mapHeight,
+    );
+  }, [tiles, position, size, mapHeight]);
+
   /** Whether this country is the answer, the miss, or neither. */
   const toneOf = (geo: CountryFeature): "right" | "wrong" | null => {
     if (!answer) return null;
@@ -301,7 +436,7 @@ export default function WorldMap({
   };
 
   return (
-    <div className="world-wrap">
+    <div className="world-wrap" ref={wrapRef}>
       <ComposableMap
         width={WIDTH}
         height={mapHeight}
@@ -336,7 +471,12 @@ export default function WorldMap({
         >
           {/* The same satellite imagery the globe is wrapped in. Plate carrée
               is how the file is stored, so it drops straight onto the sphere's
-              bounds with no warping. */}
+              bounds with no warping.
+
+              Kept underneath the tiles rather than replaced by them: it is the
+              whole world in one file and it is already here, so it stands in
+              for any tile still on its way and for the ground just outside the
+              ones fetched. Without it a drag runs onto bare sea colour. */}
           <image
             href={night ? GREY_TEXTURE : DAY_TEXTURE}
             x={0}
@@ -345,6 +485,17 @@ export default function WorldMap({
             height={mapHeight}
             preserveAspectRatio="none"
           />
+          {flatTiles.map((t) => (
+            <image
+              key={t.key}
+              href={t.href}
+              x={t.x}
+              y={t.y}
+              width={t.w}
+              height={t.h}
+              preserveAspectRatio="none"
+            />
+          ))}
 
           {shapes && (
             <Geographies geography={{ type: "FeatureCollection", features: shapes.features }}>
@@ -434,6 +585,10 @@ export default function WorldMap({
         </ZoomableGroup>
       </ComposableMap>
       <MapZoomControls onZoomIn={() => zoomBy(1.6)} onZoomOut={() => zoomBy(1 / 1.6)} />
+      {/* Whose imagery this is, printed wherever it's drawn — and only where it
+          actually is: a source with nothing in this projection leaves the
+          photograph up, and crediting it for that would be a lie. */}
+      {tiles?.flat && <p className="map-credit">{tiles.credit}</p>}
       {!shapes && <p className="map-loading muted">Loading the world…</p>}
     </div>
   );
