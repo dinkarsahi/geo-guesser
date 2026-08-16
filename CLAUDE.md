@@ -127,8 +127,10 @@ for, so it can never cost anyone a round.
 
 The home page asks one question — **who are you playing** — and answers it with
 three cards: `Today's Round`, `Duel a Friend`, and `All Games`. The games
-themselves are behind the third of those, on a shelf with whatever is being
-built next at the end of it. Each card is three lines — the name, a `hook`
+themselves are behind the third of those, on a shelf that ends with the bench
+and then whatever is being built next. Both sit after the games rather than
+among them: one is a copy of a game and the other isn't a game yet, and putting
+either in the row would offer it as one. Each card is three lines — the name, a `hook`
 asking whether you fancy it, and a `blurb` saying what a round involves; eight
 descriptions read as a list, where eight questions read as a dare. They used to be the home page, with the two
 contests tacked on as an eighth card; seven games in front of the question
@@ -151,12 +153,19 @@ All of it is `App.tsx`. `browsing` says which menu is underneath everything
 (`"home"` or `"games"`) and is **deliberately untouched by `toMenu`** — coming
 out of Flag Spotter lands back on the shelf it was picked off, where coming out
 of today's round lands home, which is where that player came from. `social` is
-whichever contest is open, and no longer has a hub of its own.
+whichever contest is open, and no longer has a hub of its own. `scrapbook` is
+the bench being open — see below.
+
+A card's words are a `GameCard`, and `MODES` is that plus a `ModeId`. The split
+is what lets the bench have the same setup screen as a game without being a
+mode: `ModeSetup` takes a card, not an id. `ownMap` on a card says the game
+brings its own map and the world-map choices have nothing to offer it — the
+tube's alone, and data rather than the `id !== "tube"` test it replaced.
 
 ## The seven games
 
-(Seven playable, plus one card on the shelf for a game that isn't built — see
-"Coming soon" below.)
+(Seven playable, plus the bench and a card for a game that isn't built — see
+"The scrapbook" and "Coming soon" below.)
 
 | Game | `ModeId` | Question | Marked on |
 |---|---|---|---|
@@ -284,11 +293,9 @@ alone, 64 with the circle.
 This arrived on a bench of its own — `Game Maker Test Version`, a second copy of
 the tube game that marked a click both ways side by side — and was judged there
 before it was let near a score. Having graduated it **replaced** the ride rather
-than standing beside it, and the bench has since been taken down: there is one
-tube rule and it is that file. If the next rule wants a bench, build it the same
-way — a flag in `App.tsx` and never a `ModeId`, since a `ModeId` enters the
-daily rota, needs a mode letter and a re-run of `schema.sql`, and an experiment
-is the last thing to show everybody as their round of the day.
+than standing beside it, and that bench has since been taken down: there is one
+tube rule and it is that file. The bench on the shelf today is a copy of City
+Spotter and is built the same way — see "The scrapbook" below.
 
 **The trap, and it cost a round trip:** membership is the station's dot inside
 the circle, and it has to stay something a player can *count off the screen*.
@@ -299,7 +306,32 @@ tolerance for dots straddling the edge then let in Preston Road, 1.74 km from a
 the one thing this rule cannot afford. If the test ever grows a tolerance again,
 the circle on the map has to grow with it.
 
-### The eighth card: coming soon
+### The scrapbook: the bench
+
+`Game Maker's Scrapbook` — `src/modes/CityScrapbook.tsx`, on the shelf between
+the games and Export Spotter. A **copy of City Spotter kept aside to try things
+on**, currently identical to it, and meant to come apart from it: a change made
+there stays there until it has earned its way over, and when it graduates it
+*replaces* what `CityLocator` does rather than standing beside it.
+
+The rules, which are the last bench's and cost nothing to keep:
+
+- **Never a `ModeId`.** It's reached by the `scrapbook` flag in `App.tsx` and
+  nothing else. A `ModeId` enters the daily rota, needs a letter in a duel code
+  and a re-run of `schema.sql`, and an experiment is the last thing to hand
+  somebody as their round of the day. Nothing in `match.ts`, `duel.ts` or the
+  database knows it exists.
+- **Nothing on it is scored anywhere.** It takes no `match` and can't be given
+  one, so there's no clock, no seeded deal and no leaderboard — the copy
+  deliberately doesn't call `matchOptions`.
+- **It has the games' setup screen**, unlike the last bench, because it is a
+  copy of a game and the map it's tried on is part of what's being tried. That's
+  what `GameCard` is for.
+- **It comes down when it has settled its argument.** A copy of a game kept past
+  the question it was built to answer collects dust and confusion in equal
+  measure.
+
+### The last card: coming soon
 
 `Export Spotter`, on the end of the shelf in `AllGames`. A `div` rather than a
 `button` and dimmed by `.mode-card.is-coming`: there is nothing behind it, and a
