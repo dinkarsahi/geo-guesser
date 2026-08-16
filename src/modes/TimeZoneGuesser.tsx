@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import FactCard from "../components/FactCard";
 import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
@@ -187,27 +187,6 @@ function TimeZoneGame({
   const thisHour = Math.floor(now / 3_600_000) * 3_600_000;
 
   /**
-   * What each round's clock read at the moment it was answered.
-   *
-   * The results table is read minutes after the fact, and every clock in the
-   * world has moved on by then — read live there, all five rounds would report
-   * the same minute past whatever their hour is, and none of them the minute
-   * anybody was actually asked about. So the reading is taken once, when the
-   * round closes, and kept.
-   *
-   * Kept against the target itself because that is what the table hands back:
-   * one object per round, and the same objects it was dealt.
-   */
-  const asked = useRef(new Map<TimeTarget, number>());
-  useEffect(() => {
-    if (phase !== "result") return;
-    // The first tick after the round closed wins; the rest are the live clock
-    // arriving a second later and are exactly what this is here to ignore.
-    if (asked.current.has(game.target)) return;
-    asked.current.set(game.target, clockNow(game.target.clockOffset, now));
-  }, [phase, game.target, now]);
-
-  /**
    * The round, painted on the map: green over everywhere keeping the clock
    * that was asked about, red over the part of the world the player picked
    * instead.
@@ -321,16 +300,20 @@ function TimeZoneGame({
           <span className="prompt-clock">{clockLabel(clockNow(when.clockOffset, now))}</span>
         </div>
       )}
-      // The clock the round was about, as it was asked and as it is named:
-      // "21:11 (UTC+4)". The reading alone is what the player was shown and is
-      // the only form in which they can recognise the round; the offset alone
-      // is the durable half, and it's what makes two rows an hour apart tell
-      // each other apart. The reading is the one frozen when the round closed
-      // — see `asked` — since by the time this list is looked at, every clock
-      // on it has moved on and the offsets haven't.
+      // The clock the round was about, as it reads and as it is named:
+      // "21:11 (UTC+4)". The reading is what the player was shown and is the
+      // only form in which they can recognise the round; the offset is what
+      // that reading came from, and it's what tells two rows an hour apart
+      // apart once the reading is only a number.
+      //
+      // Still ticking, like everything else in this game — the table is read
+      // minutes after the last round, and a reading held from when the round
+      // closed would be a time nowhere on Earth is standing at any more. That
+      // every row then reports the same minute is not a coincidence to hide:
+      // they are one moment read in five places, which is the fact the whole
+      // game is about.
       answerLabel={(when) =>
-        `${clockLabel(asked.current.get(when) ?? clockNow(when.clockOffset, now))} ` +
-        `(${utcLabel(when.namedOffset)})`
+        `${clockLabel(clockNow(when.clockOffset, now))} (${utcLabel(when.namedOffset)})`
       }
       // What was clicked instead, beside how far out it put them: "1 hour out
       // (Gabon, UTC−1)". The map is gone by the time this is read, and a

@@ -218,10 +218,13 @@ lets the pool be *every* country rather than the ones someone got round to.
   (Myanmar, UTC+6:30)": the reading is what the player was shown and is the only
   form they can recognise a round in, the offset is the durable half, and both
   halves are wanted because two rounds an hour apart read alike otherwise.
-  **The reading in that table is frozen when the round closes** (`asked`), since
-  a live clock read there would report the minute the table was opened rather
-  than the minute anyone was asked about — five rows all ending in the same
-  minute. An offset can't be read back off a reading, which is why
+  **The readings in that table keep ticking**, like every other clock in this
+  game: it is read minutes after the last round, and a reading held from when
+  the round closed is a time nowhere on Earth is standing at any more. Every
+  row then reports the same minute, which is not a fault to hide — they are one
+  moment read in five places, which is the fact the whole game is about. (This
+  was briefly frozen instead; that was wrong, and a stale clock is the worse of
+  the two failures.) An offset can't be read back off a reading, which is why
   `ClockReading` carries both: a position on the face is deliberately blind to
   the date line, so UTC+13 read back off one comes out as UTC−11.
 - **Tube** treats whichever station's patch of the map you clicked as your
@@ -468,7 +471,13 @@ well as Production. README has the details.
 - **Names say what a thing is for**, not what type it is.
 - The results table in `GameFrame` must stay a real `<table>`. It was a header
   `div` over an `<ol>` once — two grids sized to their own contents — and every
-  heading sat a column out from what it described.
+  heading sat a column out from what it described. It also **sizes itself to
+  its contents and centres itself on the page** rather than filling the panel
+  around it: no fixed panel width holds a row like "3 hours out (United States
+  of America, UTC−6)", and fitted to one, cells split over two lines. That it
+  can end up wider than its parent is why it's centred with `left`/`transform`
+  — auto margins give up and align left the moment a box outgrows its
+  container.
 - Accessors handed to `GlobeMap` (`polygonCap`, `polygonStroke`,
   `polygonAltitude`) and the arrays behind them **must keep their identity
   between renders**. The globe re-styles all 242 countries whenever it is handed

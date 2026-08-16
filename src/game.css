@@ -1609,9 +1609,10 @@ body:has(.game-play) {
 }
 
 /* ---- Summary -------------------------------------------------------- */
-/* Wider than it reads, because of the table: four columns and a heading like
-   "Number of stops to destination" don't fit in 480 without the heading
-   wrapping and taking the answers down with it. */
+/* Wider than it reads, because of what's under the score: a standings row is
+   a name against three figures, and 480 puts the name into two lines. The
+   table below sets its own width — see `.summary-table` — so this no longer
+   has to be the width of the widest row anybody might play. */
 .summary {
   max-width: 560px;
   margin: 24px auto 0;
@@ -1633,8 +1634,26 @@ body:has(.game-play) {
    answer take the room that's going, since it's the column with words in it,
    and every heading sits over its own column by construction. */
 .summary-table {
-  width: 100%;
+  /* Sized to what's in it, and allowed to be wider than the panel it sits in.
+     Fitted to the panel instead, the time zone game's rows split as "06:58"
+     over "(UTC−9:30)" — one fact reading as two, with the half that says which
+     clock it was left on a line of its own.
+
+     Wider than the panel rather than the panel wider to suit, because no fixed
+     width settles this: a row is a heading, a reading, a country and an offset,
+     and "3 hours out (United States of America, UTC−6)" is not the longest of
+     them that can be dealt. So the table asks for what it needs and only wraps
+     where a phone genuinely can't hold it.
+
+     Centred by the `left`/`transform` pair rather than by auto margins, which
+     give up and align left the moment a box is wider than its container. The
+     panel is centred in the page, so the table's middle lands on the page's. */
+  width: max-content;
+  max-width: calc(100vw - 32px);
   margin: 24px 0;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
   border-collapse: collapse;
   text-align: left;
 }
