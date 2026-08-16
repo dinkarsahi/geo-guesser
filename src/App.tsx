@@ -42,14 +42,14 @@ const MODES: {
     id: "flag",
     title: "Flag Spotter",
     hook: "Will you capture the flag or raise the white flag?",
-    blurb: "With just the flag, can you spot the country it belongs to?",
+    blurb: "Can you spot which country the flag belongs to?",
     emoji: "🚩",
   },
   {
     id: "currency",
     title: "Currency Spotter",
     hook: "Are you good with money?",
-    blurb: "With a currency and its symbol, can you spot a country that spends it?",
+    blurb: "Using a currency and its symbol, can you spot a country which spends it?",
     emoji: "💱",
   },
   {
@@ -64,7 +64,7 @@ const MODES: {
     id: "population",
     title: "Population Spotter",
     hook: "Good with numbers?",
-    blurb: "With just a population figure, can you spot the country that has it?",
+    blurb: "Can you spot the country given its population figure?",
     emoji: "👥",
   },
   {
@@ -79,7 +79,7 @@ const MODES: {
     id: "timezone",
     title: "Time Zone Spotter",
     hook: "Can you handle the jet lag?",
-    blurb: "Read the clock, and spot somewhere in the world it's that time right now.",
+    blurb: "Read the clock, and spot a country in that time zone.",
     emoji: "🕰️",
   },
 ];
