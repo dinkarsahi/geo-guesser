@@ -44,7 +44,23 @@ export interface TileSource {
 }
 
 /**
- * The altitude at which a given level stops resolving.
+ * How far past its last level a source may still be pushed.
+ *
+ * At 1 the zoom would stop exactly where the imagery matches the screen
+ * pixel-for-pixel — honest, and meaner than it needs to be. Magnifying the
+ * deepest tiles a little is not the blur this file was written to escape: it is
+ * the same coastline seen slightly soft, and it is what lets a player lean in on
+ * the place they've found instead of being held at arm's length by a globe that
+ * won't let them look. Three is about where soft turns to mush, and it is the
+ * difference between a shallow source feeling capped and feeling broken.
+ *
+ * It costs nothing on a deep source: Esri runs into the floor below long before
+ * this could matter to it.
+ */
+const OVERZOOM = 3;
+
+/**
+ * The altitude at which a given level stops being worth going nearer.
  *
  * Level 9 lands at about 0.05 by eye — roughly where 300 metres a pixel matches
  * a pixel on the screen — and every level below it doubles the detail, so it
@@ -52,7 +68,8 @@ export interface TileSource {
  * problem rather than the pictures: nearer than this the horizon bends
  * strangely and a click at a shallow angle stops landing where the cursor is.
  */
-const floorFor = (maxLevel: number) => Math.max(0.004, 0.05 * 2 ** (9 - maxLevel));
+const floorFor = (maxLevel: number) =>
+  Math.max(0.004, (0.05 * 2 ** (9 - maxLevel)) / OVERZOOM);
 
 const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best";
 

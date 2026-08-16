@@ -572,7 +572,25 @@ well as Production. README has the details.
 The flat map takes synthetic clicks fine. The **globe does not** — its WebGL
 canvas raycasts from real pointer events, so automated clicks land nowhere.
 Verify globe-specific work by hand, or check it on the flat map and read the
-globe path.
+globe path. The globe's **zoom buttons are ordinary DOM**, so zoom behaviour can
+be driven and screenshotted even though clicks on the world can't.
+
+**The trap, and it wasted most of a session:** `npm run dev` does not fail when
+5173 is taken — it says "Port 5173 is in use, trying another one…" in among its
+startup lines and quietly serves the new code on 5176, while the browser at 5173
+carries on being served by a **previous** dev server that is still alive. Every
+observation is then of stale code, and the change under test looks like it did
+nothing. Worse, stopping a background `npm run dev` doesn't reliably kill the
+vite child, so these accumulate across a session. So: **read the port off the
+dev server's own output before trusting a screenshot**, and if anything looks
+impossibly unchanged, check for strays —
+`Get-CimInstance Win32_Process -Filter "Name = 'node.exe'"` — and kill the lot
+before starting one.
+
+Related, and the reason a reload is not optional: **hot reload has not been
+applying edits here**. A page loaded before a change keeps running the old
+module however long you wait, so reload the page after every edit rather than
+watching for it to update itself.
 
 ---
 
