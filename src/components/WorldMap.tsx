@@ -11,12 +11,7 @@ import type { Coord } from "../lib/geo";
 import type { GuessMapProps, MapHighlight } from "./mapTypes";
 import { countryAt, useWorldShapes, type CountryFeature } from "../lib/worldShapes";
 import { DAY_TEXTURE, GREY_TEXTURE } from "../lib/textures";
-import {
-  flatTileSpan,
-  FLAT_WORLD_PX,
-  type FlatTiles,
-  type TileSource,
-} from "../lib/mapTiles";
+import { flatTileSpan, FLAT_WORLD_PX, WORLD_TILES, type FlatTiles } from "../lib/mapTiles";
 import MapZoomControls from "./MapZoomControls";
 
 const WIDTH = 1024;
@@ -99,14 +94,6 @@ interface WorldMapProps extends GuessMapProps {
    * across it, and there's nothing to fly to.
    */
   highlights?: MapHighlight[] | null;
-  /**
-   * Draw the map in imagery that resolves as you zoom instead of the one flat
-   * photograph — the flat map's half of the globe's `tiles`. A source that
-   * publishes nothing in this projection leaves the photograph alone, which is
-   * why this is the source and not a flag: it's the source that decides whether
-   * there is anything to draw.
-   */
-  tiles?: TileSource | null;
 }
 
 interface Position {
@@ -200,9 +187,12 @@ export default function WorldMap({
   highlightCodes = null,
   missCode = null,
   highlights = null,
-  tiles = null,
 }: WorldMapProps) {
   const shapes = useWorldShapes();
+  // Daylight is tiled, night keeps the photograph — the same trade the globe
+  // makes, and for the same reason: night is one grey image of the world, and
+  // there is no grey world to tile from.
+  const tiles = night ? null : WORLD_TILES;
   // Painting the answer on rather than pinning it: see `highlights`.
   const painted = !!highlights?.length;
 

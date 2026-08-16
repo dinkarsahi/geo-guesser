@@ -189,6 +189,16 @@ export const NASA_TRUE_COLOUR: TileSource = {
 };
 
 /**
+ * The imagery every map in the game draws, in daylight.
+ *
+ * One name so there is one place to change it, and NASA's because it is the
+ * only one of the three a shipped game can stand on: public domain, no key, no
+ * meter, commercial use expressly fine, and nothing owed but the credit line
+ * the maps print. The other two below are what it was chosen over.
+ */
+export const WORLD_TILES = NASA_BLUE_MARBLE;
+
+/**
  * Esri's World Imagery, in the usual `{z}/{y}/{x}` slippy scheme — **note the
  * y before the x**, which is Esri's order and not the more common one.
  *

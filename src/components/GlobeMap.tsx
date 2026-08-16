@@ -3,7 +3,7 @@ import Globe, { type GlobeMethods } from "react-globe.gl";
 import type { GuessMapProps, MapHighlight } from "./mapTypes";
 import { countryAt, useWorldShapes, type CountryFeature } from "../lib/worldShapes";
 import { DAY_TEXTURE, GREY_TEXTURE } from "../lib/textures";
-import type { TileSource } from "../lib/mapTiles";
+import { WORLD_TILES } from "../lib/mapTiles";
 import MapZoomControls from "./MapZoomControls";
 
 const MIN_ALTITUDE = 0.05; // closest button zoom
@@ -38,18 +38,6 @@ interface GlobeMapProps extends GuessMapProps {
    * enough out to see the whole band rather than diving at one end of it.
    */
   highlights?: MapHighlight[] | null;
-  /**
-   * Skin the globe in map tiles rather than in one photograph of the Earth, so
-   * that zooming in shows more of a place instead of more of the same pixels.
-   * The source decides how deep that goes and what it's allowed to cost — see
-   * `mapTiles.ts`.
-   *
-   * Null everywhere but the scrapbook. It's a prop rather than a second copy of
-   * this component because the whole point of trying it is to try *this* globe
-   * with it — a copy would be a different globe by the second change made to
-   * either.
-   */
-  tiles?: TileSource | null;
 }
 
 /** Green for the clock that was asked about, red for the one picked instead. */
@@ -81,10 +69,20 @@ export default function GlobeMap({
   highlightCodes = null,
   missCode = null,
   highlights = null,
-  tiles = null,
 }: GlobeMapProps) {
-  // How close the camera may get: the source's own limit where there is one,
-  // since each of them runs out of pictures at a different depth.
+  /**
+   * The imagery, and the reason night mode is the exception.
+   *
+   * Given a tile engine, three-globe hides the photographed globe and draws
+   * tiles in its place — which takes `globeImageUrl` out of the picture, and
+   * night mode's grey world is nothing but that image. So night keeps the
+   * photograph and the tiles are daylight's. It costs night the sharpening,
+   * which is the smaller loss: night is the plainer, harder way to play, and a
+   * toggle that quietly stopped changing anything would be the worse trade.
+   */
+  const tiles = night ? null : WORLD_TILES;
+  // How close the camera may get: the imagery's own limit where there is any,
+  // since each source runs out of pictures at a different depth.
   const minAltitude = tiles ? tiles.minAltitude : MIN_ALTITUDE;
   // Painting the answer on rather than pinning it: see `highlights`.
   const painted = !!highlights?.length;
@@ -256,10 +254,9 @@ export default function GlobeMap({
         height={size.h}
         backgroundColor="rgba(0,0,0,0)"
         globeImageUrl={night ? GREY_TEXTURE : DAY_TEXTURE}
-        // Given a tile engine, three-globe hides the photographed globe and
-        // draws tiles in its place — so the two lines above stop applying, and
-        // with them night mode's grey world and the relief bump. The night
-        // toggle still cools the atmosphere, which is all it can reach here.
+        // Only night reaches the line above: see `tiles`. The relief bump goes
+        // with it, which daylight doesn't miss — the imagery has the terrain in
+        // it now rather than needing it faked.
         globeTileEngineUrl={tiles ? tiles.url : undefined}
         // How deep to ask. Every one of these services answers 400 past its
         // last level and the engine draws nothing where no tile arrived, so

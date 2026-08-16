@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { TUBE_TAGLINE } from "./data/tube";
 import { type Match } from "./lib/match";
 import CityLocator from "./modes/CityLocator";
-import CityScrapbook, { SCRAPBOOK_TITLE } from "./modes/CityScrapbook";
 import CompanyGuesser from "./modes/CompanyGuesser";
 import CurrencyGuesser from "./modes/CurrencyGuesser";
 import FlagGuesser from "./modes/FlagGuesser";
@@ -91,22 +90,6 @@ const MODES: (GameCard & { id: Mode })[] = [
     emoji: "🕰️",
   },
 ];
-
-/**
- * The bench: a copy of City Spotter kept aside to try things on.
- *
- * A card of its own rather than a row in `MODES`, because it must never be a
- * `ModeId` — that would enter it in the daily rota and in duel codes, which is
- * the last place an experiment belongs. See `CityScrapbook` for the rest of the
- * rules it lives by.
- */
-const SCRAPBOOK: GameCard = {
-  title: SCRAPBOOK_TITLE,
-  hook: "Fancy being the game maker?",
-  blurb:
-    "City Spotter, kept aside to try things on. Nothing here counts for anything.",
-  emoji: "🧪",
-};
 
 const DEFAULT_SETTINGS: GameSettings = { rounds: 5, flat: false, borders: true };
 
@@ -254,11 +237,9 @@ function DuelMark() {
  */
 function AllGames({
   onPick,
-  onBench,
   onBack,
 }: {
   onPick: (mode: Mode) => void;
-  onBench: () => void;
   onBack: () => void;
 }) {
   return (
@@ -281,16 +262,6 @@ function AllGames({
             <span className="muted mode-blurb">{m.blurb}</span>
           </button>
         ))}
-        {/* The bench, at the end of the shelf with the unfinished things rather
-            than among the games: it is a copy of one of them and a score off it
-            means nothing, and standing it eighth in the row would offer it as a
-            game to play. */}
-        <button className="mode-card" onClick={onBench}>
-          <span className="mode-emoji">{SCRAPBOOK.emoji}</span>
-          <span className="mode-title">{SCRAPBOOK.title}</span>
-          <span className="mode-hook">{SCRAPBOOK.hook}</span>
-          <span className="muted mode-blurb">{SCRAPBOOK.blurb}</span>
-        </button>
         {/* What's being built, on the shelf it will stand on. A div rather than
             a button because there is nothing behind it yet: a card that takes
             the press and does nothing reads as a broken game rather than an
@@ -330,11 +301,6 @@ export default function App() {
   // room of people you know. Both are their own door on the home page now.
   const [social, setSocial] = useState<"daily" | "room" | null>(null);
   const [match, setMatch] = useState<Match | null>(null);
-  // The bench is open. Not a `Mode`: it's a copy of one game kept aside to try
-  // things on, and making it a mode would enter it in the daily rota and in
-  // duel codes, which is the last place an experiment belongs. It shares
-  // `started` with the games, since it has the same setup screen in front of it.
-  const [scrapbook, setScrapbook] = useState(false);
   // Which menu is the one behind everything: the three doors, or the shelf of
   // games behind the third of them. Deliberately untouched by `toMenu` — a
   // player who came out of Flag Spotter came from the shelf and wants it back,
@@ -346,14 +312,13 @@ export default function App() {
     setStarted(false);
     setSocial(null);
     setMatch(null);
-    setScrapbook(false);
   };
   const toggleNight = () => setNight((n) => !n);
   const modeProps = { onExit: toMenu, night, onToggleNight: toggleNight, settings };
 
   // A running game gets the whole window: the menu's fixed-width shell and its
   // side rules would otherwise pen the map in well short of the screen edges.
-  const playing = ((mode !== null || scrapbook) && started) || match !== null;
+  const playing = (mode !== null && started) || match !== null;
   useEffect(() => {
     document.body.classList.toggle("playing", playing);
     return () => document.body.classList.remove("playing");
@@ -386,25 +351,6 @@ export default function App() {
     return <PlayMode {...modeProps} mode={mode} />;
   }
 
-  // The bench, and the same setup screen in front of it that the games get: it
-  // is a copy of one of them, and the map it's tried on is part of what's being
-  // tried. No `match` is passed and none can be — nothing here is filed.
-  if (scrapbook && started) {
-    return <CityScrapbook {...modeProps} />;
-  }
-
-  if (scrapbook) {
-    return (
-      <ModeSetup
-        mode={SCRAPBOOK}
-        settings={settings}
-        onChange={setSettings}
-        onStart={() => setStarted(true)}
-        onBack={() => setScrapbook(false)}
-      />
-    );
-  }
-
   if (mode) {
     return (
       <ModeSetup
@@ -421,11 +367,7 @@ export default function App() {
 
   if (browsing === "games") {
     return (
-      <AllGames
-        onPick={setMode}
-        onBench={() => setScrapbook(true)}
-        onBack={() => setBrowsing("home")}
-      />
+      <AllGames onPick={setMode} onBack={() => setBrowsing("home")} />
     );
   }
 

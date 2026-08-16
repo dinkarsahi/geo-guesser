@@ -93,17 +93,25 @@ the ordinary reading, which is what an unanswered one wants.
 
 Three of them, all satisfying `GuessMapProps` in `src/components/mapTypes.ts`:
 
-- **`WorldMap.tsx`** — flat, plate carrée, `react-simple-maps` + `d3-geo` over a
-  satellite texture. Also takes `tiles`, the same `TileSource` the globe does,
-  and draws the source's `flat` grid over that texture where it has one. Null
-  everywhere but the bench.
+- **`WorldMap.tsx`** — flat, plate carrée, `react-simple-maps` + `d3-geo`. Draws
+  `WORLD_TILES` over the satellite texture in daylight.
 - **`GlobeMap.tsx`** — `react-globe.gl` (three.js). Draws from a **coarsened**
   copy of the country shapes; at full 1:50m detail the globe is a slideshow.
-  Never score against the coarse copy. Takes `tiles`, a `TileSource` that skins
-  it in map tiles instead of the one flat photograph so that zooming in resolves
-  — see `src/lib/mapTiles.ts` and "The scrapbook" below. Null everywhere but the
-  bench. A source also sets how close the camera may get, since each of them
-  runs out of pictures at a different depth.
+  Never score against the coarse copy. Skinned in `WORLD_TILES` in daylight, and
+  the source also sets how close the camera may get.
+
+**Both maps are tiled, in every game, and only in daylight** — see
+`src/lib/mapTiles.ts`. The imagery resolves as you zoom instead of being one
+4096×2048 photograph magnified, which is about ten kilometres to the pixel.
+
+**Night is the exception, and deliberately.** Given a tile engine, three-globe
+hides the photographed globe and draws tiles in its place, which takes
+`globeImageUrl` out of the picture — and night mode's grey world is nothing but
+that image. So night keeps the photograph on both maps and the tiles are
+daylight's. It costs night the sharpening, which is the smaller loss: night is
+the plainer, harder way to play, and a toggle that quietly stopped changing
+anything would be the worse trade. **Anything touching the imagery has to be
+looked at in both.**
 - **`LondonMap.tsx`** — bespoke SVG of the tube network. Also takes `rings` —
   the circle a tube guess is marked against, from `src/lib/tubeReach.tsx`. The
   game only ever hands it a circle on a round the circle actually paid for. The
@@ -133,10 +141,9 @@ for, so it can never cost anyone a round.
 
 The home page asks one question — **who are you playing** — and answers it with
 three cards: `Today's Round`, `Duel a Friend`, and `All Games`. The games
-themselves are behind the third of those, on a shelf that ends with the bench
-and then whatever is being built next. Both sit after the games rather than
-among them: one is a copy of a game and the other isn't a game yet, and putting
-either in the row would offer it as one. Each card is three lines — the name, a `hook`
+themselves are behind the third of those, on a shelf that ends with whatever is
+being built next. That card sits after the games rather than among them: it
+isn't a game yet, and putting it in the row would offer it as one. Each card is three lines — the name, a `hook`
 asking whether you fancy it, and a `blurb` saying what a round involves; eight
 descriptions read as a list, where eight questions read as a dare. They used to be the home page, with the two
 contests tacked on as an eighth card; seven games in front of the question
@@ -159,19 +166,19 @@ All of it is `App.tsx`. `browsing` says which menu is underneath everything
 (`"home"` or `"games"`) and is **deliberately untouched by `toMenu`** — coming
 out of Flag Spotter lands back on the shelf it was picked off, where coming out
 of today's round lands home, which is where that player came from. `social` is
-whichever contest is open, and no longer has a hub of its own. `scrapbook` is
-the bench being open — see below.
+whichever contest is open, and no longer has a hub of its own.
 
 A card's words are a `GameCard`, and `MODES` is that plus a `ModeId`. The split
-is what lets the bench have the same setup screen as a game without being a
-mode: `ModeSetup` takes a card, not an id. `ownMap` on a card says the game
+is what lets something have the same setup screen as a game without being a
+mode — a bench, next time there is one: `ModeSetup` takes a card, not an id.
+`ownMap` on a card says the game
 brings its own map and the world-map choices have nothing to offer it — the
 tube's alone, and data rather than the `id !== "tube"` test it replaced.
 
 ## The seven games
 
-(Seven playable, plus the bench and a card for a game that isn't built — see
-"The scrapbook" and "Coming soon" below.)
+(Seven playable, plus a card for a game that isn't built — see "Coming soon"
+below.)
 
 | Game | `ModeId` | Question | Marked on |
 |---|---|---|---|
@@ -300,8 +307,8 @@ This arrived on a bench of its own — `Game Maker Test Version`, a second copy 
 the tube game that marked a click both ways side by side — and was judged there
 before it was let near a score. Having graduated it **replaced** the ride rather
 than standing beside it, and that bench has since been taken down: there is one
-tube rule and it is that file. The bench on the shelf today is a copy of City
-Spotter and is built the same way — see "The scrapbook" below.
+tube rule and it is that file. Benches come and go this way — see "The bench,
+when one is next wanted" below.
 
 **The trap, and it cost a round trip:** membership is the station's dot inside
 the circle, and it has to stay something a player can *count off the screen*.
@@ -312,63 +319,38 @@ tolerance for dots straddling the edge then let in Preston Road, 1.74 km from a
 the one thing this rule cannot afford. If the test ever grows a tolerance again,
 the circle on the map has to grow with it.
 
-### The scrapbook: the bench
+### The imagery: `src/lib/mapTiles.ts`
 
-`Game Maker's Scrapbook` — `src/modes/CityScrapbook.tsx`, on the shelf between
-the games and Export Spotter. A **copy of City Spotter kept aside to try things
-on**, currently identical to it, and meant to come apart from it: a change made
-there stays there until it has earned its way over, and when it graduates it
-*replaces* what `CityLocator` does rather than standing beside it.
+Both maps draw **map tiles** in daylight rather than one photograph of the
+Earth: the world cut into squares at every zoom level, each level twice the
+detail of the last, only the ones in view fetched. The globe has the engine
+built in (`globeTileEngineUrl`, which tracks the camera itself); the flat map
+lays its own out (`tilesInView` in `WorldMap`).
 
-The rules, which are the last bench's and cost nothing to keep:
-
-- **Never a `ModeId`.** It's reached by the `scrapbook` flag in `App.tsx` and
-  nothing else. A `ModeId` enters the daily rota, needs a letter in a duel code
-  and a re-run of `schema.sql`, and an experiment is the last thing to hand
-  somebody as their round of the day. Nothing in `match.ts`, `duel.ts` or the
-  database knows it exists.
-- **Nothing on it is scored anywhere.** It takes no `match` and can't be given
-  one, so there's no clock, no seeded deal and no leaderboard — the copy
-  deliberately doesn't call `matchOptions`.
-- **It has the games' setup screen**, unlike the last bench, because it is a
-  copy of a game and the map it's tried on is part of what's being tried. That's
-  what `GameCard` is for.
-- **It comes down when it has settled its argument.** A copy of a game kept past
-  the question it was built to answer collects dust and confusion in equal
-  measure.
-
-**What's on it now: the tiled globe.** `GlobeMap`'s `tiles` prop, wired only
-here. The ordinary globe wears one 4096×2048 photograph of the Earth — about ten
-kilometres to the pixel — so zooming in magnifies blur rather than showing you
-anything new. Tiles are the standard answer: the world cut into 256px squares at
-every zoom level, each level twice the detail of the last, only the ones in view
-fetched, and three-globe has the engine built in (`globeTileEngineUrl`, which
-tracks the camera itself).
-
-The prop takes a **`TileSource`** (`src/lib/mapTiles.ts`), not a flag, because
-which imagery is the whole question. Three are defined and swapping the one line
-in `CityScrapbook` is the whole of trying another:
+A **`TileSource`** says where imagery comes from and how far it can be trusted.
+Three are defined and `WORLD_TILES` picks the one the game draws, so swapping is
+one line:
 
 | Source | Deepest | Costs |
 |---|---|---|
-| `NASA_BLUE_MARBLE` — **on the bench now** | globe 8, flat 7 | nothing: public domain, no key, commercial use fine, credit line only |
-| `NASA_TRUE_COLOUR` | globe 9, flat 8 | same, but it's yesterday's actual satellite pass — real cloud over whichever country it was cloudy over, and a dark polar winter |
+| `NASA_BLUE_MARBLE` — **what the game draws** | globe 8, flat 7 | nothing: public domain, no key, no meter, commercial use expressly fine, credit line only |
+| `NASA_TRUE_COLOUR` | globe 9, flat 8 | same terms, but it's yesterday's actual satellite pass — real cloud over whichever country it was cloudy over, and a dark polar winter |
 | `ESRI_WORLD_IMAGERY` | globe 17, **no flat** | the legacy anonymous endpoint, which their terms don't cover commercially. Doing it properly is their keyed service and a bill — and their *tile* meter works out at pennies a game, which no ad-supported game survives, so it would have to be the session meter |
 
-NASA is what a shipped game can actually stand on, which is why it's the one
-mounted. Level 8 is still sixteen times sharper than the single photograph, and
-SpotOn asks where a *city* is — a question settled by coastlines and mountain
-ranges rather than by rooftops.
+**NASA is the one a shipped game can stand on**, which is why it's mounted:
+nothing is owed for it but the credit the maps print, and that matters now the
+game is meant to earn. Esri is far deeper and could not be shipped as wired.
+Level 8 is still sixteen times sharper than the single photograph, and SpotOn
+asks where a *city* is — a question settled by coastlines and mountain ranges
+rather than by rooftops. The other two are kept as the alternatives, with what
+each would cost written beside it.
 
-**The flat map is tiled too**, from the same source's `flat` grid. It is a
-second scheme rather than a second URL because **the two maps are in different
-projections and tiles are cut to one or the other**: the globe wants Web
-Mercator, which is what "slippy map" means everywhere on the web, while the flat
-map is plate carrée, and Mercator tiles laid on it would stretch further wrong
-the nearer they got to the poles. NASA publishes both, which is the only reason
-this is possible; Esri's is Mercator alone, so choosing it tiles the globe and
-leaves the flat map on its photograph. That's also why `tiles` is the source and
-not a flag — the source is what decides whether there's anything to draw.
+**The two maps need separately-cut tiles**, which is why a source has both a
+`url` and a `flat`: the globe wants Web Mercator, which is what "slippy map"
+means everywhere on the web, while the flat map is plate carrée, and Mercator
+tiles laid on it would stretch further wrong the nearer they got to the poles.
+NASA publishes both. Esri's is Mercator alone, so choosing it would tile the
+globe and leave the flat map on its photograph.
 
 Two traps, both paid for:
 
@@ -399,20 +381,40 @@ The flat map, unlike the globe, **never runs out**: 160 columns of 512 pixels is
 82,000 across the world where the deepest zoom asks for about 23,000. The
 pictures outlast the zoom rather than the other way round.
 
-Two other things it costs, both seen rather than guessed at:
+Two things left open, both seen rather than guessed at:
 
-- **The coarse borders stop matching the ground.** Given a tile engine
-  three-globe hides the photographed globe, so `globeImageUrl` and the bump map
-  do nothing — and night mode with them, leaving the toggle only the atmosphere
-  to cool. More visibly, the 1:50m outlines drawn over sharp imagery are plainly
-  in the wrong place at depth: on Esri, New Caledonia's ran across the island
-  rather than round it. The fine shapes exist (`shapes.features`) — they're kept
-  off the globe because 242 of them at full detail is a slideshow, which is the
-  trade to revisit if this graduates. Less pressing on NASA, whose floor is
-  shallower than the point where the outlines embarrass themselves.
+- **The globe's coarse borders drift from the ground at depth.** The 1:50m
+  outlines drawn over sharp imagery are visibly in the wrong place when you go
+  right in: on Esri, New Caledonia's ran across the island rather than round it.
+  The fine shapes exist (`shapes.features`) and are what the flat map draws;
+  they're kept off the globe because 242 of them at full detail is a slideshow.
+  Much less pressing on NASA, whose floor is shallower than the point where the
+  outlines embarrass themselves — but it is the trade to revisit if the imagery
+  ever gets deeper.
 - **The answer pin doesn't shrink.** `pointRadius` is in globe-radius units, so
   the green disc that looks right at reveal altitude swallows the city once you
   zoom past it. Pre-existing, and invisible until deep zoom was worth doing.
+
+### The bench, when one is next wanted
+
+There isn't one on the shelf. `Game Maker's Scrapbook` — a copy of City Spotter
+that the tiled maps above were tried on before they went near a real game — came
+down once they graduated, which is the rule benches live by: a copy of a game
+kept past the question it was built to answer collects dust and confusion in
+equal measure. It is `src/modes/CityScrapbook.tsx` at **`4d95689`**, and
+`git show 4d95689 -- src/modes/CityScrapbook.tsx` brings it back.
+
+Build the next one the same way, and the reasons are worth repeating:
+
+- **Never a `ModeId`** — a flag in `App.tsx` and nothing else. A `ModeId` enters
+  the daily rota, needs a letter in a duel code and a re-run of `schema.sql`,
+  and an experiment is the last thing to hand somebody as their round of the day.
+- **Nothing on it is scored anywhere**: pass it no `match`, so there's no clock,
+  no seeded deal and no leaderboard to file to.
+- **Give it the games' setup screen** where what's being tried touches the map —
+  that's what `GameCard` is for, and it's why `ModeSetup` takes a card and not a
+  mode id.
+- **What graduates replaces**, rather than standing beside what it replaced.
 
 ### The last card: coming soon
 
