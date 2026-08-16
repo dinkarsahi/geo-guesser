@@ -60,11 +60,11 @@ options or in `GameFrame`'s props instead.
   the same rounds without talking to each other. Seeded games deliberately skip
   the "recently seen" memory, which differs per device.
 
-### Two `GameFrame` props worth knowing
+### Three `GameFrame` props worth knowing
 
-Both are the tube's alone, and both exist because a round the circle paid for is
-marked by a rule the map can't be read for. Top to bottom the panel goes: the
-call, the mark, the note, the pick.
+The first two are the tube's alone, and both exist because a round the circle
+paid for is marked by a rule the map can't be read for. Top to bottom the panel
+goes: the call, the mark, the note, the pick.
 
 **`renderScoreCall`** — a line **above the mark**, naming the rule the mark came
 from where that isn't the mode's usual one. The tube calls "Mind the Gap!" over
@@ -79,6 +79,15 @@ itself. It sits above "You picked", not below it, because it is the mark it
 answers for and not the pick. Return null on a round with nothing to explain —
 printed every round it stops being read, which is why the tube only prints it on
 the rounds the circle paid for.
+
+**`summaryMeasure`** — the middle cell of the **results table**, replacing the
+mode's usual reading of it, given the `RoundResult` and that round's target. The
+time zone game is the only one with one, and prints what was clicked beside how
+far out it put them: "1 hour out (Gabon, UTC−1)". The map is gone by the time
+that table is read, and there a column of gaps says which rounds went wrong
+without a word about what was picked — which in that game is the whole lesson,
+since the mistake is a clock and not a place. Return null to leave a round to
+the ordinary reading, which is what an unanswered one wants.
 
 ### The maps
 
@@ -202,7 +211,19 @@ lets the pool be *every* country rather than the ones someone got round to.
   the "several clocks, no parts" path is real code and not just the
   failed-download case. There the round is marked against whichever of the
   country's clocks came closest, and the reveal names that same one; a sentence
-  quoting a clock the score didn't use is a panel arguing with itself.
+  quoting a clock the score didn't use is a panel arguing with itself. The
+  results table names that same clock again, for the same reason — see
+  `markedAgainst`, which is the one place any of the three ask which clock a
+  round was marked by. Its rows read "01:22 (UTC+9)" against "5½ hours out
+  (Myanmar, UTC+6:30)": the reading is what the player was shown and is the only
+  form they can recognise a round in, the offset is the durable half, and both
+  halves are wanted because two rounds an hour apart read alike otherwise.
+  **The reading in that table is frozen when the round closes** (`asked`), since
+  a live clock read there would report the minute the table was opened rather
+  than the minute anyone was asked about — five rows all ending in the same
+  minute. An offset can't be read back off a reading, which is why
+  `ClockReading` carries both: a position on the face is deliberately blind to
+  the date line, so UTC+13 read back off one comes out as UTC−11.
 - **Tube** treats whichever station's patch of the map you clicked as your
   answer, and charges you the ride from there — **unless the answer is inside
   that station's own circle**, where the ride is replaced by how crowded the

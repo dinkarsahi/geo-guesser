@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import FactCard from "../components/FactCard";
 import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
@@ -10,12 +10,14 @@ import {
   clockGap,
   clockLabel,
   clockNow,
-  countryClocks,
+  countryReadings,
   formatClockGap,
   scoreFromClockGap,
   timeZonePool,
   utcLabel,
   zoneClock,
+  zoneReading,
+  type ClockReading,
   type TimeTarget,
 } from "../data/timeZones";
 import { haversineKm, type Coord } from "../lib/geo";
@@ -100,16 +102,29 @@ function clocksAt(
   pieces: ZonePieces,
   click: Coord,
   at: number,
-): { name: string; clocks: number[]; ofPiece: boolean } | null {
+): { name: string; clocks: ClockReading[]; ofPiece: boolean } | null {
   const feature = countryAt(shapes, click);
   if (!feature) return null;
   const code = codeOf(feature);
   const piece = pieceAt(pieces, code, click);
-  const clocks = piece ? [zoneClock(piece.zone, at)] : countryClocks(code, at);
+  const clocks = piece ? [zoneReading(piece.zone, at)] : countryReadings(code, at);
   // Whether that one clock is the clock of a *place* or of a whole country.
   // The difference is the difference between "it is 21:47 where you pressed"
   // and "it is 21:47 in Nigeria", and only the first is worth claiming.
   return { name: nameOf(feature), clocks, ofPiece: piece !== null };
+}
+
+/**
+ * Whichever of a place's clocks stands nearest the one being asked about.
+ *
+ * The round was marked against this one — see `gapFromClick` — so it is the
+ * only one the panel and the table are allowed to name. Anything else is a
+ * sentence quoting a clock the score didn't use.
+ */
+function markedAgainst(clocks: ClockReading[], when: TimeTarget): ClockReading {
+  return clocks.reduce((best, c) =>
+    clockGap(c.clock, when.clockOffset) < clockGap(best.clock, when.clockOffset) ? c : best,
+  );
 }
 
 /** How far the clock of whatever was clicked is from the one asked about. */
@@ -122,7 +137,7 @@ function gapFromClick(
 ): number | null {
   const here = clocksAt(shapes, pieces, click, at);
   if (!here?.clocks.length) return null;
-  return Math.min(...here.clocks.map((c) => clockGap(c, when.clockOffset)));
+  return Math.min(...here.clocks.map((c) => clockGap(c.clock, when.clockOffset)));
 }
 
 function TimeZoneGame({
@@ -170,6 +185,27 @@ function TimeZoneGame({
   // handing the globe a new set of polygons every second is what makes the
   // flight out to the answer stutter.
   const thisHour = Math.floor(now / 3_600_000) * 3_600_000;
+
+  /**
+   * What each round's clock read at the moment it was answered.
+   *
+   * The results table is read minutes after the fact, and every clock in the
+   * world has moved on by then — read live there, all five rounds would report
+   * the same minute past whatever their hour is, and none of them the minute
+   * anybody was actually asked about. So the reading is taken once, when the
+   * round closes, and kept.
+   *
+   * Kept against the target itself because that is what the table hands back:
+   * one object per round, and the same objects it was dealt.
+   */
+  const asked = useRef(new Map<TimeTarget, number>());
+  useEffect(() => {
+    if (phase !== "result") return;
+    // The first tick after the round closed wins; the rest are the live clock
+    // arriving a second later and are exactly what this is here to ignore.
+    if (asked.current.has(game.target)) return;
+    asked.current.set(game.target, clockNow(game.target.clockOffset, now));
+  }, [phase, game.target, now]);
 
   /**
    * The round, painted on the map: green over everywhere keeping the clock
@@ -257,7 +293,7 @@ function TimeZoneGame({
         const here = clocksAt(shapes, pieces, click, now);
         if (!here) return null;
         if (!here.clocks.length) return { name: here.name };
-        const reads = (clock: number) => clockLabel(clockNow(clock, now));
+        const reads = (c: ClockReading) => clockLabel(clockNow(c.clock, now));
         if (here.ofPiece) {
           return {
             name: `${here.name}, where the local time is ${reads(here.clocks[0])} in the part you clicked`,
@@ -271,11 +307,10 @@ function TimeZoneGame({
         // failed to download. The round was marked against whichever of them
         // came closest, so that is the one named — a sentence quoting a clock
         // the score didn't use is a panel arguing with itself.
-        const nearest = here.clocks.reduce((best, c) =>
-          clockGap(c, game.target.clockOffset) < clockGap(best, game.target.clockOffset) ? c : best,
-        );
         return {
-          name: `${here.name}, which keeps more than one clock — the nearest reads ${reads(nearest)}`,
+          name:
+            `${here.name}, which keeps more than one clock — the nearest reads ` +
+            reads(markedAgainst(here.clocks, game.target)),
         };
       }}
       hint="Click a country where it's that time right now."
@@ -286,9 +321,32 @@ function TimeZoneGame({
           <span className="prompt-clock">{clockLabel(clockNow(when.clockOffset, now))}</span>
         </div>
       )}
-      // The clock the round was about, named rather than read: by the time this
-      // list is looked at, the reading has moved on and the offset hasn't.
-      answerLabel={(when) => utcLabel(when.namedOffset)}
+      // The clock the round was about, as it was asked and as it is named:
+      // "21:11 (UTC+4)". The reading alone is what the player was shown and is
+      // the only form in which they can recognise the round; the offset alone
+      // is the durable half, and it's what makes two rows an hour apart tell
+      // each other apart. The reading is the one frozen when the round closed
+      // — see `asked` — since by the time this list is looked at, every clock
+      // on it has moved on and the offsets haven't.
+      answerLabel={(when) =>
+        `${clockLabel(asked.current.get(when) ?? clockNow(when.clockOffset, now))} ` +
+        `(${utcLabel(when.namedOffset)})`
+      }
+      // What was clicked instead, beside how far out it put them: "1 hour out
+      // (Gabon, UTC−1)". The map is gone by the time this is read, and a
+      // column of gaps on their own says which rounds went wrong without
+      // saying what was picked — which in this game is the whole lesson, since
+      // the mistake is a clock and not a place.
+      //
+      // Named against the clock the round was marked by, the same one the
+      // reveal quotes, so a country keeping several of them can't be given a
+      // different offset here than it was given there.
+      summaryMeasure={(result, when) => {
+        if (!result.click || !result.label) return null;
+        const here = clocksAt(shapes, pieces, result.click, now);
+        if (!here?.clocks.length) return null;
+        return `${result.label} (${here.name}, ${utcLabel(markedAgainst(here.clocks, when).named)})`;
+      }}
       renderResultExtra={(when) => (
         <FactCard
           title={`${asking} — ${utcLabel(when.namedOffset)}`}

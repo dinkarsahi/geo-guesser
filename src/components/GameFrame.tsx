@@ -74,6 +74,17 @@ interface GameFrameProps<T> {
    */
   measureLabel?: string;
   /**
+   * That middle cell itself, for a mode with more to say in it than how far
+   * out the guess was. The time zone game names what was clicked and the clock
+   * it keeps — "1 hour out (Gabon, UTC−1)" — because by the time the table is
+   * read the map has gone, and a column of gaps says which rounds were lost
+   * without a word about what was picked instead.
+   *
+   * Return null to leave a round to the ordinary reading, which is what an
+   * unanswered one wants: there was no click to name.
+   */
+  summaryMeasure?: (result: RoundResult, target: T) => ReactNode;
+  /**
    * What a round asks you to find, in one word: a city, a station. Only wanted
    * by modes that pay full marks within a radius, where the verdict has to say
    * what you were close enough to.
@@ -132,6 +143,7 @@ export default function GameFrame<T>({
   answerLabel,
   hint = "Click the map to place your guess.",
   measureLabel = "Distance to destination",
+  summaryMeasure,
   targetNoun = "place",
   fullMarksLabel = "Spot on!",
   match,
@@ -240,7 +252,8 @@ export default function GameFrame<T>({
                     {answerLabel?.(targets[hidden + i]) ?? "—"}
                   </td>
                   <td className="muted">
-                    {r.hit ? "spot on" : r.label ?? formatDistance(r.distanceKm)}
+                    {summaryMeasure?.(r, targets[hidden + i]) ??
+                      (r.hit ? "spot on" : r.label ?? formatDistance(r.distanceKm))}
                   </td>
                   <td className="round-score">{r.score.toLocaleString()}</td>
                 </tr>

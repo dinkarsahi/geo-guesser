@@ -96,21 +96,51 @@ function clockFormat(zone: string): Intl.DateTimeFormat {
 }
 
 /**
+ * A clock as both the things this game has to say about one: where it stands,
+ * and how the offset it stands at is written.
+ *
+ * Carried together because neither can be recovered from the other. A position
+ * on the face is what a guess is marked against and it is deliberately blind to
+ * which side of the date line it came from — Samoa on UTC+13 and Niue on UTC−11
+ * stand in the same place. Read an offset back off that position and Samoa is
+ * labelled UTC−11, which is the same trap `TimeTarget.namedOffset` exists for.
+ */
+export interface ClockReading {
+  /** Where the clock stands on the 24-hour face, wrapped into a day. */
+  clock: number;
+  /** The same offset as it's conventionally written: −660 for UTC−11. */
+  named: number;
+}
+
+/**
  * Where one zone's clock stands, as a position on the 24-hour face. What
- * `countryClocks` reads for a whole country, read for a single part of one.
+ * `countryReadings` reads for a whole country, read for a single part of one.
  */
 export const zoneClock = (zone: string, at: number): number =>
   mod(zoneOffset(zone, at), DAY);
+
+/** The same clock, with the offset that names it. */
+export function zoneReading(zone: string, at: number): ClockReading {
+  const named = zoneOffset(zone, at);
+  return { clock: mod(named, DAY), named };
+}
 
 /**
  * Where a country's clocks stand — usually one position, eleven for Russia.
  * Empty for a country the zone table has never heard of, which takes it out of
  * the game rather than putting it on the wrong clock.
  */
-export function countryClocks(code: string, at: number): number[] {
+export function countryReadings(code: string, at: number): ClockReading[] {
   const zones = countryZones[code];
   if (!zones) return [];
-  return [...new Set(zones.map((z) => mod(zoneOffset(z, at), DAY)))];
+  // One entry per position on the face, since that is what a click answers
+  // with. Two of a country's zones reading the same clock are one answer.
+  const byClock = new Map<number, ClockReading>();
+  for (const zone of zones) {
+    const reading = zoneReading(zone, at);
+    if (!byClock.has(reading.clock)) byClock.set(reading.clock, reading);
+  }
+  return [...byClock.values()];
 }
 
 /** What a clock standing at `clockOffset` reads now, in minutes past midnight. */
