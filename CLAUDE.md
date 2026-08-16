@@ -379,13 +379,21 @@ Two traps, both paid for:
   depth it was *checked* to have, and `minAltitude` with it, so the zoom stops
   where the pictures stop instead of magnifying the deepest tiles into the same
   mush this was meant to escape.
-- **The plate carrée grid is not a quadtree.** Its levels go 2, 3, 5, 10, 20…
-  columns, settling into doubling only from the third, so the powers of two that
-  every slippy map teaches you to assume put every tile in the wrong place at
-  the top. `FlatTiles.cols` is a table read off the service's own capabilities
-  document for that reason. A tile is `360 / cols` degrees square; where that
-  doesn't divide 180 the bottom row hangs past the south pole, which costs
-  nothing since each tile is placed by its own extent.
+- **How much world a plate carrée tile holds comes off the service's ladder,
+  never from counting its columns.** A tile is 512 pixels of 0.5625° at level 0
+  — 288° square — and every level halves it (`flatTileSpan`). The columns and
+  rows follow: as many as it takes to cover 360° and 180°, with the last of them
+  hanging past the date line or the pole and clipped by the map.
+
+  The inference to avoid, because it was made and cost a round trip: a level's
+  column count looks like it should give the span, and `360 / cols` *is* right
+  from level 3 down, where the grid divides the world exactly. At the top it
+  isn't. Level 1 is three columns of **144°**, covering 432° — half a world of
+  padding — and treating them as 120° squeezes every coastline to 83% of where
+  it belongs. What that looks like is the imagery sliding out from under the
+  borders at the start of a game and snapping into place when you zoom in,
+  because zooming reaches the levels that do divide evenly. It reads as a
+  rendering fault and it is arithmetic.
 
 The flat map, unlike the globe, **never runs out**: 160 columns of 512 pixels is
 82,000 across the world where the deepest zoom asks for about 23,000. The

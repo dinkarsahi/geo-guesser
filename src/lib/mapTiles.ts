@@ -32,22 +32,41 @@
 export interface FlatTiles {
   /** One tile, by column, row and level of the grid below. */
   url: (col: number, row: number, level: number) => string;
-  /**
-   * How many columns the grid has at each level — the index is the level, and
-   * the length is how many levels there are.
-   *
-   * **A table and not a formula, because this grid is not a quadtree.** The
-   * levels go 2, 3, 5, 10, 20… columns: only from the third does it settle into
-   * doubling, and assuming powers of two puts every tile in the wrong place at
-   * the top three. Taken from the service's own capabilities document.
-   *
-   * A tile is `360 / cols` degrees square, laid from the top-left corner of the
-   * world. Where that doesn't divide 180 evenly the bottom row hangs past the
-   * south pole, which costs nothing: it's placed by its own extent and the map
-   * clips what falls off.
-   */
-  cols: number[];
+  /** The deepest level the grid holds. */
+  maxLevel: number;
 }
+
+/**
+ * How much of the world one tile covers, in degrees square, at a given level.
+ *
+ * **The number that matters here, and the one it is easiest to be wrong
+ * about.** A tile is 512 pixels of half a degree and a bit — 0.5625° — at level
+ * 0, and every level halves it. That is the service's ladder, read off its
+ * capabilities document; it is not something to infer from how many columns a
+ * level has.
+ *
+ * That inference is the trap, and it cost a round trip. Counting columns and
+ * calling a tile `360 / cols` degrees looks right, and *is* right from level 3
+ * down, where the grid happens to divide the world exactly. At the top it is
+ * not: level 1 has three columns of **144°** each, covering 432° — half a world
+ * of padding past the date line — and treating them as 120° squeezes every
+ * coastline to 83% of where it belongs. It reads as the borders sliding off the
+ * map until you zoom in far enough to reach the levels that do divide evenly,
+ * which is precisely what it looked like.
+ *
+ * The columns and rows follow from this rather than the other way round: as
+ * many as it takes to cover 360° and 180°. Where the last of them hangs past
+ * the date line or the pole, it is placed by its own extent like any other and
+ * the map clips what falls off.
+ */
+export const flatTileSpan = (level: number) => 288 / 2 ** level;
+
+/**
+ * How wide the whole world is, in pixels, at level 0 of that ladder — 360° of
+ * it at 0.5625° a pixel. Every level doubles it, which is all the choosing of a
+ * level amounts to.
+ */
+export const FLAT_WORLD_PX = 640;
 
 /** Where a map's skin comes from, and how far it can be trusted. */
 export interface TileSource {
@@ -110,13 +129,6 @@ const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best";
 const GIBS_FLAT = "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best";
 
 /**
- * The column counts of GIBS's plate carrée grids, by level. Checked against the
- * service's capabilities rather than assumed — see `FlatTiles.cols`.
- */
-const GIBS_500M_COLS = [2, 3, 5, 10, 20, 40, 80, 160];
-const GIBS_250M_COLS = [...GIBS_500M_COLS, 320];
-
-/**
  * NASA's, and free of everything: public domain imagery, no account, no key, no
  * meter, and commercial use is expressly fine. All it asks is the credit below.
  *
@@ -143,7 +155,7 @@ export const NASA_BLUE_MARBLE: TileSource = {
   flat: {
     url: (col, row, level) =>
       `${GIBS_FLAT}/BlueMarble_ShadedRelief_Bathymetry/default/500m/${level}/${row}/${col}.jpeg`,
-    cols: GIBS_500M_COLS,
+    maxLevel: 7,
   },
 };
 
@@ -172,7 +184,7 @@ export const NASA_TRUE_COLOUR: TileSource = {
   flat: {
     url: (col, row, level) =>
       `${GIBS_FLAT}/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/${lastFullDay}/250m/${level}/${row}/${col}.jpg`,
-    cols: GIBS_250M_COLS,
+    maxLevel: 8,
   },
 };
 

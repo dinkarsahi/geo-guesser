@@ -11,12 +11,15 @@ import type { Coord } from "../lib/geo";
 import type { GuessMapProps, MapHighlight } from "./mapTypes";
 import { countryAt, useWorldShapes, type CountryFeature } from "../lib/worldShapes";
 import { DAY_TEXTURE, GREY_TEXTURE } from "../lib/textures";
-import type { FlatTiles, TileSource } from "../lib/mapTiles";
+import {
+  flatTileSpan,
+  FLAT_WORLD_PX,
+  type FlatTiles,
+  type TileSource,
+} from "../lib/mapTiles";
 import MapZoomControls from "./MapZoomControls";
 
 const WIDTH = 1024;
-/** Every tile the services below serve is this square. */
-const TILE_PX = 512;
 /**
  * How much beyond the window to fetch, so a drag doesn't run off the edge of
  * what's been loaded before the tiles for the new ground arrive.
@@ -141,16 +144,19 @@ function tilesInView(
   worldPx: number,
   mapHeight: number,
 ): PlacedTile[] {
-  let level = flat.cols.length - 1;
-  for (let l = 0; l < flat.cols.length; l++) {
-    if (flat.cols[l] * TILE_PX >= worldPx) {
+  let level = flat.maxLevel;
+  for (let l = 0; l <= flat.maxLevel; l++) {
+    if (FLAT_WORLD_PX * 2 ** l >= worldPx) {
       level = l;
       break;
     }
   }
 
-  const cols = flat.cols[level];
-  const span = 360 / cols;
+  // How much world a tile holds is the service's own ladder, not a division of
+  // the grid — see `flatTileSpan`, which is where getting this wrong showed up
+  // as the map sliding out from under its borders. The grid follows from it.
+  const span = flatTileSpan(level);
+  const cols = Math.ceil(360 / span);
   const rows = Math.ceil(180 / span);
   const tileW = (span / 360) * WIDTH;
   const tileH = (span / 180) * mapHeight;
