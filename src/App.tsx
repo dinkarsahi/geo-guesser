@@ -10,7 +10,6 @@ import PlayFriend from "./modes/PlayFriend";
 import PopulationGuesser from "./modes/PopulationGuesser";
 import TimeZoneGuesser from "./modes/TimeZoneGuesser";
 import TubeGuesser from "./modes/TubeGuesser";
-import TubeScoringTest, { GAME_MAKER_TITLE } from "./modes/TubeScoringTest";
 import type { GameSettings, ModeId, ModeProps } from "./modes/ModeProps";
 
 type Mode = ModeId;
@@ -215,18 +214,16 @@ function DuelMark() {
 /**
  * The shelf of games, behind the third door on the home page.
  *
- * Seven of them, and the bench at the end. They're a door rather than the home
- * page itself because the home page has one question to ask — who are you
- * playing — and seven cards in front of it made the answer "nobody" look like
- * the only one on offer.
+ * Seven of them, and what's being built next at the end. They're a door rather
+ * than the home page itself because the home page has one question to ask — who
+ * are you playing — and seven cards in front of it made the answer "nobody"
+ * look like the only one on offer.
  */
 function AllGames({
   onPick,
-  onBench,
   onBack,
 }: {
   onPick: (mode: Mode) => void;
-  onBench: () => void;
   onBack: () => void;
 }) {
   return (
@@ -249,17 +246,19 @@ function AllGames({
             <span className="muted mode-blurb">{m.blurb}</span>
           </button>
         ))}
-        {/* The workshop where a way of marking a game is tried out before it
-            counts for anything. Last in the grid and named for what it is, so
-            nobody comes to it expecting their score to go anywhere. */}
-        <button className="mode-card" onClick={onBench}>
-          <span className="mode-emoji">🧪</span>
-          <span className="mode-title">{GAME_MAKER_TITLE}</span>
+        {/* What's being built, on the shelf it will stand on. A div rather than
+            a button because there is nothing behind it yet: a card that takes
+            the press and does nothing reads as a broken game rather than an
+            unfinished one, and this way it can't be tabbed to either. */}
+        <div className="mode-card is-coming">
+          <span className="mode-emoji">📦</span>
+          <span className="mode-title">Export Spotter</span>
+          <span className="mode-soon">Coming soon</span>
           <span className="muted mode-blurb">
-            Set both ends of a tube round and watch the marking show its working: the
-            ride on its own, against the ride with the circle the game now allows.
+            See what a country sells the world more of than anything else, and work out
+            who it is.
           </span>
-        </button>
+        </div>
       </div>
     </div>
   );
@@ -286,10 +285,6 @@ export default function App() {
   // room of people you know. Both are their own door on the home page now.
   const [social, setSocial] = useState<"daily" | "room" | null>(null);
   const [match, setMatch] = useState<Match | null>(null);
-  // The scoring bench. Not a `Mode`: it's a copy of one game kept aside to try
-  // a rule out on, and making it a mode would enter it in the daily rota and in
-  // duel codes, which is the last place an experiment belongs.
-  const [tubeTest, setTubeTest] = useState(false);
   // Which menu is the one behind everything: the three doors, or the shelf of
   // games behind the third of them. Deliberately untouched by `toMenu` — a
   // player who came out of Flag Spotter came from the shelf and wants it back,
@@ -301,14 +296,13 @@ export default function App() {
     setStarted(false);
     setSocial(null);
     setMatch(null);
-    setTubeTest(false);
   };
   const toggleNight = () => setNight((n) => !n);
   const modeProps = { onExit: toMenu, night, onToggleNight: toggleNight, settings };
 
   // A running game gets the whole window: the menu's fixed-width shell and its
   // side rules would otherwise pen the map in well short of the screen edges.
-  const playing = (mode !== null && started) || match !== null || tubeTest;
+  const playing = (mode !== null && started) || match !== null;
   useEffect(() => {
     document.body.classList.toggle("playing", playing);
     return () => document.body.classList.remove("playing");
@@ -328,8 +322,6 @@ export default function App() {
         match={match}
       />
     );
-
-  if (tubeTest) return <TubeScoringTest {...modeProps} />;
 
   if (social === "daily") {
     return <HeadToHead onBack={toMenu} onStart={setMatch} />;
@@ -351,7 +343,7 @@ export default function App() {
         onChange={setSettings}
         onStart={() => setStarted(true)}
         // Back to the shelf the game was picked off, not out to the home page:
-        // somebody who opened the wrong one of eight wanted a different one.
+        // somebody who opened the wrong one of seven wanted a different one.
         onBack={() => setMode(null)}
       />
     );
@@ -359,11 +351,7 @@ export default function App() {
 
   if (browsing === "games") {
     return (
-      <AllGames
-        onPick={setMode}
-        onBench={() => setTubeTest(true)}
-        onBack={() => setBrowsing("home")}
-      />
+      <AllGames onPick={setMode} onBack={() => setBrowsing("home")} />
     );
   }
 

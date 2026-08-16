@@ -269,8 +269,19 @@ export default function GameFrame<T>({
   // something in the player's favour and won't say what: the distance is right
   // there on the map, and a hundred beside it wants explaining. Below a
   // kilometre there's nothing to explain — they clicked on the place.
+  //
+  // Only where the round was actually marked on distance, which is what a round
+  // without a `label` of its own is. A mode that scores on something else has
+  // no business quoting kilometres: a population guess one country out and bang
+  // on the number was being congratulated for being "just 12,801 km away", a
+  // figure that had nothing to do with the mark and read as the game measuring
+  // the wrong thing.
   const nearNote =
-    fullMarks && lastResult && !lastResult.hit && lastResult.distanceKm >= 1
+    fullMarks &&
+    lastResult &&
+    lastResult.label === undefined &&
+    !lastResult.hit &&
+    lastResult.distanceKm >= 1
       ? `You were close enough to the ${targetNoun} — just ` +
         `${formatDistance(lastResult.distanceKm)} away!`
       : null;

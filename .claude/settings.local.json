@@ -125,7 +125,10 @@
       "PowerShell(node \"C:\\\\Users\\\\sahid\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-sahid-geo-guesser\\\\48910de0-6481-4a4d-862a-5a0f81bc64c9\\\\scratchpad\\\\make-icons.mjs\")",
       "PowerShell(node make-icons.mjs)",
       "PowerShell(Get-Content public/icons.svg -TotalCount 3 | ForEach-Object { $_.Substring\\(0, [Math]::Min\\(400, $_.Length\\)\\) }; \"...\"; git log --oneline -1 -- public/icons.svg)",
-      "PowerShell(Copy-Item *)"
+      "PowerShell(Copy-Item *)",
+      "Bash(git rm *)",
+      "Bash(grep -n \"^/\\\\* ---- \" src/game.css)",
+      "Bash(grep -n \"pickTargets\\(pool, rounds, seed\\)\\\\|easierBy\\\\|const {\" src/lib/useGame.ts)"
     ]
   }
 }

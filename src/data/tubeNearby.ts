@@ -26,10 +26,11 @@ import {
  * middle of London is. It's the outer network that is sparse enough for
  * closeness to mean something, and sparse enough for the ride to be silly.
  *
- * It arrived as an experiment on a bench of its own and was judged there before
- * being let anywhere near a score. Having graduated it *replaced* the ride
- * rather than standing beside it — there is one tube rule, and the bench
- * (`src/modes/TubeScoringTest.tsx`) now exists to show its working.
+ * It arrived as an experiment on a bench of its own — a second copy of the game
+ * that marked a click both ways side by side — and was judged there before being
+ * let anywhere near a score. Having graduated it *replaced* the ride rather than
+ * standing beside it, and the bench was taken down with the argument it settled:
+ * there is one tube rule, and it is this file.
  */
 
 /**
@@ -73,9 +74,6 @@ const BASE_KM = 1.2;
 const PER_ZONE_KM = 0.4;
 const MAX_KM = 2.4;
 
-/** What a zone adds to the reach, for a screen that has to say so out loud. */
-export const NEARBY_STEP_KM = PER_ZONE_KM;
-
 /**
  * What a station on a zone boundary gives up against the outer of its two.
  *
@@ -90,9 +88,6 @@ export const NEARBY_STEP_KM = PER_ZONE_KM;
  * sparse stretches of map as the zone 3 ones next to them.
  */
 const BOUNDARY_KM = 0.1;
-
-/** The boundary discount, for a screen that has to say so out loud. */
-export const NEARBY_BOUNDARY_KM = BOUNDARY_KM;
 
 /**
  * A station is in when its dot is in, and by nothing wider than that.
@@ -124,7 +119,7 @@ export function nearbyRadiusKm(station: TubeStation): number | null {
   return Math.min(MAX_KM, reach);
 }
 
-/** Worked out once per station — the bench asks for this on every render. */
+/** Worked out once per station, since a hovered map asks constantly. */
 const reachOf = new Map<string, TubeStation[]>();
 
 /**
@@ -138,7 +133,7 @@ const reachOf = new Map<string, TubeStation[]>();
  *
  * Empty for a station too far in to have a circle at all.
  */
-export function stationsInReach(clicked: TubeStation): TubeStation[] {
+function stationsInReach(clicked: TubeStation): TubeStation[] {
   const cached = reachOf.get(clicked.name);
   if (cached) return cached;
   const radius = nearbyRadiusKm(clicked);
@@ -172,8 +167,6 @@ export interface NearbyMark {
   eased: boolean;
   /** The mark. */
   score: number;
-  /** What the ride alone would have paid, so the bench can show both. */
-  rideScore: number;
   /** How the result panel words the verdict. */
   label: string;
 }
@@ -216,7 +209,6 @@ export function markNearby(clicked: TubeStation, answer: TubeStation): NearbyMar
     reachStops,
     eased,
     score: scoreFromStops(countedStops),
-    rideScore: scoreFromStops(stops),
     // How far the guess really was, always — and where the marks came from,
     // where that isn't the same thing. The ride is what the player wants to know
     // and the only figure the map can be checked against, so it stays on the

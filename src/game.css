@@ -96,6 +96,15 @@
   /* Wider than the globe it covers, so the blades overhang both sides. */
   font-size: 1.15em;
   line-height: 1;
+  /* Centred on its own box, which is not the same as centred on the globe: the
+     crossed-swords glyph carries its handles low and right and hangs its ink
+     off-centre inside the em, so a box centred by the grid still reads as a
+     pair of swords leaning off the world: the blade running up to the right is
+     drawn in front and reaches further, and the eye follows it. Measured, the
+     two glyphs are concentric to a hundredth of an em — this is a correction
+     for what is seen rather than for what is there, which is why it is a round
+     number arrived at by eye and not a calculation. */
+  transform: translateX(-0.06em);
   /* Lifts the blades off a globe of much the same brightness. */
   filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.85));
 }
@@ -143,9 +152,29 @@
   margin-left: -0.28em;
 }
 
-/* The home page's three doors, where the shelf behind one of them has eight
-   cards: given more room each, since they're a choice being made rather than a
-   list being scanned, and wide enough that all three sit in one row on a
+/* A game that isn't built yet, standing on the shelf it will stand on. Dimmed
+   and not a button: it says what is coming without offering to start it, and
+   the eye should pass over it on the way to the seven that do work. */
+.mode-card.is-coming {
+  cursor: default;
+  opacity: 0.55;
+  border-style: dashed;
+}
+.mode-soon {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+/* The home page's three doors, where the shelf behind one of them has the
+   seven games: given more room each, since they're a choice being made rather
+   than a list being scanned, and wide enough that all three sit in one row on a
    desktop rather than leaving the third stranded on its own. */
 .mode-grid-trio {
   max-width: 900px;
@@ -877,131 +906,6 @@ body:has(.game-play) {
   font-weight: 600;
 }
 
-/* ---- Tube scoring bench --------------------------------------------- */
-/* The one screen whose title is a sentence. It wraps and sits small rather
-   than pushing the station boxes off the middle of the bar. */
-.lab-title {
-  white-space: normal;
-  max-width: 190px;
-  font-size: 14px;
-  line-height: 1.25;
-}
-/* Both ends of a round, side by side, because the whole exercise is comparing
-   one against the other. */
-.lab-picks {
-  display: flex;
-  align-items: flex-end;
-  gap: 14px;
-}
-.lab-pick {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-.lab-input {
-  width: 200px;
-  max-width: 32vw;
-  padding: 7px 10px;
-  font: inherit;
-  font-size: 15px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text-h);
-}
-.lab-input:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-.lab-actions {
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-}
-/* Which two stations are being compared, over the columns comparing them. */
-.lab-pair {
-  margin: 0;
-  font-size: 15px;
-  text-align: center;
-  color: #d1d5db;
-}
-.lab-pair strong {
-  color: #fff;
-}
-/* The same click marked both ways, a column each. A real table, so the figures
-   stay under the heading that names which rule they came from. */
-.lab-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 15px;
-}
-.lab-table th,
-.lab-table td {
-  padding: 6px 10px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.lab-table thead th {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #9ca3af;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-}
-.lab-table tbody th {
-  text-align: left;
-  font-weight: 600;
-  color: #d1d5db;
-}
-.lab-table td {
-  color: #e5e7eb;
-  width: 34%;
-}
-.lab-points {
-  font-size: 19px;
-  font-weight: 700;
-}
-.lab-table .is-up {
-  color: #4ade80;
-}
-.lab-delta {
-  font-size: 13px;
-  font-weight: 600;
-}
-/* The working behind the right-hand column: how wide the reach is, why that
-   wide, and what it caught. Quieter than the figures it explains. */
-.lab-working {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  text-align: center;
-  color: #9ca3af;
-}
-.lab-working strong {
-  color: #e5e7eb;
-  font-variant-numeric: tabular-nums;
-}
-/* For a heading a screen reader needs and the eye doesn't — the empty corner
-   of the comparison table. */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-@media (max-width: 900px) {
-  .lab-title {
-    display: none;
-  }
-}
-
 /* ---- Prompt --------------------------------------------------------- */
 .prompt {
   margin-bottom: 12px;
@@ -1580,10 +1484,9 @@ body:has(.game-play) {
   color: var(--text);
 }
 /* Where the mark came from, when the mark and the map disagree: the tube pays
-   a click near the answer by how crowded the circle round it is, so a round
-   the player can see is eighteen stops long is marked four. Set like the
-   bench's working, which is the same sentence about the same circle, and kept
-   quieter than the figures it explains. */
+   a click near the answer by how crowded the circle round it is, so a round the
+   player can see is twenty-two stops long can be worth most of a hundred. Kept
+   quieter than the figures it explains — it is the working, not the verdict. */
 .result-working {
   margin: 0;
   max-width: 640px;

@@ -10,15 +10,15 @@ import {
 import type { Coord } from "./geo";
 
 /**
- * The circle a tube round is half marked on, made visible — drawn on the map,
- * and said in words under the score.
+ * The circle a tube round can be marked on, made visible — drawn on the map,
+ * announced over the mark, and explained in a sentence under it.
  *
- * Both live here rather than in the screens that use them because the whole
- * rule is read off the drawing: the number of stations a player can count
- * inside the circle is what the round cost them. A circle that differed by a
- * hair between the game and the bench, or a circle drawn on a round it had
- * nothing to do with, would make the picture disagree with the printed number
- * — which is the one thing this rule cannot afford.
+ * All three live here rather than in the screen that shows them because the
+ * whole rule is read off the drawing: the circle a player can see round their
+ * click is what the round was marked on. A circle drawn on a round it had
+ * nothing to do with, or a sentence about one the map never drew, would make
+ * the picture disagree with the score — which is the one thing this rule cannot
+ * afford.
  */
 
 /** Nothing to draw, as one array rather than a fresh one each render. */
@@ -33,7 +33,7 @@ export const NO_RINGS: MapRing[] = [];
  * A radius is a claim about a particular click, so it's drawn when there's a
  * click to make it about.
  */
-export function reachRing(station: TubeStation): MapRing[] {
+function reachRing(station: TubeStation): MapRing[] {
   const km = nearbyRadiusKm(station);
   return km === null
     ? NO_RINGS
@@ -76,10 +76,10 @@ export function gapCall(click: Coord, answer: TubeStation): string | null {
  * area — every station out here has one, and the player has landed in one of
  * them, not in some single feature of the map they were supposed to know about.
  *
- * It quotes no numbers. The ride is on the headline, the mark is beside it, and
- * the radius, the count inside it and the arithmetic between them are the
- * bench's business — on a round they are three sentences of workings between
- * the player and the next question.
+ * It quotes no numbers. The ride is on the headline and the mark is beside it;
+ * the radius, the count inside it and the arithmetic between them belong to
+ * `tubeNearby.ts` and stay there — on a round they are three sentences of
+ * workings between the player and the next question.
  *
  * Null on every other round, because there the stops on the headline are the
  * whole story and a note that never varies stops being read.

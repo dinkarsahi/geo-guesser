@@ -39,13 +39,41 @@ interface GameProps extends ModeProps {
  * with the right sort of population scores well wherever on Earth it is.
  *
  * Squared in the exponent, like the distance modes and the tube map: the curve
- * leaves full marks slowly and then falls off, rather than charging most for
- * the first step away from the answer. At 2, being out by half again scores 96
- * and a factor of two 89 — both of which are knowing roughly how many people
- * live there, which is all the question asked. A factor of ten is 27 and a
- * factor of fifty near enough nothing.
+ * leaves its top slowly and then falls off, rather than charging most for the
+ * first step away from the answer. At 2, and marked out of `NEAR_COUNTRY_MAX`,
+ * being out by half again scores 91 and a factor of two 84 — both of which are
+ * knowing roughly how many people live there, which is most of what the
+ * question asked. A factor of ten is 25 and a factor of fifty near enough
+ * nothing.
  */
 const RATIO_SCALE = 2;
+
+/**
+ * The most a country that isn't the answer can be worth.
+ *
+ * The question is which country has that many people in it, and there is one
+ * right answer to it. Marked on the number alone, a guess at the wrong country
+ * with a population within a few per cent of the right one rounded to a full
+ * hundred — the game's word for "you found it" — handed out for not finding it.
+ *
+ * So the whole curve is marked out of this instead, and the last five points
+ * belong to the country. Nothing else changes: knowing that about 12 million
+ * people live somewhere is still nearly all of the question, and is still paid
+ * as such. What it stops is the panel calling a miss a perfect answer.
+ */
+const NEAR_COUNTRY_MAX = 95;
+
+/**
+ * What makes one of these rounds easier than another, for `useGame`'s climbing
+ * deal: how many people live there. Held at module scope so the game is handed
+ * the same function every render rather than a fresh one.
+ *
+ * The pool is every country on the map, and most countries are small — dealt
+ * flat, a game was as likely to ask for five islands nobody could place as for
+ * anywhere anyone had heard of. Nothing has been taken out of the pool; the
+ * rounds are just dealt from the big end first, so a game climbs.
+ */
+const byPopulation = (c: PopulationTarget) => c.population;
 
 /** "2.4", "17" — a multiplier, at a precision worth reading. */
 const times = (ratio: number) =>
@@ -89,12 +117,18 @@ function PopulationGame({
     if (!picked?.population) return { score: 0, label: "No figures for there" };
     const ratio = picked.population / target.population;
     const off = Math.abs(Math.log(ratio)) / RATIO_SCALE;
+    const factor = ratio >= 1 ? ratio : 1 / ratio;
     return {
-      score: Math.round(MAX_ROUND_SCORE * Math.exp(-off * off)),
+      score: Math.round(NEAR_COUNTRY_MAX * Math.exp(-off * off)),
+      // A factor that prints as "1.0×" is a country with the same population as
+      // the answer, and "1.0× too many people" describes that as a mistake in
+      // the number when the number was right and the country wasn't.
       label:
-        ratio >= 1
-          ? `${times(ratio)}× too many people`
-          : `${times(1 / ratio)}× too few people`,
+        times(factor) === "1.0"
+          ? "The right sort of number, the wrong country"
+          : ratio >= 1
+            ? `${times(ratio)}× too many people`
+            : `${times(1 / ratio)}× too few people`,
     };
   };
 
@@ -109,6 +143,9 @@ function PopulationGame({
         ? { score: MAX_ROUND_SCORE, label: "" }
         : scoreFor(guess, target),
     guessAt: (guess) => anchorAt(shapes, guess),
+    // Rounds that get harder as the game goes on: the first is dealt from the
+    // most populous fifth of the world and the last from the least.
+    easierBy: byPopulation,
     ...matchOptions(match),
   });
 

@@ -140,14 +140,6 @@ interface LondonMapProps extends GuessMapProps {
   night?: boolean;
   /** Ground circles to draw under the network. */
   rings?: MapRing[];
-  /**
-   * Let the map move itself: back to the whole network when a round resets,
-   * and out to it again when the answer is revealed. True for a game, where
-   * each round is a fresh look at the map. False where the answer is something
-   * the player set themselves and the view is theirs to keep — being yanked
-   * back to zoom 1 every time you name a station makes the map unusable.
-   */
-  autoView?: boolean;
 }
 
 interface Position {
@@ -277,7 +269,6 @@ export default function LondonMap({
   disabled = false,
   night = false,
   rings,
-  autoView = true,
 }: LondonMapProps) {
   // White, TfL-style palette in day mode; a dark variant for night mode.
   const theme = night
@@ -511,7 +502,7 @@ export default function LondonMap({
   const [prevAnswer, setPrevAnswer] = useState(answer);
   if (answer !== prevAnswer) {
     setPrevAnswer(answer);
-    if (!answer && autoView) setPosition({ coordinates: defaultCenter, zoom: 1 });
+    if (!answer) setPosition({ coordinates: defaultCenter, zoom: 1 });
   }
 
   /**
@@ -521,10 +512,9 @@ export default function LondonMap({
    * round resets the view above.
    */
   useEffect(() => {
-    if (!autoView) return;
     if (answer) flyTo({ coordinates: defaultCenter, zoom: 1 });
     else stopFlight();
-  }, [answer, autoView, defaultCenter, flyTo, stopFlight]);
+  }, [answer, defaultCenter, flyTo, stopFlight]);
 
   const k = position.zoom;
   const s = spreadFor(k);
