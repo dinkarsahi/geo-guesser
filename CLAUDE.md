@@ -123,6 +123,19 @@ built next at the end of it. They used to be the home page, with the two
 contests tacked on as an eighth card; seven games in front of the question
 answered it before it was asked, and the contests read as two more games.
 
+**TEMPORARY — the tap cheat.** Tapping the question itself six times in one
+round answers that round correctly, in every game: the flag, the population
+figure, the station name, whatever is being asked. It is `CHEAT_TAPS` and
+`promptTap` in `GameFrame`, the `onClick` on the prompt, and `solveRound` /
+`solvePoint` in `useGame` — four pieces, nothing else knows about it, and
+deleting all four takes it out cleanly. It goes through `submitGuess` like a
+real click, so a cheated round is marked, timed and filed like any other — which
+also means it will file to a leaderboard if used in a duel or today's round.
+`solvePoint` clicks the target's own coordinate, or where that fails the mode's
+`hitTest` walks a widening ring until something passes: two countries in the
+pool of 233, Equatorial Guinea and New Zealand, have a Natural Earth label point
+outside their own borders.
+
 All of it is `App.tsx`. `browsing` says which menu is underneath everything
 (`"home"` or `"games"`) and is **deliberately untouched by `toMenu`** — coming
 out of Flag Spotter lands back on the shelf it was picked off, where coming out
@@ -274,8 +287,13 @@ row in the table above, a unique mode letter, and a re-run of `schema.sql`.
 ## Scoring
 
 Every round is out of **100** (`MAX_ROUND_SCORE`), and a finished game is the
-**average** of its rounds, not the total — so 78 means the same thing whether
-the game was five rounds or ten. `finalScore` in `src/lib/geo.ts`.
+**average** of its rounds, not the total — so 78 means the same thing however
+many rounds were played. `finalScore` in `src/lib/geo.ts`.
+
+**Every game is five rounds.** The setup screen used to offer ten as well;
+`settings.rounds` is still the knob and modes still read it, but nothing sets it
+to anything but 5 any more, so a score off the shelf and a score from a duel are
+the same measurement.
 
 **All four curves are Gaussian**: `100 · exp(−(off/scale)²)`, not a plain decay.
 This is deliberate and shared, and it is the single most important thing to

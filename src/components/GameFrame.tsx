@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import type { Coord } from "../lib/geo";
 import { finalScore, formatDistance, MAX_ROUND_SCORE } from "../lib/geo";
 import type { Match } from "../lib/match";
@@ -99,6 +99,18 @@ export interface PickedGuess {
 }
 
 /**
+ * TEMPORARY — the tap cheat. Tap the question itself this many times in one
+ * round and the round answers itself correctly: the flag, the population, the
+ * station name, whatever is being asked. It is on the prompt rather than on a
+ * key so that it works on a phone, and six because nobody reaches six by
+ * accident.
+ *
+ * To take it out: this constant, `promptTap` below, the `onClick` on the prompt,
+ * and `solveRound` in `useGame`. Nothing else knows about it.
+ */
+const CHEAT_TAPS = 6;
+
+/**
  * How many rounds the summary will list before it starts hiding the early
  * ones. The longest game is ten, so nothing reaches this today — it's here so
  * that a longer game added later prints a summary rather than a scroll.
@@ -140,6 +152,7 @@ export default function GameFrame<T>({
     timeLeftMs,
     roundClosesAt,
     totalMs,
+    solveRound,
   } = game;
 
   // A room's rounds go up as they're marked and the table comes back with them.
@@ -152,6 +165,18 @@ export default function GameFrame<T>({
   // wants it uncovered every time, and having to press it again each round is
   // the thing they were trying to get away from.
   const [panelFolded, setPanelFolded] = useState(false);
+  // TEMPORARY — the tap cheat's counter. A ref rather than state: nothing on
+  // screen changes until the sixth tap, and counting in state would redraw the
+  // map under the player five times for nothing. Kept with the round it was
+  // counted in, so taps don't carry over from the last question.
+  const taps = useRef({ round: -1, count: 0 });
+  const promptTap = () => {
+    if (phase !== "guessing") return;
+    if (taps.current.round !== roundIndex) taps.current = { round: roundIndex, count: 0 };
+    if (++taps.current.count < CHEAT_TAPS) return;
+    taps.current.count = 0;
+    solveRound();
+  };
   // A room runs to a timetable, which is what everything below tests for: no
   // "next round" button, a countdown in its place, and its own results screen.
   const timetabled = match?.startAt !== undefined;
@@ -299,7 +324,10 @@ export default function GameFrame<T>({
           <NightToggle night={night} onToggle={onToggleNight} />
           <h2>{title}</h2>
         </div>
-        <div className="prompt">{renderPrompt(target, phase)}</div>
+        {/* TEMPORARY — the tap cheat lives on the question itself. */}
+        <div className="prompt" onClick={promptTap}>
+          {renderPrompt(target, phase)}
+        </div>
         <div className="game-stats">
           <span>Round {roundIndex + 1}/{totalRounds}</span>
           <span className="round-score">{totalScore.toLocaleString()} pts</span>

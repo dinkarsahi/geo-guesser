@@ -186,6 +186,11 @@ export interface Game<T> {
   roundClosesAt: number | null;
   /** How long the whole game has taken so far, summed over its rounds. */
   totalMs: number;
+  /**
+   * TEMPORARY — answer the round correctly, as though the player had clicked
+   * the right place. Behind the tap cheat in `GameFrame`; see `solvePoint`.
+   */
+  solveRound: () => void;
 }
 
 /** Where a timetabled game is: which round, when it opened, when it gives way. */
@@ -227,6 +232,38 @@ function timingAt(schedule: RoundSchedule | undefined, rounds: number): Timing {
     openedAt = closesAt;
   }
   return { index: rounds, openedAt, closesAt: openedAt };
+}
+
+/**
+ * TEMPORARY — the tap cheat. Delete this, `solveRound` below and the tap
+ * counter in `GameFrame` together, and nothing else knows about any of it.
+ *
+ * Where to click to be right. The target's own coordinate almost always is:
+ * a city is its coordinate, a station is its dot, and a country's is Natural
+ * Earth's label point, which is chosen to sit inside the country. Almost —
+ * New Zealand's label sits in Cook Strait, and a mode that scores off the
+ * country under the click would mark that as open water and pay nothing. So
+ * where the mode has a `hitTest` and the coordinate fails it, this walks a
+ * widening ring around it until something passes.
+ */
+function solvePoint<T>(
+  target: T,
+  getCoord: (t: T) => Coord,
+  hitTest?: (guess: Coord, target: T) => boolean,
+): Coord {
+  const at = getCoord(target);
+  if (!hitTest || hitTest(at, target)) return at;
+  for (let radius = 0.25; radius <= 8; radius *= 2) {
+    for (let step = 0; step < 16; step++) {
+      const angle = (step / 16) * 2 * Math.PI;
+      const near = {
+        lat: at.lat + radius * Math.sin(angle),
+        lng: at.lng + radius * Math.cos(angle),
+      };
+      if (hitTest(near, target)) return near;
+    }
+  }
+  return at;
 }
 
 /** Fisher-Yates shuffle, in place, from whichever source of chance is given. */
@@ -572,6 +609,16 @@ export function useGame<T>(
     setPhase("guessing");
   }, [pool, rounds, seed, easierBy, roundLimitMs]);
 
+  // TEMPORARY — the tap cheat's half of the bargain. It goes through
+  // `submitGuess` like any other click, so the round is marked, timed and filed
+  // exactly as a played one: a cheat that took a different route through the
+  // scoring would be a second way of finishing a round, and the first thing to
+  // break next time the first one changes.
+  const solveRound = useCallback(() => {
+    if (phase !== "guessing") return;
+    submitGuess(solvePoint(target, getCoord, hitTest));
+  }, [phase, submitGuess, target, getCoord, hitTest]);
+
   return {
     target,
     targets,
@@ -591,5 +638,6 @@ export function useGame<T>(
     roundClosesAt:
       startAt === undefined ? null : timingAt(schedule, targets.length).closesAt,
     totalMs: results.reduce((sum, r) => sum + r.elapsedMs, 0),
+    solveRound,
   };
 }

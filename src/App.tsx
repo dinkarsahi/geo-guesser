@@ -134,16 +134,9 @@ function ModeSetup({
       <p className="muted menu-sub">{mode.blurb}</p>
 
       <div className="setup-panel">
-        <Choice<number>
-          label="Length"
-          value={settings.rounds}
-          onChange={(rounds) => onChange({ ...settings, rounds })}
-          options={[
-            { value: 5, title: "5 rounds", hint: "A quick game, marked out of 100" },
-            { value: 10, title: "10 rounds", hint: "Twice the game, marked the same way" },
-          ]}
-        />
-
+        {/* No length to choose: every game is five rounds, the same five rounds
+            that today's round and a duel are. One number for the whole app
+            means a score means one thing wherever it was got. */}
         {worldMap && (
           <>
             <Choice<boolean>
