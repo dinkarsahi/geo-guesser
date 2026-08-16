@@ -203,13 +203,11 @@ export function markNearby(clicked: TubeStation, answer: TubeStation): NearbyMar
     eased,
     score: scoreFromStops(countedStops),
     rideScore: scoreFromStops(stops),
-    // Where the circle did the work, the ride is named as well as the mark:
-    // "4 stops away" over a journey the player can see is eighteen looks like
-    // the game has lost count of its own network. Both in stops, because stops
-    // are what the game marks in — the metres are how the circle is built, not
-    // what the answer is worth.
-    label: eased
-      ? `${formatStops(countedStops)} — the ride is ${stops}`
-      : formatStops(stops),
+    // What the round was charged, in stops, and only that. "4 stops away" over
+    // a journey the player can see is eighteen still has to say so — but it is
+    // said in the sentence under the mark now (`creditNote`), where it can also
+    // say why, rather than in a dash on the end of the headline that names the
+    // ride and leaves it hanging.
+    label: formatStops(countedStops),
   };
 }

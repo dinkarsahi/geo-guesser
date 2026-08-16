@@ -387,6 +387,13 @@ export default function GameFrame<T>({
                   them looks like something was rounded in the player's favour
                   and won't say what. */}
               {nearNote && <p className="result-near">{nearNote}</p>}
+              {/* Straight under the mark, because it is the mark it explains —
+                  a figure that contradicts what the map plainly shows has to
+                  answer for itself in the same breath, not after a line about
+                  something else. Below the pick it read as a note about the
+                  pick, and a player who had their number and their reason
+                  either side of a name had to assemble the two. */}
+              {scoreNote && <p className="result-working">{scoreNote}</p>}
               {picked && !fullMarks && (
                 <p className="picked-line">
                   <span className="picked-label">You picked</span>
@@ -394,10 +401,6 @@ export default function GameFrame<T>({
                   {picked.detail && <span className="picked-detail">{picked.detail}</span>}
                 </p>
               )}
-              {/* Under the station that was picked, because it is that pick
-                  the sum is about: the circle drawn on the map belongs to it,
-                  and the sentence reads on from the name. */}
-              {scoreNote && <p className="result-working">{scoreNote}</p>}
               {renderResultExtra && (
                 <div className="fact-panel">{renderResultExtra(target)}</div>
               )}

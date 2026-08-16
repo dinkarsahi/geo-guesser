@@ -9,9 +9,9 @@ import {
   zoneLabel,
   type TubeStation,
 } from "../data/tube";
-import { markNearby, nearbyRadiusKm } from "../data/tubeNearby";
+import { markNearby } from "../data/tubeNearby";
 import { matchOptions } from "../lib/match";
-import { NO_RINGS, reachNote, reachRing } from "../lib/tubeReach";
+import { creditNote, NO_RINGS, paidRing } from "../lib/tubeReach";
 import { useGame } from "../lib/useGame";
 import type { ModeProps } from "./ModeProps";
 
@@ -40,13 +40,14 @@ export default function TubeGuesser({
     ...matchOptions(match),
   });
 
-  // The circle of whatever was just pressed, and nothing before that: it is
-  // there to explain the mark, so it arrives with the mark. Held across renders
-  // rather than rebuilt, since the map re-projects every circle it is handed a
-  // new array of and this draws again whenever the pointer crosses a station.
+  // The circle, on the rounds it paid for and no others: it is there to explain
+  // a mark that is kinder than the ride, and on a round charged as the ride
+  // there is nothing for it to explain. Held across renders rather than rebuilt,
+  // since the map re-projects every circle it is handed a new array of and this
+  // draws again whenever the pointer crosses a station.
   const rings = useMemo(
-    () => (game.currentGuess ? reachRing(nearestStation(game.currentGuess)) : NO_RINGS),
-    [game.currentGuess],
+    () => (game.currentGuess ? paidRing(game.currentGuess, game.target) : NO_RINGS),
+    [game.currentGuess, game.target],
   );
 
   return (
@@ -61,22 +62,16 @@ export default function TubeGuesser({
       // same words the card and the setup screen promised, paid out.
       fullMarksLabel={TUBE_SPOT_ON}
       // The station whose patch was clicked — the same one the round was
-      // scored against, so "6 stops away" below finally says from where. Its
-      // circle is named with it, since that circle is drawn on the map and is
-      // half of what the round was marked on.
+      // scored against, so "6 stops away" above finally says from where. Its
+      // zone and nothing else: the radius belongs to the rounds the circle
+      // actually paid for, and printed on every miss it was a measurement in
+      // search of a reason.
       pickedLabel={(click) => {
         const station = nearestStation(click);
-        const km = nearbyRadiusKm(station);
-        return {
-          name: station.name,
-          detail:
-            km === null
-              ? zoneLabel(station.zone)
-              : `${zoneLabel(station.zone)} · circle ${km.toFixed(1)} km`,
-        };
+        return { name: station.name, detail: zoneLabel(station.zone) };
       }}
       renderScoreNote={(station, result) =>
-        result.click && !result.hit ? reachNote(result.click, station) : null
+        result.click && !result.hit ? creditNote(result.click, station) : null
       }
       hint="Click a station to place your guess."
       measureLabel="Number of stops to destination"

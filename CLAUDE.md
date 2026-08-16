@@ -55,12 +55,15 @@ options or in `GameFrame`'s props instead.
 
 ### A `GameFrame` prop worth knowing
 
-**`renderScoreNote`** — a sentence under the mark saying where the mark came
-from, given the target and the whole `RoundResult`. Only the tube has one, and
-only because its number can contradict the map: a click one stop's walk from the
-answer is marked 4 stops over a ride the player can see is 18, and a figure that
-disagrees with the picture has to explain itself. Return null on a round with
-nothing to explain — printed every round it stops being read.
+**`renderScoreNote`** — a sentence **directly under the mark** saying where the
+mark came from, given the target and the whole `RoundResult`. Only the tube has
+one, and only because its number can contradict the map: a click one stop's walk
+from the answer is marked 4 stops over a ride the player can see is 18, and a
+figure that disagrees with the picture has to explain itself. It sits above "You
+picked", not below it, because it is the mark it answers for and not the pick.
+Return null on a round with nothing to explain — printed every round it stops
+being read, which is why the tube only prints it on the rounds the circle paid
+for.
 
 ### The maps
 
@@ -73,7 +76,8 @@ Three of them, all satisfying `GuessMapProps` in `src/components/mapTypes.ts`:
   Never score against the coarse copy.
 - **`LondonMap.tsx`** — bespoke SVG of the tube network. Also takes `rings` —
   the circle a tube guess is marked against, drawn by the game and by the bench
-  from the same `src/lib/tubeReach.tsx` — and `autoView`; see below.
+  from the same `src/lib/tubeReach.tsx` — and `autoView`; see below. The game
+  only ever hands it a circle on a round the circle actually paid for.
 
 Reveal colouring comes in two flavours, and they are not interchangeable:
 
@@ -159,11 +163,19 @@ lets the pool be *every* country rather than the ones someone got round to.
   answer, and charges you the ride from there — **unless the answer is inside
   that station's own circle**, where the ride is replaced by how crowded the
   circle is. The circle, its sizes and the reason for both are in
-  `src/data/tubeNearby.ts`; it is drawn on the map by `src/lib/tubeReach.tsx`
-  and explained in the result panel by `reachNote` from the same file, which is
-  shared with the bench so the two can never say different things about the
-  same click. The kinder of the ride and the circle counts, so the rule can
-  only ever help. It is also the one game with a
+  `src/data/tubeNearby.ts`. **Both the circle and the sentence about it appear
+  only on the rounds the circle paid for** — `paidRing` and `creditNote` in
+  `src/lib/tubeReach.tsx`, shared with the bench's game so the two can never say
+  different things about the same click. A round charged as the ride says what
+  it always said, "18 stops away", with nothing drawn and nothing explained: a
+  circle round a click that got no credit reads as an offer made and then not
+  honoured, and a radius printed under every pick is a measurement in search of
+  a reason. On the rounds it did pay, the sentence names the ride the player was
+  let off ("You were 21 stops from Harrow & Wealdston, but you clicked close by
+  — so we're giving you some credit!") and the circle round the pick shows why.
+  The radius, the count inside it and the arithmetic between them are the
+  bench's business, not a player's. The kinder of the ride and the circle
+  counts, so the rule can only ever help. It is also the one game with a
   line of its own — `TUBE_TAGLINE` in `data/tube.ts`, "See it. Say it. Spot
   it.". It is printed under the title on its All Games card and again on the setup
   screen (a `tagline` on the `MODES` entry in `App.tsx`, which only the tube
@@ -229,7 +241,11 @@ array's identity must be stable, since the map re-projects the lot whenever it's
 handed a new one) and `autoView` (false stops the map flying back to the whole
 network when the answer changes, which on the bench would yank the view away
 every time a station is named). `rings` is no longer bench-only — the game draws
-the same circle, from the same `reachRing`.
+the same circle, from the same `reachRing`, though it only draws it where the
+circle changed the mark (`paidRing`). The bench's own screen draws it for
+whatever station is picked, because up there the circle is the thing under
+examination; the five rounds played from that screen behave exactly as the
+game's do.
 
 ---
 

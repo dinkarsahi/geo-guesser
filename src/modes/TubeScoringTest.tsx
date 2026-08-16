@@ -11,13 +11,12 @@ import {
 } from "../data/tube";
 import {
   markNearby,
-  nearbyRadiusKm,
   NEARBY_BOUNDARY_KM,
   NEARBY_FROM_ZONE,
   NEARBY_STEP_KM,
 } from "../data/tubeNearby";
 import { formatDistance, type Coord } from "../lib/geo";
-import { NO_RINGS, reachNote, reachRing } from "../lib/tubeReach";
+import { creditNote, NO_RINGS, paidRing, reachRing } from "../lib/tubeReach";
 import { useGame } from "../lib/useGame";
 import type { ModeProps } from "./ModeProps";
 
@@ -326,11 +325,13 @@ function TestGame({ onExit, night, onToggleNight, settings }: Omit<ModeProps, "m
     },
   });
 
-  // The reach of whatever was just pressed, and nothing before that: in a round
-  // the circle is there to explain the mark, so it arrives with the mark.
+  // A round shows the circle exactly where the game does — on the rounds it
+  // paid for. The bench above draws it for any pick, because up there the
+  // circle is the thing being examined; down here it is a round being played,
+  // and it has to look like one.
   const rings = useMemo(
-    () => (game.currentGuess ? reachRing(nearestStation(game.currentGuess)) : NO_RINGS),
-    [game.currentGuess],
+    () => (game.currentGuess ? paidRing(game.currentGuess, game.target) : NO_RINGS),
+    [game.currentGuess, game.target],
   );
 
   return (
@@ -342,20 +343,14 @@ function TestGame({ onExit, night, onToggleNight, settings }: Omit<ModeProps, "m
       onToggleNight={onToggleNight}
       pickedLabel={(click) => {
         const station = nearestStation(click);
-        const km = nearbyRadiusKm(station);
-        return {
-          name: station.name,
-          detail:
-            km === null
-              ? zoneLabel(station.zone)
-              : `${zoneLabel(station.zone)} · reach ${km.toFixed(1)} km`,
-        };
+        return { name: station.name, detail: zoneLabel(station.zone) };
       }}
       // The same sentence the game gives, since this is meant to be the game:
       // a bench whose rounds explain themselves differently is a bench that
-      // can't be trusted about the thing it's a copy of.
+      // can't be trusted about the thing it's a copy of. The radius and the
+      // arithmetic are still a click away, on the bench itself.
       renderScoreNote={(station, result) =>
-        result.click && !result.hit ? reachNote(result.click, station) : null
+        result.click && !result.hit ? creditNote(result.click, station) : null
       }
       hint="Click a station to place your guess."
       measureLabel="Stops to destination"

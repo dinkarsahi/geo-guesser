@@ -11,9 +11,9 @@ import type { Coord } from "./geo";
  * Both live here rather than in the screens that use them because the whole
  * rule is read off the drawing: the number of stations a player can count
  * inside the circle is what the round cost them. A circle that differed by a
- * hair between the game and the bench, or a sentence that quoted a radius the
- * map didn't draw, would make the printed number disagree with the picture —
- * which is the one thing this rule cannot afford.
+ * hair between the game and the bench, or a circle drawn on a round it had
+ * nothing to do with, would make the picture disagree with the printed number
+ * — which is the one thing this rule cannot afford.
  */
 
 /** Nothing to draw, as one array rather than a fresh one each render. */
@@ -36,50 +36,50 @@ export function reachRing(station: TubeStation): MapRing[] {
 }
 
 /**
- * Where the mark came from, when the circle had anything to do with it.
+ * The circle to draw over a round, which is none unless the circle paid.
  *
- * It names the same three things the eye can check on the map: how wide the
- * circle is, what is inside it, and what that came to against the ride. Silent
- * where the clicked station has no circle at all, because then nothing happened
- * that the stops don't already say — and a note printed every round is a note
- * nobody reads.
+ * A radius that appears on every guess is a radius the player learns to ignore,
+ * and worse, one that seems to be claiming something on rounds where it did
+ * nothing: a circle drawn round a click that was charged the full ride reads as
+ * an offer that was made and then not honoured. So it is drawn exactly when it
+ * is the reason the mark is what it is, and the sentence below appears with it.
  */
-export function reachNote(click: Coord, answer: TubeStation): ReactNode {
+export function paidRing(click: Coord, answer: TubeStation): MapRing[] {
+  const clicked = nearestStation(click);
+  return markNearby(clicked, answer).eased ? reachRing(clicked) : NO_RINGS;
+}
+
+/**
+ * Why the mark is kinder than the ride, when it is.
+ *
+ * Only ever printed on a round the circle paid for, and it says the one thing
+ * the player can't work out from the panel: that the ride really was that long
+ * and they are being let off some of it. The circle's radius, its population
+ * and the arithmetic between them are the bench's business — on a round they
+ * are three sentences of workings between the player and the next question, and
+ * everything they explain is already drawn on the map.
+ *
+ * Null on every other round, because there the stops on the headline are the
+ * whole story and a note that never varies stops being read.
+ */
+export function creditNote(click: Coord, answer: TubeStation): ReactNode {
   const clicked = nearestStation(click);
   const mark = markNearby(clicked, answer);
-  if (mark.radiusKm === null) return null;
+  if (!mark.eased) return null;
 
-  const radius = <strong>{mark.radiusKm.toFixed(1)} km</strong>;
-
-  if (!mark.covered) {
-    return (
-      <>
-        {clicked.name}’s circle reaches {radius}, and {answer.name} falls outside it — so
-        this one was charged as the ride.
-      </>
-    );
-  }
-
-  const inside =
-    mark.neighbours === 0
-      ? "no other station stands inside it"
-      : `${mark.neighbours} other ${
-          mark.neighbours === 1 ? "station stands" : "stations stand"
-        } inside it`;
+  // Two stations can sit a street apart with no train between them at all, and
+  // "You were Infinity stops away" is not the sentence for it.
+  const ride = Number.isFinite(mark.stops) ? (
+    <>
+      You were <strong>{mark.stops}</strong> stops from {answer.name}
+    </>
+  ) : (
+    <>There’s no ride from {clicked.name} to {answer.name} at all</>
+  );
 
   return (
     <>
-      {clicked.name}’s circle reaches {radius} and {inside}, so anywhere inside it counts
-      as <strong>{mark.reachStops}</strong> {mark.reachStops === 1 ? "stop" : "stops"}
-      {mark.eased ? (
-        <>
-          {" "}
-          — cheaper than the {mark.stops}-stop ride, and the kinder of the two is what
-          you pay.
-        </>
-      ) : (
-        <>. The ride was shorter still, so that stood.</>
-      )}
+      {ride}, but you clicked close by — so we’re giving you some credit!
     </>
   );
 }
