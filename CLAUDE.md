@@ -119,7 +119,9 @@ for, so it can never cost anyone a round.
 The home page asks one question — **who are you playing** — and answers it with
 three cards: `Today's Round`, `Duel a Friend`, and `All Games`. The games
 themselves are behind the third of those, on a shelf with whatever is being
-built next at the end of it. They used to be the home page, with the two
+built next at the end of it. Each card is three lines — the name, a `hook`
+asking whether you fancy it, and a `blurb` saying what a round involves; eight
+descriptions read as a list, where eight questions read as a dare. They used to be the home page, with the two
 contests tacked on as an eighth card; seven games in front of the question
 answered it before it was asked, and the contests read as two more games.
 
@@ -230,10 +232,10 @@ lets the pool be *every* country rather than the ones someone got round to.
   The kinder of the ride and the circle
   counts, so the rule can only ever help. It is also the one game with a
   line of its own — `TUBE_TAGLINE` in `data/tube.ts`, "See it. Say it. Spot
-  it.". It is printed under the title on its All Games card and again on the setup
-  screen (a `tagline` on the `MODES` entry in `App.tsx`, which only the tube
-  sets — seven slogans would be no emphasis), and it replaces "Spot on!" on a
-  round worth full marks, via `GameFrame`'s `fullMarksLabel`. The reveal uses
+  it.". Every card on the shelf now carries a `hook`, and the tube's *is* that
+  line, from the one constant; the `tagline` field it also sets is what puts the
+  line on the setup screen, which no other game has. And it replaces "Spot on!"
+  on a round worth full marks, via `GameFrame`'s `fullMarksLabel`. The reveal uses
   `TUBE_SPOT_ON`, which is the tagline with its last full stop turned into an
   exclamation mark — **derived, not written out again**, so the words stay in
   one place and only the punctuation differs. Only the wording moves — what

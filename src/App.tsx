@@ -14,12 +14,19 @@ import type { GameSettings, ModeId, ModeProps } from "./modes/ModeProps";
 
 type Mode = ModeId;
 
-// `tagline` is a line the game is known by, printed between its title and its
-// blurb. Only the tube has one — a slogan on every card would be seven slogans
-// and no emphasis.
+// Every card says three things: the game's name, a line asking whether the
+// player fancies it, and a sentence saying what a round actually involves. The
+// `hook` is the middle one, and it is a question rather than a description —
+// eight descriptions on a shelf are read as a list, eight questions as a dare.
+//
+// `tagline` is a different thing and still the tube's alone: the line that game
+// is known by, printed on its setup screen and paid out as its full-marks
+// announcement. The tube's hook is that same line, so both come from the one
+// constant and can't drift apart.
 const MODES: {
   id: Mode;
   title: string;
+  hook: string;
   blurb: string;
   emoji: string;
   tagline?: string;
@@ -27,44 +34,52 @@ const MODES: {
   {
     id: "city",
     title: "City Spotter",
-    blurb: "See a city name, spin the globe and click where it is.",
+    hook: "Know your cities?",
+    blurb: "With just the name, can you spin the globe and spot where it is?",
     emoji: "🏙️",
   },
   {
     id: "flag",
     title: "Flag Spotter",
-    blurb: "Identify a country from its flag, then learn a fact about it.",
+    hook: "Will you capture the flag or raise the white flag?",
+    blurb: "With just the flag, can you spot the country it belongs to?",
     emoji: "🚩",
   },
   {
     id: "currency",
     title: "Currency Spotter",
-    blurb: "See a currency and its symbol, then find somewhere that spends it.",
+    hook: "Are you good with money?",
+    blurb: "With a currency and its symbol, can you spot a country that spends it?",
     emoji: "💱",
   },
   {
     id: "company",
     title: "Corporate HQ Spotter",
-    blurb: "Spot a company from its logo, then guess where it's headquartered.",
+    hook: "What's your corporate blind spot?",
+    blurb:
+      "With just the company logo, can you spot which country it's headquartered in?",
     emoji: "🏢",
   },
   {
     id: "population",
     title: "Population Spotter",
-    blurb: "See how many people live somewhere and work out where it is.",
+    hook: "Good with numbers?",
+    blurb: "With just a population figure, can you spot the country that has it?",
     emoji: "👥",
   },
   {
     id: "tube",
     title: "Tube Station Spotter",
+    hook: TUBE_TAGLINE,
     tagline: TUBE_TAGLINE,
-    blurb: "Pinpoint a London Underground station on a zoomed-in map.",
+    blurb: "With just the station name, can you spot it on the tube map?",
     emoji: "🚇",
   },
   {
     id: "timezone",
     title: "Time Zone Spotter",
-    blurb: "Read a clock and find somewhere on Earth it's that time right now.",
+    hook: "Can you handle the jet lag?",
+    blurb: "Read the clock, and spot somewhere in the world it's that time right now.",
     emoji: "🕰️",
   },
 ];
@@ -228,14 +243,14 @@ function AllGames({
       </div>
       <h1>All Games</h1>
       <p className="muted menu-sub">
-        Pick a game, then choose how long and what to play it on.
+        Pick a game, then choose what to play it on.
       </p>
       <div className="mode-grid">
         {MODES.map((m) => (
           <button key={m.id} className="mode-card" onClick={() => onPick(m.id)}>
             <span className="mode-emoji">{m.emoji}</span>
             <span className="mode-title">{m.title}</span>
-            {m.tagline && <span className="muted mode-blurb">{m.tagline}</span>}
+            <span className="mode-hook">{m.hook}</span>
             <span className="muted mode-blurb">{m.blurb}</span>
           </button>
         ))}
@@ -247,9 +262,9 @@ function AllGames({
           <span className="mode-emoji">📦</span>
           <span className="mode-title">Export Spotter</span>
           <span className="mode-soon">Coming soon</span>
+          <span className="mode-hook">Know your trade?</span>
           <span className="muted mode-blurb">
-            See what a country sells the world more of than anything else, and work out
-            who it is.
+            With a country's biggest export, can you spot who it is?
           </span>
         </div>
       </div>

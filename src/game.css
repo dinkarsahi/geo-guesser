@@ -253,6 +253,17 @@
   font-weight: 600;
   color: var(--text-h);
 }
+/* The dare, between the name and the description. Set at the blurb's size but
+   in the heading's colour and a little heavier, so a card reads as three steps
+   down rather than a title over two paragraphs — and so the question, which is
+   the part meant to catch someone scanning the shelf, isn't the quietest thing
+   on the card. */
+.mode-hook {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-h);
+}
 .mode-blurb {
   font-size: 15px;
 }
