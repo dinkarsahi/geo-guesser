@@ -9,7 +9,7 @@ import {
 import { geoMercator } from "d3-geo";
 import type { Coord } from "../lib/geo";
 import type { GuessMapProps } from "./mapTypes";
-import { lineColors, stationCoords, tubeConnections, tubeLines, tubeStations } from "../data/tube";
+import { stationCoords, tubeConnections, tubeLines, tubeStations } from "../data/tube";
 import type { TubeConnectionRaw } from "../data/tube";
 import MapZoomControls from "./MapZoomControls";
 
@@ -137,7 +137,6 @@ export interface MapRing {
 const KM_PER_DEG_LAT = 110.574;
 
 interface LondonMapProps extends GuessMapProps {
-  night?: boolean;
   /** Ground circles to draw under the network. */
   rings?: MapRing[];
 }
@@ -267,27 +266,14 @@ export default function LondonMap({
   guess,
   answer,
   disabled = false,
-  night = false,
   rings,
 }: LondonMapProps) {
-  // White, TfL-style palette in day mode; a dark variant for night mode.
-  const theme = night
-    ? {
-        bg: "#16171d", zoneOdd: "#1b1d24", zoneEven: "#23262f", borough: "#3a3d49",
-        dot: "#f3f4f6", dotStroke: "#000", labelBg: "#20222b", labelStroke: "#8b8f99",
-        labelText: "#eef", thames: "#3a6ea5", hoverRing: "#e9d5ff",
-      }
-    : {
-        bg: "#ffffff", zoneOdd: "#ffffff", zoneEven: "#e6e6e6", borough: "#d3d3d3",
-        dot: "#ffffff", dotStroke: "#222", labelBg: "#ffffff", labelStroke: "#8a8a8a",
-        labelText: "#333", thames: "#9dc3e6", hoverRing: "#7c3aed",
-      };
-
-  // Black would all but vanish on the night background, so the Northern line
-  // gets lifted to a charcoal — still the darkest line on the map.
-  const lineColor = (c: string) =>
-    night && c === lineColors.Northern ? "#4a4b55" : c;
-
+  // The white, TfL-style palette the paper map is known by.
+  const theme = {
+    bg: "#ffffff", zoneOdd: "#ffffff", zoneEven: "#e6e6e6", borough: "#d3d3d3",
+    dot: "#ffffff", dotStroke: "#222", labelBg: "#ffffff", labelStroke: "#8a8a8a",
+    labelText: "#333", thames: "#9dc3e6", hoverRing: "#7c3aed",
+  };
   // Fit a Mercator projection to the width, then size the height to the data so
   // there's no empty band above/below the network.
   const { projection, mapHeight } = useMemo(() => {
@@ -798,7 +784,7 @@ export default function LondonMap({
               const oy = (dx / len) * off;
               return (
                 <line key={i} x1={qa[0] + ox} y1={qa[1] + oy} x2={qb[0] + ox} y2={qb[1] + oy}
-                  stroke={lineColor(c.color)} strokeWidth={szStroke(LINE_WIDTH)}
+                  stroke={c.color} strokeWidth={szStroke(LINE_WIDTH)}
                   strokeLinecap="round" />
               );
             })}
@@ -821,7 +807,7 @@ export default function LondonMap({
                       key={i}
                       cx={q[0]} cy={q[1]} r={r}
                       fill="none"
-                      stroke={lineColor(c)}
+                      stroke={c}
                       strokeWidth={w}
                       // One arc per line; no dashes at all when there's just one.
                       strokeDasharray={n > 1 ? `${arc} ${arc * (n - 1)}` : undefined}
@@ -876,7 +862,7 @@ export default function LondonMap({
           <ul className="tube-key" id="tube-key">
             {tubeLines.map((l) => (
               <li key={l.id}>
-                <span className="tube-key-swatch" style={{ background: lineColor(l.color) }} />
+                <span className="tube-key-swatch" style={{ background: l.color }} />
                 {l.name}
               </li>
             ))}

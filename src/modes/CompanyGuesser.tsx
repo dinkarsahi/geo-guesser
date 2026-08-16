@@ -1,7 +1,6 @@
 import FactCard from "../components/FactCard";
 import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
-import NightToggle from "../components/NightToggle";
 import WorldMap from "../components/WorldMap";
 import { companyPool, logoUrl, type CompanyTarget } from "../data/companies";
 import { countryPool } from "../data/countries";
@@ -24,8 +23,6 @@ interface GameProps extends ModeProps {
 
 function CompanyGame({
   onExit,
-  night,
-  onToggleNight,
   settings,
   match,
   pool,
@@ -51,8 +48,6 @@ function CompanyGame({
       title="Corporate HQ Spotter"
       game={game}
       onExit={onExit}
-      night={night}
-      onToggleNight={onToggleNight}
       match={match}
       pickedLabel={(click) => {
         const name = countryNameAt(shapes, click);
@@ -85,7 +80,6 @@ function CompanyGame({
         settings.flat ? (
           <WorldMap
             {...props}
-            night={night}
             borders={settings.borders}
             highlightCodes={[game.target.code]}
             missCode={missCode}
@@ -93,7 +87,6 @@ function CompanyGame({
         ) : (
           <GlobeMap
             {...props}
-            night={night}
             borders={settings.borders}
             highlightCodes={[game.target.code]}
             missCode={missCode}
@@ -118,7 +111,6 @@ export default function CompanyGuesser(props: ModeProps) {
             <button className="btn btn-ghost" onClick={props.onExit}>
               ← Menu
             </button>
-            <NightToggle night={props.night} onToggle={props.onToggleNight} />
           </div>
           <h2>Corporate HQ Spotter</h2>
           <span />

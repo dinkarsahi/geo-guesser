@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import FactCard from "../components/FactCard";
 import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
-import NightToggle from "../components/NightToggle";
 import WorldMap from "../components/WorldMap";
 import type { MapHighlight } from "../components/mapTypes";
 import { countryPool } from "../data/countries";
@@ -142,8 +141,6 @@ function gapFromClick(
 
 function TimeZoneGame({
   onExit,
-  night,
-  onToggleNight,
   settings,
   match,
   pool,
@@ -248,8 +245,6 @@ function TimeZoneGame({
       title="Time Zone Spotter"
       game={game}
       onExit={onExit}
-      night={night}
-      onToggleNight={onToggleNight}
       match={match}
       targetNoun="time"
       // What time it is where you pointed, which is the whole lesson of a miss.
@@ -345,14 +340,12 @@ function TimeZoneGame({
         settings.flat ? (
           <WorldMap
             {...props}
-            night={night}
             borders={settings.borders}
             highlights={highlights}
           />
         ) : (
           <GlobeMap
             {...props}
-            night={night}
             borders={settings.borders}
             highlights={highlights}
           />
@@ -385,7 +378,6 @@ export default function TimeZoneGuesser(props: ModeProps) {
             <button className="btn btn-ghost" onClick={props.onExit}>
               ← Menu
             </button>
-            <NightToggle night={props.night} onToggle={props.onToggleNight} />
           </div>
           <h2>Time Zone Spotter</h2>
           <span />

@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
-import NightToggle from "../components/NightToggle";
 import WorldMap from "../components/WorldMap";
 import { countryPool, type Country } from "../data/countries";
 import {
@@ -96,8 +95,6 @@ function pickedCountry(
 
 function PopulationGame({
   onExit,
-  night,
-  onToggleNight,
   settings,
   match,
   pool,
@@ -160,8 +157,6 @@ function PopulationGame({
       title="Population Spotter"
       game={game}
       onExit={onExit}
-      night={night}
-      onToggleNight={onToggleNight}
       match={match}
       hint={`Click the country you think it is — anywhere inside it counts. Figures are ${POPULATION_AS_OF} estimates.`}
       // Not a distance, whatever the other world modes head this column with:
@@ -216,7 +211,6 @@ function PopulationGame({
         settings.flat ? (
           <WorldMap
             {...props}
-            night={night}
             borders={settings.borders}
             highlightCodes={[game.target.code]}
             missCode={missCode}
@@ -224,7 +218,6 @@ function PopulationGame({
         ) : (
           <GlobeMap
             {...props}
-            night={night}
             borders={settings.borders}
             highlightCodes={[game.target.code]}
             missCode={missCode}
@@ -249,7 +242,6 @@ export default function PopulationGuesser(props: ModeProps) {
             <button className="btn btn-ghost" onClick={props.onExit}>
               ← Menu
             </button>
-            <NightToggle night={props.night} onToggle={props.onToggleNight} />
           </div>
           <h2>Population Spotter</h2>
           <span />

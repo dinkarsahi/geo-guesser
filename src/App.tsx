@@ -295,8 +295,6 @@ export default function App() {
   const [mode, setMode] = useState<Mode | null>(null);
   const [started, setStarted] = useState(false);
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
-  // Day (colourful) by default; the toggle switches to the grey night look.
-  const [night, setNight] = useState(false);
   // Which of the two contests is open — today's round against the world, or a
   // room of people you know. Both are their own door on the home page now.
   const [social, setSocial] = useState<"daily" | "room" | null>(null);
@@ -313,8 +311,7 @@ export default function App() {
     setSocial(null);
     setMatch(null);
   };
-  const toggleNight = () => setNight((n) => !n);
-  const modeProps = { onExit: toMenu, night, onToggleNight: toggleNight, settings };
+  const modeProps = { onExit: toMenu, settings };
 
   // A running game gets the whole window: the menu's fixed-width shell and its
   // side rules would otherwise pen the map in well short of the screen edges.
@@ -376,9 +373,6 @@ export default function App() {
   // the third of those, because listing all seven here answered the question
   // before it was asked — the two contests sat at the end of a row of games and
   // read as two more of them.
-  //
-  // No day/night toggle out here — it belongs with the map it changes, so it
-  // only appears once a game is running.
   return (
     <div className="menu">
       <h1>SpotOn</h1>

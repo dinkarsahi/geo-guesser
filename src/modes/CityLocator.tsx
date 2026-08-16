@@ -12,8 +12,6 @@ const CITY_SPOT_ON_KM = 50;
 
 export default function CityLocator({
   onExit,
-  night,
-  onToggleNight,
   settings,
   match,
 }: ModeProps) {
@@ -37,8 +35,6 @@ export default function CityLocator({
       title="City Spotter"
       game={game}
       onExit={onExit}
-      night={night}
-      onToggleNight={onToggleNight}
       match={match}
       targetNoun="city"
       renderPrompt={(city) => (
@@ -64,9 +60,9 @@ export default function CityLocator({
       )}
       renderMap={(props) =>
         settings.flat ? (
-          <WorldMap {...props} night={night} borders={settings.borders} />
+          <WorldMap {...props} borders={settings.borders} />
         ) : (
-          <GlobeMap {...props} night={night} borders={settings.borders} />
+          <GlobeMap {...props} borders={settings.borders} />
         )
       }
     />

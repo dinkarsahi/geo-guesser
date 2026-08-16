@@ -17,8 +17,6 @@ import type { ModeProps } from "./ModeProps";
 
 export default function TubeGuesser({
   onExit,
-  night,
-  onToggleNight,
   settings,
   match,
 }: ModeProps) {
@@ -55,8 +53,6 @@ export default function TubeGuesser({
       title="Tube Station Spotter"
       game={game}
       onExit={onExit}
-      night={night}
-      onToggleNight={onToggleNight}
       match={match}
       // The right station gets the announcement rather than "Spot on!" — the
       // same words the card and the setup screen promised, paid out.
@@ -88,7 +84,7 @@ export default function TubeGuesser({
       renderResultExtra={(station) => (
         <FactCard title={station.name} fact={station.fact} />
       )}
-      renderMap={(props) => <LondonMap {...props} night={night} rings={rings} />}
+      renderMap={(props) => <LondonMap {...props} rings={rings} />}
     />
   );
 }

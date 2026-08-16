@@ -1,7 +1,6 @@
 import FactCard from "../components/FactCard";
 import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
-import NightToggle from "../components/NightToggle";
 import WorldMap from "../components/WorldMap";
 import { countryPool } from "../data/countries";
 import { currencyOf, currencyPool, type CurrencyTarget } from "../data/currencies";
@@ -41,8 +40,6 @@ function nearestSpender(guess: Coord, money: CurrencyTarget): Coord {
 
 function CurrencyGame({
   onExit,
-  night,
-  onToggleNight,
   settings,
   match,
   pool,
@@ -74,8 +71,6 @@ function CurrencyGame({
       title="Currency Spotter"
       game={game}
       onExit={onExit}
-      night={night}
-      onToggleNight={onToggleNight}
       match={match}
       // Naming the country isn't the lesson here — the money it spends is. A
       // round lost on the euro is worth something if it ends knowing that the
@@ -110,7 +105,6 @@ function CurrencyGame({
         settings.flat ? (
           <WorldMap
             {...props}
-            night={night}
             borders={settings.borders}
             highlightCodes={spenders}
             missCode={missCode}
@@ -118,7 +112,6 @@ function CurrencyGame({
         ) : (
           <GlobeMap
             {...props}
-            night={night}
             borders={settings.borders}
             highlightCodes={spenders}
             missCode={missCode}
@@ -143,7 +136,6 @@ export default function CurrencyGuesser(props: ModeProps) {
             <button className="btn btn-ghost" onClick={props.onExit}>
               ← Menu
             </button>
-            <NightToggle night={props.night} onToggle={props.onToggleNight} />
           </div>
           <h2>Currency Spotter</h2>
           <span />

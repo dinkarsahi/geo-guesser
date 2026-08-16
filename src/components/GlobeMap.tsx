@@ -2,21 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Globe, { type GlobeMethods } from "react-globe.gl";
 import type { GuessMapProps, MapHighlight } from "./mapTypes";
 import { countryAt, useWorldShapes, type CountryFeature } from "../lib/worldShapes";
-import { DAY_TEXTURE, GREY_TEXTURE } from "../lib/textures";
 import { WORLD_TILES } from "../lib/mapTiles";
 import MapZoomControls from "./MapZoomControls";
 
-const MIN_ALTITUDE = 0.05; // closest button zoom
 const MAX_ALTITUDE = 3.5; // farthest button zoom
-
-const BUMP_TEXTURE = GREY_TEXTURE; // relief bump in both modes
 
 /** Constant, so the globe isn't handed a new one to re-apply on every render. */
 const noSide = () => "rgba(0,0,0,0)";
 
 interface GlobeMapProps extends GuessMapProps {
-  /** When true, render the greyscale globe; otherwise the colourful one. */
-  night?: boolean;
   /** Draw the country outlines over the terrain. */
   borders?: boolean;
   /**
@@ -64,26 +58,14 @@ export default function GlobeMap({
   guess,
   answer,
   disabled = false,
-  night = false,
   borders = false,
   highlightCodes = null,
   missCode = null,
   highlights = null,
 }: GlobeMapProps) {
-  /**
-   * The imagery, and the reason night mode is the exception.
-   *
-   * Given a tile engine, three-globe hides the photographed globe and draws
-   * tiles in its place — which takes `globeImageUrl` out of the picture, and
-   * night mode's grey world is nothing but that image. So night keeps the
-   * photograph and the tiles are daylight's. It costs night the sharpening,
-   * which is the smaller loss: night is the plainer, harder way to play, and a
-   * toggle that quietly stopped changing anything would be the worse trade.
-   */
-  const tiles = night ? null : WORLD_TILES;
-  // How close the camera may get: the imagery's own limit where there is any,
-  // since each source runs out of pictures at a different depth.
-  const minAltitude = tiles ? tiles.minAltitude : MIN_ALTITUDE;
+  // How close the camera may get: the imagery's own limit, since a source runs
+  // out of pictures at its own depth and there is nothing to see past it.
+  const minAltitude = WORLD_TILES.minAltitude;
   // Painting the answer on rather than pinning it: see `highlights`.
   const painted = !!highlights?.length;
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
@@ -202,9 +184,9 @@ export default function GlobeMap({
       const code = codeOf(d as CountryFeature);
       if (lit.has(code)) return "#22c55e";
       if (code && code === miss) return TONE_LINE.wrong;
-      return borders ? (night ? "#9aa3ae" : "#f8fafc") : "";
+      return borders ? "#f8fafc" : "";
     },
-    [lit, miss, borders, night, toneOf],
+    [lit, miss, borders, toneOf],
   );
   // A hair above the countries they were cut out of, so the two don't fight
   // over the same pixels — and still flat enough that a click at a shallow
@@ -253,21 +235,19 @@ export default function GlobeMap({
         width={size.w}
         height={size.h}
         backgroundColor="rgba(0,0,0,0)"
-        globeImageUrl={night ? GREY_TEXTURE : DAY_TEXTURE}
-        // Only night reaches the line above: see `tiles`. The relief bump goes
-        // with it, which daylight doesn't miss — the imagery has the terrain in
-        // it now rather than needing it faked.
-        globeTileEngineUrl={tiles ? tiles.url : undefined}
-        // How deep to ask. Every one of these services answers 400 past its
-        // last level and the engine draws nothing where no tile arrived, so
-        // leaving this at the default of 17 doesn't buy detail off a shallow
-        // service — it strips the globe bare as soon as you go too close.
-        // Spread because it is three-globe's prop, forwarded but not yet in
-        // react-globe.gl's types.
-        {...(tiles ? ({ globeTileEngineMaxLevel: tiles.maxLevel } as object) : {})}
-        bumpImageUrl={BUMP_TEXTURE}
-        showAtmosphere={!night}
-        atmosphereColor={night ? "#6b7280" : "#7fb2ff"}
+        // No `globeImageUrl` or `bumpImageUrl`: given a tile engine three-globe
+        // hides the photographed globe entirely, so either would be a texture
+        // downloaded and never seen. The imagery has the terrain in it rather
+        // than needing a bump map to fake one.
+        globeTileEngineUrl={WORLD_TILES.url}
+        // How deep to ask. The service answers 400 past its last level and the
+        // engine draws nothing where no tile arrived, so leaving this at the
+        // default of 17 doesn't buy detail off a shallower service — it strips
+        // the globe bare as soon as you go too close. Spread because it is
+        // three-globe's prop, forwarded but not yet in react-globe.gl's types.
+        {...({ globeTileEngineMaxLevel: WORLD_TILES.maxLevel } as object)}
+        showAtmosphere
+        atmosphereColor="#7fb2ff"
         atmosphereAltitude={0.18}
         onGlobeReady={handleReady}
         onGlobeClick={({ lat, lng }) => {
@@ -325,7 +305,7 @@ export default function GlobeMap({
       {/* Whose imagery this is, printed wherever it's drawn. Required by the
           people it belongs to, and the one part of borrowing a tile service
           that isn't optional. */}
-      {tiles && <p className="map-credit">{tiles.credit}</p>}
+      <p className="map-credit">{WORLD_TILES.credit}</p>
       {!shapes && <p className="map-loading muted">Loading the world…</p>}
     </div>
   );

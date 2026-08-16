@@ -94,29 +94,24 @@ the ordinary reading, which is what an unanswered one wants.
 Three of them, all satisfying `GuessMapProps` in `src/components/mapTypes.ts`:
 
 - **`WorldMap.tsx`** — flat, plate carrée, `react-simple-maps` + `d3-geo`. Draws
-  `WORLD_TILES` over the satellite texture in daylight.
+  `WORLD_TILES` over the satellite texture.
 - **`GlobeMap.tsx`** — `react-globe.gl` (three.js). Draws from a **coarsened**
   copy of the country shapes; at full 1:50m detail the globe is a slideshow.
-  Never score against the coarse copy. Skinned in `WORLD_TILES` in daylight, and
-  the source also sets how close the camera may get.
-
-**Both maps are tiled, in every game, and only in daylight** — see
-`src/lib/mapTiles.ts`. The imagery resolves as you zoom instead of being one
-4096×2048 photograph magnified, which is about ten kilometres to the pixel.
-
-**Night is the exception, and deliberately.** Given a tile engine, three-globe
-hides the photographed globe and draws tiles in its place, which takes
-`globeImageUrl` out of the picture — and night mode's grey world is nothing but
-that image. So night keeps the photograph on both maps and the tiles are
-daylight's. It costs night the sharpening, which is the smaller loss: night is
-the plainer, harder way to play, and a toggle that quietly stopped changing
-anything would be the worse trade. **Anything touching the imagery has to be
-looked at in both.**
+  Never score against the coarse copy. Skinned in `WORLD_TILES`, which also sets
+  how close the camera may get.
 - **`LondonMap.tsx`** — bespoke SVG of the tube network. Also takes `rings` —
   the circle a tube guess is marked against, from `src/lib/tubeReach.tsx`. The
   game only ever hands it a circle on a round the circle actually paid for. The
   array's identity must be stable, since the map re-projects the lot whenever
   it's handed a new one.
+
+**Both world maps are tiled, in every game** — see `src/lib/mapTiles.ts`. The
+imagery resolves as you zoom instead of being one 4096×2048 photograph
+magnified, which is about ten kilometres to the pixel. There is **no day/night
+toggle** any more: it was a second palette for every map — a grey globe, a dark
+tube map, a second set of line colours — and once the world was tiled, night's
+grey world was the one thing tiles couldn't replace, since a tile engine hides
+the photographed globe that grey world *was*. It went rather than being carried.
 
 Reveal colouring comes in two flavours, and they are not interchangeable:
 

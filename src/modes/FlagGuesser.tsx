@@ -1,7 +1,6 @@
 import FactCard from "../components/FactCard";
 import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
-import NightToggle from "../components/NightToggle";
 import WorldMap from "../components/WorldMap";
 import { countryPool, flagUrl, type Country } from "../data/countries";
 import { matchOptions } from "../lib/match";
@@ -22,7 +21,7 @@ interface GameProps extends ModeProps {
   shapes: WorldShapes;
 }
 
-function FlagGame({ onExit, night, onToggleNight, settings, match, pool, shapes }: GameProps) {
+function FlagGame({ onExit, settings, match, pool, shapes }: GameProps) {
   // The whole country is the target: click anywhere inside its borders for full
   // marks, and miss by however far the country picked is from the right one.
   const game = useGame<Country>(pool, (c) => c, 2000, {
@@ -41,8 +40,6 @@ function FlagGame({ onExit, night, onToggleNight, settings, match, pool, shapes 
       title="Flag Spotter"
       game={game}
       onExit={onExit}
-      night={night}
-      onToggleNight={onToggleNight}
       match={match}
       pickedLabel={(click) => {
         const name = countryNameAt(shapes, click);
@@ -67,7 +64,6 @@ function FlagGame({ onExit, night, onToggleNight, settings, match, pool, shapes 
         settings.flat ? (
           <WorldMap
             {...props}
-            night={night}
             borders={settings.borders}
             highlightCodes={[game.target.code]}
             missCode={missCode}
@@ -75,7 +71,6 @@ function FlagGame({ onExit, night, onToggleNight, settings, match, pool, shapes 
         ) : (
           <GlobeMap
             {...props}
-            night={night}
             borders={settings.borders}
             highlightCodes={[game.target.code]}
             missCode={missCode}
@@ -100,7 +95,6 @@ export default function FlagGuesser(props: ModeProps) {
             <button className="btn btn-ghost" onClick={props.onExit}>
               ← Menu
             </button>
-            <NightToggle night={props.night} onToggle={props.onToggleNight} />
           </div>
           <h2>Flag Spotter</h2>
           <span />

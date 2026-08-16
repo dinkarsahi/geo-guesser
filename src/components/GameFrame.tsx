@@ -7,7 +7,6 @@ import type { Game, Phase, RoundResult } from "../lib/useGame";
 import { useRoom } from "../lib/useRoom";
 import MatchResult from "./MatchResult";
 import type { GuessMapProps } from "./mapTypes";
-import NightToggle from "./NightToggle";
 import RoomResult from "./RoomResult";
 import RoomReveal from "./RoomReveal";
 
@@ -15,8 +14,6 @@ interface GameFrameProps<T> {
   title: string;
   game: Game<T>;
   onExit: () => void;
-  night: boolean;
-  onToggleNight: () => void;
   /** The prompt shown to the player (city name, flag, station name…). */
   renderPrompt: (target: T, phase: Phase) => ReactNode;
   /** Renders the map, wired to the game's guess handlers. */
@@ -132,8 +129,6 @@ export default function GameFrame<T>({
   title,
   game,
   onExit,
-  night,
-  onToggleNight,
   renderPrompt,
   renderMap,
   renderResultExtra,
@@ -207,7 +202,6 @@ export default function GameFrame<T>({
             <button className="btn btn-ghost" onClick={onExit}>
               ← Menu
             </button>
-            <NightToggle night={night} onToggle={onToggleNight} />
           </div>
           <h2>{title} — Results</h2>
           <span />
@@ -334,7 +328,6 @@ export default function GameFrame<T>({
           <button className="btn btn-ghost" onClick={onExit}>
             ← Menu
           </button>
-          <NightToggle night={night} onToggle={onToggleNight} />
           <h2>{title}</h2>
         </div>
         {/* TEMPORARY — the tap cheat lives on the question itself. */}

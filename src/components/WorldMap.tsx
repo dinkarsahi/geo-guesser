@@ -10,7 +10,7 @@ import { geoEquirectangular, geoPath } from "d3-geo";
 import type { Coord } from "../lib/geo";
 import type { GuessMapProps, MapHighlight } from "./mapTypes";
 import { countryAt, useWorldShapes, type CountryFeature } from "../lib/worldShapes";
-import { DAY_TEXTURE, GREY_TEXTURE } from "../lib/textures";
+import { DAY_TEXTURE } from "../lib/textures";
 import { flatTileSpan, FLAT_WORLD_PX, WORLD_TILES, type FlatTiles } from "../lib/mapTiles";
 import MapZoomControls from "./MapZoomControls";
 
@@ -71,7 +71,6 @@ const prefersReducedMotion = () =>
 type Pt = [number, number];
 
 interface WorldMapProps extends GuessMapProps {
-  night?: boolean;
   /** Draw the country outlines. */
   borders?: boolean;
   /**
@@ -182,36 +181,24 @@ export default function WorldMap({
   guess,
   answer,
   disabled = false,
-  night = false,
   borders = true,
   highlightCodes = null,
   missCode = null,
   highlights = null,
 }: WorldMapProps) {
   const shapes = useWorldShapes();
-  // Daylight is tiled, night keeps the photograph — the same trade the globe
-  // makes, and for the same reason: night is one grey image of the world, and
-  // there is no grey world to tile from.
-  const tiles = night ? null : WORLD_TILES;
   // Painting the answer on rather than pinning it: see `highlights`.
   const painted = !!highlights?.length;
 
-  const theme = night
-    ? {
-        sea: "#000000", border: "rgba(226,232,240,0.75)",
-        highlight: "rgba(74,222,128,0.35)", highlightLine: "#6ee7a8",
-        wrong: "rgba(244,63,94,0.4)", wrongLine: "#fb7185",
-      }
-    : {
-        // The land is the satellite image, so the only colours left to pick
-        // are the lines drawn over it. White reads on every biome, which is
-        // why the globe uses it too. The sea is sampled from the texture's own
-        // deep ocean (sampled off the file at 150W/0N and 25W/30S), so zoomed
-        // out the map has no edge to speak of.
-        sea: "#050c22", border: "rgba(255,255,255,0.85)",
-        highlight: "rgba(74,222,128,0.35)", highlightLine: "#4ade80",
-        wrong: "rgba(225,29,72,0.4)", wrongLine: "#fb7185",
-      };
+  // The land is the satellite image, so the only colours left to pick are the
+  // lines drawn over it. White reads on every biome, which is why the globe
+  // uses it too. The sea is sampled from the texture's own deep ocean (off the
+  // file at 150W/0N and 25W/30S), so zoomed out the map has no edge to speak of.
+  const theme = {
+    sea: "#050c22", border: "rgba(255,255,255,0.85)",
+    highlight: "rgba(74,222,128,0.35)", highlightLine: "#4ade80",
+    wrong: "rgba(225,29,72,0.4)", wrongLine: "#fb7185",
+  };
 
   // Plate carrée: longitude and latitude map straight onto x and y, which is
   // exactly how the texture is stored, so the image needs no warping to line
@@ -401,7 +388,7 @@ export default function WorldMap({
   const miss = answer ? (missCode ?? "").toLowerCase() : "";
 
   /**
-   * The imagery under everything, where a source has any for this projection.
+   * The imagery under everything.
    *
    * Worked out from the settled view rather than from the live one: the map
    * only reports where it is when a drag or a zoom *ends*, and that is exactly
@@ -410,18 +397,18 @@ export default function WorldMap({
    * waits for the end is whether a sharper level, or new ground, is called for.
    */
   const flatTiles = useMemo(() => {
-    if (!tiles?.flat) return [];
+    if (!WORLD_TILES.flat) return [];
     // How wide the world is drawn, in real pixels: the map is scaled to cover
     // its box, so the bigger of the two ratios is the one doing the covering.
     const cover = Math.max(size.w / WIDTH, size.h / mapHeight);
     return tilesInView(
-      tiles.flat,
+      WORLD_TILES.flat,
       position.coordinates,
       position.zoom,
       WIDTH * cover * position.zoom,
       mapHeight,
     );
-  }, [tiles, position, size, mapHeight]);
+  }, [position, size, mapHeight]);
 
   /** Whether this country is the answer, the miss, or neither. */
   const toneOf = (geo: CountryFeature): "right" | "wrong" | null => {
@@ -474,7 +461,7 @@ export default function WorldMap({
               for any tile still on its way and for the ground just outside the
               ones fetched. Without it a drag runs onto bare sea colour. */}
           <image
-            href={night ? GREY_TEXTURE : DAY_TEXTURE}
+            href={DAY_TEXTURE}
             x={0}
             y={0}
             width={WIDTH}
@@ -584,7 +571,7 @@ export default function WorldMap({
       {/* Whose imagery this is, printed wherever it's drawn — and only where it
           actually is: a source with nothing in this projection leaves the
           photograph up, and crediting it for that would be a lie. */}
-      {tiles?.flat && <p className="map-credit">{tiles.credit}</p>}
+      <p className="map-credit">{WORLD_TILES.credit}</p>
       {!shapes && <p className="map-loading muted">Loading the world…</p>}
     </div>
   );

@@ -26,8 +26,6 @@ export interface GameSettings {
 /** Props every game mode receives from App. */
 export interface ModeProps {
   onExit: () => void;
-  night: boolean;
-  onToggleNight: () => void;
   settings: GameSettings;
   /**
    * Set when the mode is being played as a head-to-head match: five rounds
