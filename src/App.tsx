@@ -55,7 +55,7 @@ const MODES: {
   {
     id: "company",
     title: "Corporate HQ Spotter",
-    hook: "What's your corporate blind spot?",
+    hook: "Can you navigate the corporate landscape?",
     blurb:
       "With just the company logo, can you spot which country it's headquartered in?",
     emoji: "🏢",
