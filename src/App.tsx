@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { TUBE_TAGLINE } from "./data/tube";
-import { gameOfDay, modeTitle, type Match } from "./lib/match";
+import { type Match } from "./lib/match";
 import CityLocator from "./modes/CityLocator";
 import CompanyGuesser from "./modes/CompanyGuesser";
 import CurrencyGuesser from "./modes/CurrencyGuesser";
@@ -379,25 +379,26 @@ export default function App() {
         <button className="mode-card" onClick={() => setSocial("daily")}>
           <WorldDuelMark />
           <span className="mode-title">Today's Round</span>
+          {/* The game of the day is deliberately not named here any more: the
+              door is the offer, and which game is behind it is the first thing
+              the round itself says. */}
           <span className="muted mode-blurb">
-            Take on everyone playing today. The day picks the game from all seven — it's{" "}
-            {modeTitle(gameOfDay())} — and everyone gets the same five rounds, once.
+            Play today's round — a daily pick from one of our SpotOn games. See where you
+            stand against the world.
           </span>
         </button>
         <button className="mode-card" onClick={() => setSocial("room")}>
           <DuelMark />
           <span className="mode-title">Duel a Friend</span>
           <span className="muted mode-blurb">
-            Read out a code and play the same rounds at the same time. One table at the
-            end, and the winner takes it.
+            Play against friends in one of our SpotOn games. Winner gets bragging rights.
           </span>
         </button>
         <button className="mode-card" onClick={() => setBrowsing("games")}>
           <span className="mode-emoji">🗺️</span>
           <span className="mode-title">All Games</span>
           <span className="muted mode-blurb">
-            All seven on your own, at your own pace and for as long as you like — no
-            code, no clock, nobody waiting.
+            Play all games at your own pace — practice makes perfect.
           </span>
         </button>
       </div>
