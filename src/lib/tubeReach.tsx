@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { MapRing } from "../components/LondonMap";
 import { nearestStation, type TubeStation } from "../data/tube";
-import { markNearby, nearbyRadiusKm } from "../data/tubeNearby";
+import { markNearby, nearbyRadiusKm, MIND_THE_GAP_CALL } from "../data/tubeNearby";
 import type { Coord } from "./geo";
 
 /**
@@ -47,6 +47,19 @@ export function reachRing(station: TubeStation): MapRing[] {
 export function paidRing(click: Coord, answer: TubeStation): MapRing[] {
   const clicked = nearestStation(click);
   return markNearby(clicked, answer).eased ? reachRing(clicked) : NO_RINGS;
+}
+
+/**
+ * The announcement over the mark, on a round the circle paid for.
+ *
+ * It arrives before the number rather than after it, and it is the platform's
+ * own words: the player is about to read a figure that is nothing like the ride
+ * they can see on the map, and being told first which rule they are being
+ * marked by makes that figure an answer instead of a mistake. Null on every
+ * other round, where the ride needs no announcing.
+ */
+export function gapCall(click: Coord, answer: TubeStation): string | null {
+  return markNearby(nearestStation(click), answer).eased ? MIND_THE_GAP_CALL : null;
 }
 
 /**

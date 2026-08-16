@@ -11,7 +11,7 @@ import {
 } from "../data/tube";
 import { markNearby } from "../data/tubeNearby";
 import { matchOptions } from "../lib/match";
-import { creditNote, NO_RINGS, paidRing } from "../lib/tubeReach";
+import { creditNote, gapCall, NO_RINGS, paidRing } from "../lib/tubeReach";
 import { useGame } from "../lib/useGame";
 import type { ModeProps } from "./ModeProps";
 
@@ -70,6 +70,9 @@ export default function TubeGuesser({
         const station = nearestStation(click);
         return { name: station.name, detail: zoneLabel(station.zone) };
       }}
+      renderScoreCall={(station, result) =>
+        result.click && !result.hit ? gapCall(result.click, station) : null
+      }
       renderScoreNote={(station, result) =>
         result.click && !result.hit ? creditNote(result.click, station) : null
       }

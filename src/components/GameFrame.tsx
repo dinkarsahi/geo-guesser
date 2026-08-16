@@ -31,6 +31,18 @@ interface GameFrameProps<T> {
    */
   pickedLabel?: (click: Coord) => PickedGuess | null;
   /**
+   * A line above the mark, for a round decided by something other than the
+   * mode's usual rule. The tube calls "Mind the Gap!" over a round its circle
+   * paid for, because the figure underneath — a count of what stands in that
+   * circle — is not the number the map leads you to expect, and being told
+   * which rule you are being marked by before you read it makes it an answer
+   * rather than a mistake.
+   *
+   * Return null where the ordinary rule applied, which is nearly always: an
+   * announcement made every round announces nothing.
+   */
+  renderScoreCall?: (target: T, result: RoundResult) => ReactNode;
+  /**
    * Where the mark came from, in a sentence, for a mode whose sum the map
    * can't be read for. The tube pays for a click near the answer by how
    * crowded the circle round it is, so a round the player can see is eighteen
@@ -103,6 +115,7 @@ export default function GameFrame<T>({
   renderMap,
   renderResultExtra,
   pickedLabel,
+  renderScoreCall,
   renderScoreNote,
   answerLabel,
   hint = "Click the map to place your guess.",
@@ -243,6 +256,8 @@ export default function GameFrame<T>({
   // the whole result rather than the click, because what wants explaining is
   // usually the difference between the two numbers in it.
   const scoreNote = isResult && lastResult ? renderScoreNote?.(target, lastResult) : null;
+  // Which rule the mark below came from, where that isn't the usual one.
+  const scoreCall = isResult && lastResult ? renderScoreCall?.(target, lastResult) : null;
   // What the clock took off this round. Always zero outside a match, where
   // there's no clock on a round to take anything.
   const timeCost = lastResult ? lastResult.accuracy - lastResult.score : 0;
@@ -371,6 +386,10 @@ export default function GameFrame<T>({
                   duel, where the clock takes its cut afterwards, still says
                   "spot on" — the guess was perfect, and the sum further down
                   explains what the seconds cost. */}
+              {/* Over the mark, not in it: the mark is a figure and this is
+                  the rule that figure came from, and run together on one line
+                  they read as a single overexcited verdict. */}
+              {scoreCall && <p className="result-call">{scoreCall}</p>}
               <div className="result-headline">
                 {fullMarks ? (
                   <span className="result-distance result-hit">{fullMarksLabel}</span>

@@ -1538,6 +1538,20 @@ body:has(.game-play) {
   align-items: baseline;
   gap: 16px;
 }
+/* The rule the mark came from, called over it. Set like a sign rather than a
+   sentence — small, spaced and upper case — so it reads as the announcement it
+   is quoting and cannot be mistaken for part of the figure below it. */
+.result-call {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+}
+.result-panel.hud .result-call {
+  color: #c4b5fd;
+}
 /* What the click actually landed on, above the answer. A miss is worth more
    when it names both ends of it — the answer, and what was pointed at instead
    — and the second one only this line ever says out loud.

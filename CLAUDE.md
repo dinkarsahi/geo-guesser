@@ -53,7 +53,16 @@ options or in `GameFrame`'s props instead.
   the same rounds without talking to each other. Seeded games deliberately skip
   the "recently seen" memory, which differs per device.
 
-### A `GameFrame` prop worth knowing
+### Two `GameFrame` props worth knowing
+
+Both are the tube's alone, and both exist because a round the circle paid for is
+marked by a rule the map can't be read for. Top to bottom the panel goes: the
+call, the mark, the note, the pick.
+
+**`renderScoreCall`** — a line **above the mark**, naming the rule the mark came
+from where that isn't the mode's usual one. The tube calls "Mind the Gap!" over
+a round its circle paid for. Return null everywhere else: an announcement made
+every round announces nothing.
 
 **`renderScoreNote`** — a sentence **directly under the mark** saying where the
 mark came from, given the target and the whole `RoundResult`. Only the tube has
@@ -170,9 +179,15 @@ lets the pool be *every* country rather than the ones someone got round to.
   it always said, "18 stops away", with nothing drawn and nothing explained: a
   circle round a click that got no credit reads as an offer made and then not
   honoured, and a radius printed under every pick is a measurement in search of
-  a reason. On the rounds it did pay, the sentence names the ride the player was
-  let off ("You were 21 stops from Harrow & Wealdston, but you clicked close by
-  — so we're giving you some credit!") and the circle round the pick shows why.
+  a reason. On the rounds it did pay, the circle has a name — the **Mind the
+  Gap Area**, `MIND_THE_GAP` in `tubeNearby.ts` — and the panel is that name
+  called over the mark ("MIND THE GAP!"), then the mark itself as a count of
+  what stands in the circle ("4 stations within the Mind the Gap Area"), then
+  the ride the player was let off ("You were 21 stops from Wembley Central, but
+  you clicked close by — so we're giving you some credit!"). Marked on the ride
+  the figure is a distance and reads as one, "15 stops away"; marked on the
+  circle it is a count of stations, and calling that a distance is what used to
+  make the headline name the ride afterwards to stop looking wrong.
   The radius, the count inside it and the arithmetic between them are the
   bench's business, not a player's. The kinder of the ride and the circle
   counts, so the rule can only ever help. It is also the one game with a

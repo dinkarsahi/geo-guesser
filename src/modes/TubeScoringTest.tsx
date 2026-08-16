@@ -16,7 +16,7 @@ import {
   NEARBY_STEP_KM,
 } from "../data/tubeNearby";
 import { formatDistance, type Coord } from "../lib/geo";
-import { creditNote, NO_RINGS, paidRing, reachRing } from "../lib/tubeReach";
+import { creditNote, gapCall, NO_RINGS, paidRing, reachRing } from "../lib/tubeReach";
 import { useGame } from "../lib/useGame";
 import type { ModeProps } from "./ModeProps";
 
@@ -349,6 +349,9 @@ function TestGame({ onExit, night, onToggleNight, settings }: Omit<ModeProps, "m
       // a bench whose rounds explain themselves differently is a bench that
       // can't be trusted about the thing it's a copy of. The radius and the
       // arithmetic are still a click away, on the bench itself.
+      renderScoreCall={(station, result) =>
+        result.click && !result.hit ? gapCall(result.click, station) : null
+      }
       renderScoreNote={(station, result) =>
         result.click && !result.hit ? creditNote(result.click, station) : null
       }

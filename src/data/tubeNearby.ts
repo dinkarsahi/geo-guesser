@@ -33,6 +33,20 @@ import {
  */
 
 /**
+ * What the circle is called out loud, on the one screen that has to name it.
+ *
+ * A rule with a name is a rule a player can hold on to: "the gap" is exactly
+ * what it pays for — the space between two stations that are neighbours on the
+ * ground and strangers on the network — and the announcement is the one every
+ * passenger on the network has already heard. It is named only where it pays;
+ * elsewhere the game goes on talking about stops, which is what it marks in.
+ */
+export const MIND_THE_GAP = "Mind the Gap";
+
+/** The same words as the platform says them, for the line above the mark. */
+export const MIND_THE_GAP_CALL = `${MIND_THE_GAP}!`;
+
+/**
  * The innermost whole zone that gets a circle. Boundary stations one step in —
  * the zone 2/3 ones — get one too, at the reduced size below.
  */
@@ -203,11 +217,16 @@ export function markNearby(clicked: TubeStation, answer: TubeStation): NearbyMar
     eased,
     score: scoreFromStops(countedStops),
     rideScore: scoreFromStops(stops),
-    // What the round was charged, in stops, and only that. "4 stops away" over
-    // a journey the player can see is eighteen still has to say so — but it is
-    // said in the sentence under the mark now (`creditNote`), where it can also
-    // say why, rather than in a dash on the end of the headline that names the
-    // ride and leaves it hanging.
-    label: formatStops(countedStops),
+    // What the round was charged, and where the charge came from. Marked on the
+    // ride it is a distance — "4 stops away" — and marked on the circle it is a
+    // count of what stands in the circle, which is a different thing said in the
+    // same units, and saying it as a distance was the whole reason the old
+    // headline had to name the ride afterwards to stop looking wrong. Named
+    // rather than described, because a rule the player can put a name to is one
+    // they can expect the next time they land beside the answer.
+    label: eased
+      ? `${countedStops} ${countedStops === 1 ? "station" : "stations"} within the ` +
+        `${MIND_THE_GAP} Area`
+      : formatStops(stops),
   };
 }
