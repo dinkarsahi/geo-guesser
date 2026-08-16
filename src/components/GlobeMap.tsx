@@ -3,22 +3,11 @@ import Globe, { type GlobeMethods } from "react-globe.gl";
 import type { GuessMapProps, MapHighlight } from "./mapTypes";
 import { countryAt, useWorldShapes, type CountryFeature } from "../lib/worldShapes";
 import { DAY_TEXTURE, GREY_TEXTURE } from "../lib/textures";
-import { satelliteTile, TILE_CREDIT } from "../lib/mapTiles";
+import type { TileSource } from "../lib/mapTiles";
 import MapZoomControls from "./MapZoomControls";
 
 const MIN_ALTITUDE = 0.05; // closest button zoom
 const MAX_ALTITUDE = 3.5; // farthest button zoom
-
-/**
- * How much further in the tiled globe lets you go.
- *
- * The limits above are set by the one flat photograph: there is no reason to
- * push past 0.05 when what's under the camera stops improving well before it,
- * and letting the player keep going only shows them the blur bigger. Tiles keep
- * resolving, so the floor drops to where the horizon starts to bend awkwardly
- * instead of to where the picture gives up.
- */
-const TILED_MIN_ALTITUDE = 0.004;
 
 const BUMP_TEXTURE = GREY_TEXTURE; // relief bump in both modes
 
@@ -52,14 +41,15 @@ interface GlobeMapProps extends GuessMapProps {
   /**
    * Skin the globe in map tiles rather than in one photograph of the Earth, so
    * that zooming in shows more of a place instead of more of the same pixels.
-   * See `mapTiles.ts` for what that costs and who the imagery belongs to.
+   * The source decides how deep that goes and what it's allowed to cost — see
+   * `mapTiles.ts`.
    *
-   * Off everywhere but the scrapbook. It's a prop rather than a second copy of
+   * Null everywhere but the scrapbook. It's a prop rather than a second copy of
    * this component because the whole point of trying it is to try *this* globe
    * with it — a copy would be a different globe by the second change made to
    * either.
    */
-  tiles?: boolean;
+  tiles?: TileSource | null;
 }
 
 /** Green for the clock that was asked about, red for the one picked instead. */
@@ -91,8 +81,11 @@ export default function GlobeMap({
   highlightCodes = null,
   missCode = null,
   highlights = null,
-  tiles = false,
+  tiles = null,
 }: GlobeMapProps) {
+  // How close the camera may get: the source's own limit where there is one,
+  // since each of them runs out of pictures at a different depth.
+  const minAltitude = tiles ? tiles.minAltitude : MIN_ALTITUDE;
   // Painting the answer on rather than pinning it: see `highlights`.
   const painted = !!highlights?.length;
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
@@ -120,9 +113,9 @@ export default function GlobeMap({
     const controls = g.controls() as unknown as OrbitLike;
     controls.enablePan = false;
     // Globe radius is 100, so distance 101 is an altitude of 0.01 — right down
-    // on the surface. The tiled globe is allowed nearer still, since there is
-    // something down there to see.
-    controls.minDistance = 100 + (tiles ? TILED_MIN_ALTITUDE : 0.01) * 100;
+    // on the surface. The drag limit follows the same floor the buttons use,
+    // rather than letting a scroll wheel go where a button won't.
+    controls.minDistance = 100 + minAltitude * 100;
     controls.maxDistance = 520; // how far you can zoom out
     controls.rotateSpeed = 0.6;
     controls.zoomSpeed = 1; // a touch faster so deep zoom isn't tedious
@@ -137,7 +130,7 @@ export default function GlobeMap({
     const pov = g.pointOfView();
     const altitude = Math.min(
       MAX_ALTITUDE,
-      Math.max(tiles ? TILED_MIN_ALTITUDE : MIN_ALTITUDE, pov.altitude * factor),
+      Math.max(minAltitude, pov.altitude * factor),
     );
     g.pointOfView({ altitude }, 350);
   };
@@ -267,7 +260,14 @@ export default function GlobeMap({
         // draws tiles in its place — so the two lines above stop applying, and
         // with them night mode's grey world and the relief bump. The night
         // toggle still cools the atmosphere, which is all it can reach here.
-        globeTileEngineUrl={tiles ? satelliteTile : undefined}
+        globeTileEngineUrl={tiles ? tiles.url : undefined}
+        // How deep to ask. Every one of these services answers 400 past its
+        // last level and the engine draws nothing where no tile arrived, so
+        // leaving this at the default of 17 doesn't buy detail off a shallow
+        // service — it strips the globe bare as soon as you go too close.
+        // Spread because it is three-globe's prop, forwarded but not yet in
+        // react-globe.gl's types.
+        {...(tiles ? ({ globeTileEngineMaxLevel: tiles.maxLevel } as object) : {})}
         bumpImageUrl={BUMP_TEXTURE}
         showAtmosphere={!night}
         atmosphereColor={night ? "#6b7280" : "#7fb2ff"}
@@ -328,7 +328,7 @@ export default function GlobeMap({
       {/* Whose imagery this is, printed wherever it's drawn. Required by the
           people it belongs to, and the one part of borrowing a tile service
           that isn't optional. */}
-      {tiles && <p className="map-credit">{TILE_CREDIT}</p>}
+      {tiles && <p className="map-credit">{tiles.credit}</p>}
       {!shapes && <p className="map-loading muted">Loading the world…</p>}
     </div>
   );

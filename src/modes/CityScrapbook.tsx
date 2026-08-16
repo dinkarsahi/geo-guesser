@@ -3,6 +3,7 @@ import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
 import WorldMap from "../components/WorldMap";
 import { cities, type City } from "../data/cities";
+import { NASA_BLUE_MARBLE } from "../lib/mapTiles";
 import { useGame } from "../lib/useGame";
 import type { ModeProps } from "./ModeProps";
 
@@ -90,14 +91,25 @@ export default function CityScrapbook({
       )}
       // The globe on tiles rather than on one photograph, which is what's being
       // tried here: zooming in should show you more of a place, not more pixels
-      // of the same picture. `mapTiles.ts` has the reasoning and the strings
-      // attached; City Spotter is the same round on the plain globe, which is
-      // what to hold this against.
+      // of the same picture. City Spotter is the same round on the plain globe,
+      // which is what to hold this against.
+      //
+      // NASA's, because it's the one that could actually be shipped: public
+      // domain, no key, no meter, commercial use fine, and it asks only for the
+      // credit line. It stops at level 8 where Esri goes to 17 — the question
+      // this bench is now here to answer is whether that's enough for a game
+      // about where a city is. Swapping `NASA_TRUE_COLOUR` or
+      // `ESRI_WORLD_IMAGERY` in here is the whole of trying the other two.
       renderMap={(props) =>
         settings.flat ? (
           <WorldMap {...props} night={night} borders={settings.borders} />
         ) : (
-          <GlobeMap {...props} night={night} borders={settings.borders} tiles />
+          <GlobeMap
+            {...props}
+            night={night}
+            borders={settings.borders}
+            tiles={NASA_BLUE_MARBLE}
+          />
         )
       }
     />

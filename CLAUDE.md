@@ -97,9 +97,11 @@ Three of them, all satisfying `GuessMapProps` in `src/components/mapTypes.ts`:
   satellite texture.
 - **`GlobeMap.tsx`** — `react-globe.gl` (three.js). Draws from a **coarsened**
   copy of the country shapes; at full 1:50m detail the globe is a slideshow.
-  Never score against the coarse copy. Takes `tiles`, which skins it in map
-  tiles instead of the one flat photograph so that zooming in resolves — see
-  `src/lib/mapTiles.ts` and "The scrapbook" below. Off everywhere but the bench.
+  Never score against the coarse copy. Takes `tiles`, a `TileSource` that skins
+  it in map tiles instead of the one flat photograph so that zooming in resolves
+  — see `src/lib/mapTiles.ts` and "The scrapbook" below. Null everywhere but the
+  bench. A source also sets how close the camera may get, since each of them
+  runs out of pictures at a different depth.
 - **`LondonMap.tsx`** — bespoke SVG of the tube network. Also takes `rings` —
   the circle a tube guess is marked against, from `src/lib/tubeReach.tsx`. The
   game only ever hands it a circle on a round the circle actually paid for. The
@@ -339,22 +341,42 @@ kilometres to the pixel — so zooming in magnifies blur rather than showing you
 anything new. Tiles are the standard answer: the world cut into 256px squares at
 every zoom level, each level twice the detail of the last, only the ones in view
 fetched, and three-globe has the engine built in (`globeTileEngineUrl`, which
-tracks the camera itself). It works — the Sahara resolves down to dry riverbeds.
+tracks the camera itself).
 
-Three things it costs, all of them seen rather than guessed at:
+The prop takes a **`TileSource`** (`src/lib/mapTiles.ts`), not a flag, because
+which imagery is the whole question. Three are defined and swapping the one line
+in `CityScrapbook` is the whole of trying another:
 
-- **The imagery is Esri's**, not ours, and attribution is required wherever it's
-  drawn (`TILE_CREDIT`, printed bottom-left). Their terms are written around
-  having an account for anything past casual use. Fine on a bench; a deliberate
-  decision before it goes near the real game.
+| Source | Deepest | Costs |
+|---|---|---|
+| `NASA_BLUE_MARBLE` — **on the bench now** | level 8, ~600 m/px | nothing: public domain, no key, commercial use fine, credit line only |
+| `NASA_TRUE_COLOUR` | level 9, ~300 m/px | same, but it's yesterday's actual satellite pass — real cloud over whichever country it was cloudy over, and a dark polar winter |
+| `ESRI_WORLD_IMAGERY` | level 17, ~1 m/px | the legacy anonymous endpoint, which their terms don't cover commercially. Doing it properly is their keyed service and a bill — and their *tile* meter works out at pennies a game, which no ad-supported game survives, so it would have to be the session meter |
+
+NASA is what a shipped game can actually stand on, which is why it's the one
+mounted. Level 8 is still sixteen times sharper than the single photograph, and
+SpotOn asks where a *city* is — a question settled by coastlines and mountain
+ranges rather than by rooftops.
+
+**The trap, and it is the reason `maxLevel` is not optional:** asked for a level
+past its last, every one of these services answers **400**, and the engine draws
+nothing where no tile arrived. So a generous `maxLevel` doesn't buy detail off a
+shallow service — it strips the globe bare the moment you go too close. Each
+source carries the depth it was *checked* to have, and `minAltitude` with it, so
+the zoom stops where the pictures stop instead of magnifying the deepest tiles
+into the same mush this was meant to escape.
+
+Two other things it costs, both seen rather than guessed at:
+
 - **The coarse borders stop matching the ground.** Given a tile engine
   three-globe hides the photographed globe, so `globeImageUrl` and the bump map
   do nothing — and night mode with them, leaving the toggle only the atmosphere
   to cool. More visibly, the 1:50m outlines drawn over sharp imagery are plainly
-  in the wrong place at depth: New Caledonia's runs across the island rather than
-  round it. The fine shapes exist (`shapes.features`) — they're kept off the
-  globe because 242 of them at full detail is a slideshow, which is the trade to
-  revisit if this graduates.
+  in the wrong place at depth: on Esri, New Caledonia's ran across the island
+  rather than round it. The fine shapes exist (`shapes.features`) — they're kept
+  off the globe because 242 of them at full detail is a slideshow, which is the
+  trade to revisit if this graduates. Less pressing on NASA, whose floor is
+  shallower than the point where the outlines embarrass themselves.
 - **The answer pin doesn't shrink.** `pointRadius` is in globe-radius units, so
   the green disc that looks right at reveal altitude swallows the city once you
   zoom past it. Pre-existing, and invisible until deep zoom was worth doing.
