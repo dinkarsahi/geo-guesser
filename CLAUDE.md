@@ -97,7 +97,9 @@ Three of them, all satisfying `GuessMapProps` in `src/components/mapTypes.ts`:
   satellite texture.
 - **`GlobeMap.tsx`** — `react-globe.gl` (three.js). Draws from a **coarsened**
   copy of the country shapes; at full 1:50m detail the globe is a slideshow.
-  Never score against the coarse copy.
+  Never score against the coarse copy. Takes `tiles`, which skins it in map
+  tiles instead of the one flat photograph so that zooming in resolves — see
+  `src/lib/mapTiles.ts` and "The scrapbook" below. Off everywhere but the bench.
 - **`LondonMap.tsx`** — bespoke SVG of the tube network. Also takes `rings` —
   the circle a tube guess is marked against, from `src/lib/tubeReach.tsx`. The
   game only ever hands it a circle on a round the circle actually paid for. The
@@ -330,6 +332,32 @@ The rules, which are the last bench's and cost nothing to keep:
 - **It comes down when it has settled its argument.** A copy of a game kept past
   the question it was built to answer collects dust and confusion in equal
   measure.
+
+**What's on it now: the tiled globe.** `GlobeMap`'s `tiles` prop, wired only
+here. The ordinary globe wears one 4096×2048 photograph of the Earth — about ten
+kilometres to the pixel — so zooming in magnifies blur rather than showing you
+anything new. Tiles are the standard answer: the world cut into 256px squares at
+every zoom level, each level twice the detail of the last, only the ones in view
+fetched, and three-globe has the engine built in (`globeTileEngineUrl`, which
+tracks the camera itself). It works — the Sahara resolves down to dry riverbeds.
+
+Three things it costs, all of them seen rather than guessed at:
+
+- **The imagery is Esri's**, not ours, and attribution is required wherever it's
+  drawn (`TILE_CREDIT`, printed bottom-left). Their terms are written around
+  having an account for anything past casual use. Fine on a bench; a deliberate
+  decision before it goes near the real game.
+- **The coarse borders stop matching the ground.** Given a tile engine
+  three-globe hides the photographed globe, so `globeImageUrl` and the bump map
+  do nothing — and night mode with them, leaving the toggle only the atmosphere
+  to cool. More visibly, the 1:50m outlines drawn over sharp imagery are plainly
+  in the wrong place at depth: New Caledonia's runs across the island rather than
+  round it. The fine shapes exist (`shapes.features`) — they're kept off the
+  globe because 242 of them at full detail is a slideshow, which is the trade to
+  revisit if this graduates.
+- **The answer pin doesn't shrink.** `pointRadius` is in globe-radius units, so
+  the green disc that looks right at reveal altitude swallows the city once you
+  zoom past it. Pre-existing, and invisible until deep zoom was worth doing.
 
 ### The last card: coming soon
 

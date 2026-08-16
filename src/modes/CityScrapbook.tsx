@@ -88,11 +88,16 @@ export default function CityScrapbook({
       renderResultExtra={(city) => (
         <FactCard title={`${city.name}, ${city.country}`} fact={city.fact} />
       )}
+      // The globe on tiles rather than on one photograph, which is what's being
+      // tried here: zooming in should show you more of a place, not more pixels
+      // of the same picture. `mapTiles.ts` has the reasoning and the strings
+      // attached; City Spotter is the same round on the plain globe, which is
+      // what to hold this against.
       renderMap={(props) =>
         settings.flat ? (
           <WorldMap {...props} night={night} borders={settings.borders} />
         ) : (
-          <GlobeMap {...props} night={night} borders={settings.borders} />
+          <GlobeMap {...props} night={night} borders={settings.borders} tiles />
         )
       }
     />

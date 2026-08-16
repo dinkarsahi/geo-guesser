@@ -3,10 +3,22 @@ import Globe, { type GlobeMethods } from "react-globe.gl";
 import type { GuessMapProps, MapHighlight } from "./mapTypes";
 import { countryAt, useWorldShapes, type CountryFeature } from "../lib/worldShapes";
 import { DAY_TEXTURE, GREY_TEXTURE } from "../lib/textures";
+import { satelliteTile, TILE_CREDIT } from "../lib/mapTiles";
 import MapZoomControls from "./MapZoomControls";
 
 const MIN_ALTITUDE = 0.05; // closest button zoom
 const MAX_ALTITUDE = 3.5; // farthest button zoom
+
+/**
+ * How much further in the tiled globe lets you go.
+ *
+ * The limits above are set by the one flat photograph: there is no reason to
+ * push past 0.05 when what's under the camera stops improving well before it,
+ * and letting the player keep going only shows them the blur bigger. Tiles keep
+ * resolving, so the floor drops to where the horizon starts to bend awkwardly
+ * instead of to where the picture gives up.
+ */
+const TILED_MIN_ALTITUDE = 0.004;
 
 const BUMP_TEXTURE = GREY_TEXTURE; // relief bump in both modes
 
@@ -37,6 +49,17 @@ interface GlobeMapProps extends GuessMapProps {
    * enough out to see the whole band rather than diving at one end of it.
    */
   highlights?: MapHighlight[] | null;
+  /**
+   * Skin the globe in map tiles rather than in one photograph of the Earth, so
+   * that zooming in shows more of a place instead of more of the same pixels.
+   * See `mapTiles.ts` for what that costs and who the imagery belongs to.
+   *
+   * Off everywhere but the scrapbook. It's a prop rather than a second copy of
+   * this component because the whole point of trying it is to try *this* globe
+   * with it — a copy would be a different globe by the second change made to
+   * either.
+   */
+  tiles?: boolean;
 }
 
 /** Green for the clock that was asked about, red for the one picked instead. */
@@ -68,6 +91,7 @@ export default function GlobeMap({
   highlightCodes = null,
   missCode = null,
   highlights = null,
+  tiles = false,
 }: GlobeMapProps) {
   // Painting the answer on rather than pinning it: see `highlights`.
   const painted = !!highlights?.length;
@@ -95,7 +119,10 @@ export default function GlobeMap({
     if (!g) return;
     const controls = g.controls() as unknown as OrbitLike;
     controls.enablePan = false;
-    controls.minDistance = 101; // globe radius is 100 — get right down to the surface
+    // Globe radius is 100, so distance 101 is an altitude of 0.01 — right down
+    // on the surface. The tiled globe is allowed nearer still, since there is
+    // something down there to see.
+    controls.minDistance = 100 + (tiles ? TILED_MIN_ALTITUDE : 0.01) * 100;
     controls.maxDistance = 520; // how far you can zoom out
     controls.rotateSpeed = 0.6;
     controls.zoomSpeed = 1; // a touch faster so deep zoom isn't tedious
@@ -110,7 +137,7 @@ export default function GlobeMap({
     const pov = g.pointOfView();
     const altitude = Math.min(
       MAX_ALTITUDE,
-      Math.max(MIN_ALTITUDE, pov.altitude * factor),
+      Math.max(tiles ? TILED_MIN_ALTITUDE : MIN_ALTITUDE, pov.altitude * factor),
     );
     g.pointOfView({ altitude }, 350);
   };
@@ -236,6 +263,11 @@ export default function GlobeMap({
         height={size.h}
         backgroundColor="rgba(0,0,0,0)"
         globeImageUrl={night ? GREY_TEXTURE : DAY_TEXTURE}
+        // Given a tile engine, three-globe hides the photographed globe and
+        // draws tiles in its place — so the two lines above stop applying, and
+        // with them night mode's grey world and the relief bump. The night
+        // toggle still cools the atmosphere, which is all it can reach here.
+        globeTileEngineUrl={tiles ? satelliteTile : undefined}
         bumpImageUrl={BUMP_TEXTURE}
         showAtmosphere={!night}
         atmosphereColor={night ? "#6b7280" : "#7fb2ff"}
@@ -293,6 +325,10 @@ export default function GlobeMap({
         onZoomIn={() => zoomBy(0.6)}
         onZoomOut={() => zoomBy(1 / 0.6)}
       />
+      {/* Whose imagery this is, printed wherever it's drawn. Required by the
+          people it belongs to, and the one part of borrowing a tile service
+          that isn't optional. */}
+      {tiles && <p className="map-credit">{TILE_CREDIT}</p>}
       {!shapes && <p className="map-loading muted">Loading the world…</p>}
     </div>
   );
