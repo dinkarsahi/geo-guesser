@@ -27,6 +27,7 @@ carry that and everything else is a variation:
 | `src/lib/useGame.ts` | The round loop: deal the targets, take a click, mark it, advance. Every mode calls this. |
 | `src/components/GameFrame.tsx` | Everything the player sees around the map: prompt bar, clock, result panel, results table. |
 | `src/lib/geo.ts` | Distance, and the curve a distance is marked on. |
+| `src/lib/useRoute.ts` | Every URL the app answers to — see "The URLs". |
 
 A mode (`src/modes/*.tsx`) is therefore quite thin: it picks a pool, says how to
 score a click, and hands `GameFrame` some render props. If you find yourself
@@ -157,11 +158,11 @@ also means it will file to a leaderboard if used in a duel or today's round.
 pool of 233, Equatorial Guinea and New Zealand, have a Natural Earth label point
 outside their own borders.
 
-All of it is `App.tsx`. `browsing` says which menu is underneath everything
-(`"home"` or `"games"`) and is **deliberately untouched by `toMenu`** — coming
-out of Flag Spotter lands back on the shelf it was picked off, where coming out
-of today's round lands home, which is where that player came from. `social` is
-whichever contest is open, and no longer has a hub of its own.
+All of it is `App.tsx`, and **which screen is up is the URL's** — see below.
+`social` and `browsing` are gone: the path says which contest is open and which
+menu is underneath, and coming out of Flag Spotter landing on the shelf while
+coming out of today's round lands home is now just the path's own parent rather
+than a flag held deliberately out of step with everything else.
 
 A card's words are a `GameCard`, and `MODES` is that plus a `ModeId`. The split
 is what lets something have the same setup screen as a game without being a
@@ -169,6 +170,62 @@ mode — a bench, next time there is one: `ModeSetup` takes a card, not an id.
 `ownMap` on a card says the game
 brings its own map and the world-map choices have nothing to offer it — the
 tube's alone, and data rather than the `id !== "tube"` test it replaced.
+
+### The URLs
+
+`src/lib/useRoute.ts` owns every address the app answers to, and the URL is the
+truth rather than a copy of state kept beside it — which is the whole of why the
+browser's own back button works without a line of wiring.
+
+| Path | Screen |
+|---|---|
+| `/` | the three doors |
+| `/dailyround` | Today's Round — the `HeadToHead` component |
+| `/headtohead` | Duel a Friend — the `PlayFriend` component |
+| `/allgames` | the shelf |
+| `/cityspotter`, `/flagspotter`, `/currencyspotter`, `/corporatehqspotter`, `/populationspotter`, `/tubestationspotter`, `/timezonespotter` | that game's setup screen, and the round itself |
+
+**The names crossed over and the file says so:** `/headtohead` is Duel a Friend,
+while `/dailyround` is the component *called* `HeadToHead`. The screens were
+renamed, the paths were chosen afterwards from what players are shown, and the
+components kept their old names. Follow `useRoute.ts`, not the file names.
+
+**Adding a game means adding a path here**, as well as a mode letter in
+`match.ts`. The paths are written down rather than derived from the titles: a
+URL is a promise, and derived, a copy tweak to a game's name would silently
+break every link to it.
+
+Three things follow, and they're the point rather than side effects:
+
+- **Nothing about a game in progress is in the URL** — no code, no seed, no
+  round. So a refresh of `/cityspotter` hands back the setup screen and a *new*
+  deal rather than another go at the round just played. A URL can't be made
+  unrefreshable — F5 belongs to the browser, and `beforeunload` can only prompt
+  — so the way to stop a path replaying a round is to not put the round in it.
+  (Scores were never resting on this: `checkEntry` plus the unique index on
+  `(code, player)` is what makes today's round one go, "however the player got
+  there".)
+- **A contest's round keeps the contest's address**, not the game's. A refresh
+  mid-daily lands on `/dailyround`, where the one-go guard is, and mid-duel on
+  `/headtohead`, where `joinedHere` puts the player back in the round in
+  progress. Sent to `/tubestationspotter` instead, a refresh would read as the
+  contest being replayable at will.
+- **A `Session` carries the path it belongs to**, and `App` reads the game off
+  it only while the two agree. Derived rather than cleared by an effect watching
+  the path — cleared, there'd be a render where a finished game is still on
+  screen because the tidying-up hasn't run, and `react-hooks` refuses the
+  `setState`-in-effect that would do it.
+
+**The trap, and it only bites in production:** the host serves `/allgames` as a
+file that doesn't exist, so *clicking* to it works and refreshing or sharing the
+link 404s. `vercel.json` rewrites everything to `index.html`, which is what makes
+a deep link work at all. Vite's dev server already falls back, so this cannot be
+caught locally. Anything that replaces that file has to keep the rewrite.
+
+Not built, deliberately: **no code in any URL**. `/headtohead/MVVB5A9` would
+make a room code a link to send rather than a code to read out, and reloading it
+already works — but it was judged as one more path that could deal a round
+again, and left out until that's wanted.
 
 ## The seven games
 
@@ -528,7 +585,8 @@ the round in progress without inserting anything.
 
 Code layout is `[mode letter][kind letter][5 chars]`. Mode letters: `C` city,
 `F` flag, `M` currency, `H` company, `P` population, `T` tube, `Z` timezone.
-**Adding a game means adding a letter here**, and it must be unique.
+**Adding a game means adding a letter here**, and it must be unique. It also
+means a path in `useRoute.ts` — see "The URLs" above.
 
 The room clock is the *server's*, not the device's: `serverNow()` in
 `supabase.ts` corrects the local clock using the `Date` header on every reply.

@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { TUBE_TAGLINE } from "./data/tube";
 import { type Match } from "./lib/match";
+import { spell, useRoute } from "./lib/useRoute";
 import CityLocator from "./modes/CityLocator";
 import CompanyGuesser from "./modes/CompanyGuesser";
 import CurrencyGuesser from "./modes/CurrencyGuesser";
@@ -283,6 +284,24 @@ function AllGames({
   );
 }
 
+/**
+ * A game in progress, and the address it belongs to.
+ *
+ * The path is carried along with it so that leaving the screen ends the game
+ * without anything having to notice and tidy up: on any other path this simply
+ * isn't the session any more. `path` is "" for no game at all, which no route
+ * ever spells.
+ */
+interface Session {
+  path: string;
+  /** A game off the shelf, past its setup screen. */
+  started: boolean;
+  /** A round of today's game, or of a duel. */
+  match: Match | null;
+}
+
+const NO_SESSION: Session = { path: "", started: false, match: null };
+
 /** The mode itself, whichever it is, wired to the props they all share. */
 function PlayMode({ mode, ...props }: ModeProps & { mode: Mode }) {
   if (mode === "city") return <CityLocator {...props} />;
@@ -295,29 +314,43 @@ function PlayMode({ mode, ...props }: ModeProps & { mode: Mode }) {
 }
 
 export default function App() {
-  const [mode, setMode] = useState<Mode | null>(null);
-  const [started, setStarted] = useState(false);
+  // Which screen is up is the address bar's business now — see `useRoute`. What
+  // stays here is what a URL deliberately doesn't carry: whether a round is
+  // under way, and which match it belongs to. Neither survives a refresh, and
+  // that's the point of keeping them out of the path.
+  const [route, go] = useRoute();
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
-  // Which of the two contests is open — today's round against the world, or a
-  // room of people you know. Both are their own door on the home page now.
-  const [social, setSocial] = useState<"daily" | "room" | null>(null);
-  const [match, setMatch] = useState<Match | null>(null);
-  // Which menu is the one behind everything: the three doors, or the shelf of
-  // games behind the third of them. Deliberately untouched by `toMenu` — a
-  // player who came out of Flag Spotter came from the shelf and wants it back,
-  // where one coming out of today's round never saw it.
-  const [browsing, setBrowsing] = useState<"home" | "games">("home");
+  const [session, setSession] = useState<Session>(NO_SESSION);
 
-  const toMenu = () => {
-    setMode(null);
-    setStarted(false);
-    setSocial(null);
-    setMatch(null);
-  };
+  const mode = route.at === "game" ? route.mode : null;
+  const path = spell(route);
+
+  // A game belongs to the address it was started from, and moving anywhere else
+  // ends it — including when the move was the browser's own back button rather
+  // than a press on ours. Read off the path rather than cleared by an effect
+  // watching it: derived, there is no render where a finished game is still on
+  // screen because the tidying-up hasn't run yet.
+  const { started, match } = session.path === path ? session : NO_SESSION;
+
+  // Out of a round and back to where the round was started from, which the path
+  // already knows: a game off the shelf returns to the shelf, and a contest's
+  // round returns to that contest's own screen by simply being let go of. This
+  // used to be a `browsing` flag kept deliberately out of step with everything
+  // else; the URL says it now.
+  const toMenu = useCallback(() => {
+    setSession(NO_SESSION);
+    if (route.at === "game") go({ at: "games" });
+  }, [route.at, go]);
+
+  // Stable, because a room hands over on a timer that lists this among its
+  // dependencies — rebuilt every render, it would tear down and reset that
+  // timer on every render too.
+  const startMatch = useCallback((m: Match) => setSession({ path, started: false, match: m }), [path]);
+
   const modeProps = { onExit: toMenu, settings };
 
-  // A running game gets the whole window: the menu's fixed-width shell and its
-  // side rules would otherwise pen the map in well short of the screen edges.
+  // A running game gets the whole window: the menu's fixed-width shell would
+  // otherwise pen the map in well short of the screen edges.
   const playing = (mode !== null && started) || match !== null;
   useEffect(() => {
     document.body.classList.toggle("playing", playing);
@@ -339,12 +372,17 @@ export default function App() {
       />
     );
 
-  if (social === "daily") {
-    return <HeadToHead onBack={toMenu} onStart={setMatch} />;
+  // A contest's round keeps the contest's own address rather than taking the
+  // game's: the round belongs to today's table or to a room, so a refresh
+  // should land back where the guards are — one go a day, or a duel that lets
+  // you rejoin the round in progress — and not on a casual game of the same
+  // name, which would read as the contest being replayable at will.
+  if (route.at === "daily") {
+    return <HeadToHead onBack={() => go({ at: "home" })} onStart={startMatch} />;
   }
 
-  if (social === "room") {
-    return <PlayFriend onBack={toMenu} onStart={setMatch} />;
+  if (route.at === "duel") {
+    return <PlayFriend onBack={() => go({ at: "home" })} onStart={startMatch} />;
   }
 
   if (mode && started) {
@@ -357,17 +395,20 @@ export default function App() {
         mode={MODES.find((m) => m.id === mode)!}
         settings={settings}
         onChange={setSettings}
-        onStart={() => setStarted(true)}
+        onStart={() => setSession({ path, started: true, match: null })}
         // Back to the shelf the game was picked off, not out to the home page:
         // somebody who opened the wrong one of seven wanted a different one.
-        onBack={() => setMode(null)}
+        onBack={() => go({ at: "games" })}
       />
     );
   }
 
-  if (browsing === "games") {
+  if (route.at === "games") {
     return (
-      <AllGames onPick={setMode} onBack={() => setBrowsing("home")} />
+      <AllGames
+        onPick={(m) => go({ at: "game", mode: m })}
+        onBack={() => go({ at: "home" })}
+      />
     );
   }
 
@@ -381,7 +422,7 @@ export default function App() {
       <h1>SpotOn</h1>
       <p className="muted menu-sub">Play the world, play a friend, or just play.</p>
       <div className="mode-grid mode-grid-trio">
-        <button className="mode-card" onClick={() => setSocial("daily")}>
+        <button className="mode-card" onClick={() => go({ at: "daily" })}>
           <WorldDuelMark />
           <span className="mode-title">Today's Round</span>
           {/* The game of the day is deliberately not named here any more: the
@@ -392,14 +433,14 @@ export default function App() {
             stand against the world.
           </span>
         </button>
-        <button className="mode-card" onClick={() => setSocial("room")}>
+        <button className="mode-card" onClick={() => go({ at: "duel" })}>
           <DuelMark />
           <span className="mode-title">Duel a Friend</span>
           <span className="muted mode-blurb">
             Play against friends in one of our SpotOn games. Winner gets bragging rights.
           </span>
         </button>
-        <button className="mode-card" onClick={() => setBrowsing("games")}>
+        <button className="mode-card" onClick={() => go({ at: "games" })}>
           <span className="mode-emoji">🗺️</span>
           <span className="mode-title">All Games</span>
           <span className="muted mode-blurb">
