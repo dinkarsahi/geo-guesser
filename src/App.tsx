@@ -146,8 +146,11 @@ function ModeSetup({
   return (
     <div className="menu setup">
       <div className="menu-bar">
+        {/* Back, not Home: this screen was opened off the shelf of games and
+            that is where it returns to — somebody who picked the wrong one of
+            seven wants the other six, not the front door. */}
         <button className="btn btn-ghost" onClick={onBack}>
-          ← Menu
+          ← Back
         </button>
       </div>
       <h1>
@@ -246,7 +249,7 @@ function AllGames({
     <div className="menu">
       <div className="menu-bar">
         <button className="btn btn-ghost" onClick={onBack}>
-          ← Menu
+          ← Home
         </button>
       </div>
       <h1>All Games</h1>
