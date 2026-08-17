@@ -50,12 +50,14 @@
   }
 }
 
+/* No rules down the sides. The column is centred and its width is what says
+   where the page is; a line drawn either side of it reads as the edge of a
+   frame the game is sitting inside rather than as the page itself. */
 #root {
   width: 1126px;
   max-width: 100%;
   margin: 0 auto;
   text-align: center;
-  border-inline: 1px solid var(--border);
   min-height: 100svh;
   display: flex;
   flex-direction: column;

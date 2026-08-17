@@ -391,6 +391,16 @@
 .h2h-mode .mode-emoji {
   font-size: 24px;
 }
+/* The draw, under the games rather than among them: it spans the whole grid and
+   centres its own label, so it can't be read as one more game on the shelf. */
+.h2h-mode-random {
+  grid-column: 1 / -1;
+  justify-content: center;
+  border-style: dashed;
+}
+.h2h-mode-random:hover:not(:disabled) {
+  border-style: solid;
+}
 .h2h-code-panel {
   align-items: center;
   text-align: center;
@@ -816,11 +826,10 @@
 }
 
 /* ---- Game shell ----------------------------------------------------- */
-/* While a game is on, the app shell drops its column width and side rules so
-   the map can use the whole window rather than being boxed into the middle. */
+/* While a game is on, the app shell drops its column width so the map can use
+   the whole window rather than being boxed into the middle. */
 body.playing #root {
   width: 100%;
-  border-inline: none;
 }
 /* Nothing scrolls during a round — the map is pinned to the window and the
    controls float on top of it. */

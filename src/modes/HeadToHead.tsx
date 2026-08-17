@@ -109,7 +109,7 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
     <div className="menu setup">
       <div className="menu-bar">
         <button className="btn btn-ghost" onClick={back}>
-          ← {screen === "pick" ? "Head to Head" : "Back"}
+          ← {screen === "pick" ? "Home" : "Back"}
         </button>
       </div>
       <h1>

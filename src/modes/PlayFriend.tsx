@@ -40,6 +40,17 @@ const RULES = `${MATCH_ROUNDS} rounds, ${Math.round(
 const POLL_MS = 1_500;
 
 /**
+ * A game drawn out of the hat, for a host who doesn't want to choose.
+ *
+ * Unseeded on purpose, unlike everything else about a duel: this decides which
+ * room gets made, before there is a code for the players to share, so there is
+ * nothing here that has to come out the same on two devices. The code the draw
+ * produces carries the answer to everyone else.
+ */
+const anyMode = (): ModeId =>
+  MATCH_MODES[Math.floor(Math.random() * MATCH_MODES.length)].id;
+
+/**
  * What a code that's already in play says, and a code that has been played.
  *
  * One sentence for both, because from outside the room they're the same event:
@@ -246,7 +257,7 @@ export default function PlayFriend({ onBack, onStart }: PlayFriendProps) {
     <div className="menu setup">
       <div className="menu-bar">
         <button className="btn btn-ghost" onClick={back}>
-          ← {screen === "pick" ? "Head to Head" : "Back"}
+          ← {screen === "pick" ? "Home" : "Back"}
         </button>
       </div>
       <h1>
@@ -372,11 +383,22 @@ export default function PlayFriend({ onBack, onStart }: PlayFriendProps) {
                   <span>{busy ? "Opening…" : m.title}</span>
                 </button>
               ))}
+              {/* Across the whole row rather than sitting in the grid as an
+                  eighth card: it isn't a game, it's a way of not picking one. */}
+              <button
+                className="h2h-mode h2h-mode-random"
+                disabled={busy}
+                onClick={() => make(anyMode())}
+              >
+                <span className="mode-emoji">🎲</span>
+                <span>{busy ? "Opening…" : "Randomise the game"}</span>
+              </button>
             </div>
           </div>
           <p className="muted h2h-code-hint">
             Everyone in the room plays this game on this map, so nobody is racing a
-            different question.
+            different question. Randomise draws one of the seven, and the lobby says
+            which came up.
           </p>
         </div>
       )}
