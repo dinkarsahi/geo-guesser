@@ -391,16 +391,6 @@
 .h2h-mode .mode-emoji {
   font-size: 24px;
 }
-/* The draw, under the games rather than among them: it spans the whole grid and
-   centres its own label, so it can't be read as one more game on the shelf. */
-.h2h-mode-random {
-  grid-column: 1 / -1;
-  justify-content: center;
-  border-style: dashed;
-}
-.h2h-mode-random:hover:not(:disabled) {
-  border-style: solid;
-}
 .h2h-code-panel {
   align-items: center;
   text-align: center;

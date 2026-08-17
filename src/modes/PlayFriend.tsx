@@ -383,13 +383,10 @@ export default function PlayFriend({ onBack, onStart }: PlayFriendProps) {
                   <span>{busy ? "Opening…" : m.title}</span>
                 </button>
               ))}
-              {/* Across the whole row rather than sitting in the grid as an
-                  eighth card: it isn't a game, it's a way of not picking one. */}
-              <button
-                className="h2h-mode h2h-mode-random"
-                disabled={busy}
-                onClick={() => make(anyMode())}
-              >
+              {/* Last in the grid and shaped like the seven above it: the draw
+                  is picked the same way a game is, so it's pressed the same way
+                  a game is. What it is, rather than a game, the label says. */}
+              <button className="h2h-mode" disabled={busy} onClick={() => make(anyMode())}>
                 <span className="mode-emoji">🎲</span>
                 <span>{busy ? "Opening…" : "Randomise the game"}</span>
               </button>
