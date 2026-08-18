@@ -9,10 +9,18 @@ interface SiteFooterProps {
   here: Route["at"];
 }
 
-/** Written out rather than built from `at`, so the union's shape is respected. */
+/**
+ * The pages that aren't games, and the way back to the front door.
+ *
+ * All Games is deliberately **not** among them. It is one of the three cards
+ * the home page is made of, and a footer is where a site keeps the things it
+ * has to say rather than a second copy of the offer — listed down here it read
+ * as though the shelf were paperwork too.
+ *
+ * Written out rather than built from `at`, so the union's shape is respected.
+ */
 const LINKS: { route: Route; label: string }[] = [
   { route: { at: "home" }, label: "Home" },
-  { route: { at: "games" }, label: "All Games" },
   { route: { at: "about" }, label: "About" },
   { route: { at: "credits" }, label: "Credits" },
   { route: { at: "privacy" }, label: "Privacy" },
@@ -53,17 +61,16 @@ export default function SiteFooter({ go, here }: SiteFooterProps) {
       {/* The one line that has to be here whatever else is: who the game
           belongs to, and the year it says so in. */}
       <p className="site-footer-note">
-        © {new Date().getFullYear()} SpotOn · {MATCH_ROUNDS} rounds, one world.
+        © {new Date().getFullYear()} SpotOn · Around the world in {MATCH_ROUNDS} rounds.
       </p>
-      {/* Named here as well as on the maps themselves. A credit drawn on a map
-          is on screen for the length of a round; this is where somebody who
-          went looking for it afterwards will actually look. */}
+      {/* The credits themselves rather than a pointer to them: NASA asks for
+          this line, and printing it costs less than sending somebody to another
+          page to read it. No link on the end — Credits is three words to the
+          left of here, and a second way to the same page reads as a different
+          one. */}
       <p className="muted site-footer-note">
         Satellite imagery courtesy of NASA EOSDIS GIBS. Country shapes from Natural
-        Earth.{" "}
-        <button className="site-footer-inline" onClick={() => go({ at: "credits" })}>
-          Full credits
-        </button>
+        Earth.
       </p>
     </footer>
   );

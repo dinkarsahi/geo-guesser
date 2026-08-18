@@ -180,7 +180,14 @@ helper rather than each screen carrying its own, because there are ten of them
 and the one that quietly lost its footer is exactly what nobody would notice.
 
 It exists because there was nowhere for a credit, a copyright line or a policy
-link to live, and it carries the two pages behind it:
+link to live. It holds Home, About, Credits, Privacy and Contact — and
+deliberately **not** All Games, which is one of the three cards the home page is
+made of: a footer is where a site keeps what it has to say, and the shelf listed
+down there read as paperwork too. The NASA and Natural Earth credit is printed
+in full rather than linked, since Credits is three words to its left and a
+second route to one page reads as a route to a different one.
+
+The pages behind it:
 
 - **`About`** — what the game is, how a round is marked, the three ways to play,
   and a table of all seven games saying what each is marked on. Its numbers come

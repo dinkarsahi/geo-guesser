@@ -1011,25 +1011,19 @@
   justify-content: center;
   gap: 6px 18px;
 }
-.site-footer-link,
-.site-footer-inline {
+.site-footer-link {
   padding: 0;
   border: none;
   background: none;
-  font: inherit;
-  color: var(--accent);
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.site-footer-link {
   font-family: var(--heading);
   font-size: 14px;
   font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
   text-decoration: none;
+  text-underline-offset: 3px;
 }
-.site-footer-link:hover,
-.site-footer-inline:hover {
+.site-footer-link:hover {
   text-decoration: underline;
 }
 .site-footer-note {
