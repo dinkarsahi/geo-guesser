@@ -1,4 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import About from "./components/About";
+import Credits from "./components/Credits";
+import SiteFooter from "./components/SiteFooter";
 import { TUBE_TAGLINE } from "./data/tube";
 import { type Match } from "./lib/match";
 import { spellScreen, useRoute } from "./lib/useRoute";
@@ -35,6 +38,13 @@ interface GameCard {
    * have nothing to offer it. The tube's alone.
    */
   ownMap?: boolean;
+  /**
+   * A line of small print under the blurb, for a game that shows somebody
+   * else's property. Corporate HQ Spotter's alone: it puts real brand marks on
+   * screen, and the disclaimer belongs where they are about to appear as well
+   * as on the credits page, where somebody has to go looking for it.
+   */
+  smallprint?: string;
 }
 
 const MODES: (GameCard & { id: Mode })[] = [
@@ -66,6 +76,8 @@ const MODES: (GameCard & { id: Mode })[] = [
     blurb:
       "With just the company logo, can you spot which country it's headquartered in?",
     emoji: "🏢",
+    smallprint:
+      "Company names and logos are trademarks of their respective owners. SpotOn is not affiliated with, endorsed by or sponsored by any company shown.",
   },
   {
     id: "population",
@@ -159,6 +171,7 @@ function ModeSetup({
       </h1>
       {mode.tagline && <p className="muted menu-sub mode-tagline">{mode.tagline}</p>}
       <p className="muted menu-sub">{mode.blurb}</p>
+      {mode.smallprint && <p className="muted mode-smallprint">{mode.smallprint}</p>}
 
       <div className="setup-panel">
         {/* No length to choose: every game is five rounds, the same five rounds
@@ -372,6 +385,17 @@ export default function App() {
     return () => document.body.classList.remove("playing");
   }, [playing]);
 
+  // The screen, and under it the footer — on everything except a round, where
+  // the map is pinned to the window and nothing scrolls. Written as a wrapper
+  // rather than dropped into each screen: there are ten of them, and a footer
+  // missing from one is exactly the sort of thing nobody notices.
+  const page = (screen: ReactNode) => (
+    <>
+      {screen}
+      <SiteFooter go={go} here={route.at} />
+    </>
+  );
+
   // A match names its own game and carries the map it's to be played on, so it
   // skips the setup screen entirely: everyone playing it is asked the same five
   // questions, and in a room they're looking at the same world as well. Where
@@ -392,25 +416,41 @@ export default function App() {
   // should land back where the guards are — one go a day, or a duel that lets
   // you rejoin the round in progress — and not on a casual game of the same
   // name, which would read as the contest being replayable at will.
+  if (route.at === "about") {
+    return page(
+      <About
+        onBack={() => go({ at: "home" })}
+        onPlay={() => go({ at: "games" })}
+        onCredits={() => go({ at: "credits" })}
+      />,
+    );
+  }
+
+  if (route.at === "credits") {
+    return page(
+      <Credits onBack={() => go({ at: "home" })} onAbout={() => go({ at: "about" })} />,
+    );
+  }
+
   if (route.at === "daily") {
-    return (
+    return page(
       <HeadToHead
         onBack={() => go({ at: "home" })}
         onAllGames={() => go({ at: "games" })}
         onDuel={() => go({ at: "duel" })}
         onStart={startMatch}
-      />
+      />,
     );
   }
 
   if (route.at === "duel") {
-    return (
+    return page(
       <PlayFriend
         invite={route.code}
         onInvite={showInvite}
         onBack={() => go({ at: "home" })}
         onStart={startMatch}
-      />
+      />,
     );
   }
 
@@ -419,7 +459,7 @@ export default function App() {
   }
 
   if (mode) {
-    return (
+    return page(
       <ModeSetup
         mode={MODES.find((m) => m.id === mode)!}
         settings={settings}
@@ -428,16 +468,16 @@ export default function App() {
         // Back to the shelf the game was picked off, not out to the home page:
         // somebody who opened the wrong one of seven wanted a different one.
         onBack={() => go({ at: "games" })}
-      />
+      />,
     );
   }
 
   if (route.at === "games") {
-    return (
+    return page(
       <AllGames
         onPick={(m) => go({ at: "game", mode: m })}
         onBack={() => go({ at: "home" })}
-      />
+      />,
     );
   }
 
@@ -446,7 +486,7 @@ export default function App() {
   // the third of those, because listing all seven here answered the question
   // before it was asked — the two contests sat at the end of a row of games and
   // read as two more of them.
-  return (
+  return page(
     <div className="menu">
       <h1>SpotOn</h1>
       <p className="muted menu-sub">Play the world, play a friend, or just play.</p>
@@ -477,6 +517,6 @@ export default function App() {
           </span>
         </button>
       </div>
-    </div>
+    </div>,
   );
 }

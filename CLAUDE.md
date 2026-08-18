@@ -171,6 +171,35 @@ mode — a bench, next time there is one: `ModeSetup` takes a card, not an id.
 brings its own map and the world-map choices have nothing to offer it — the
 tube's alone, and data rather than the `id !== "tube"` test it replaced.
 
+### The footer, and the two pages that are read
+
+`SiteFooter` is drawn under every screen **except a round in progress** — there
+the map is pinned to the window and nothing scrolls, so a footer would either be
+painted over the map or never reached. `App` wraps each screen in a `page()`
+helper rather than each screen carrying its own, because there are ten of them
+and the one that quietly lost its footer is exactly what nobody would notice.
+
+It exists because there was nowhere for a credit, a copyright line or a policy
+link to live, and it carries the two pages behind it:
+
+- **`About`** — what the game is, how a round is marked, the three ways to play,
+  and a table of all seven games saying what each is marked on. Its numbers come
+  from `MAX_ROUND_SCORE` and `MATCH_ROUNDS`, and its list from `MATCH_MODES`, so
+  a game added to the app appears here without anyone remembering to.
+- **`Credits`** — the attributions, and four of them are **owed rather than
+  offered**: NASA asks for its imagery line, TfL's open data asks for "Data
+  provided by Transport for London", and the MIT and ISC licences on React,
+  three.js, react-globe.gl, react-simple-maps, prop-types and d3-geo require
+  their notices to travel with what ships. Take a dependency, add it there.
+
+Both are `.doc` in the stylesheet, which is the one place in this app where text
+is set left in a reading column rather than centred under a heading.
+
+The trademark disclaimer for the company logos is in **two** places on purpose:
+the credits page, and `smallprint` on the Corporate HQ card, which prints it on
+that game's setup screen. A disclaimer only on a page somebody has to go looking
+for is not on the screen where the marks actually appear.
+
 ### The URLs
 
 `src/lib/useRoute.ts` owns every address the app answers to, and the URL is the
@@ -184,6 +213,8 @@ browser's own back button works without a line of wiring.
 | `/headtohead` | Duel a Friend — the `PlayFriend` component |
 | `/headtohead/CVKQ7M` | an invitation to one room — see "The invite link" |
 | `/allgames` | the shelf |
+| `/about` | what the game is and how it's marked |
+| `/credits` | where the maps, shapes, logos and code came from |
 | `/cityspotter`, `/flagspotter`, `/currencyspotter`, `/corporatehqspotter`, `/populationspotter`, `/tubestationspotter`, `/timezonespotter` | that game's setup screen, and the round itself |
 
 **The names crossed over and the file says so:** `/headtohead` is Duel a Friend,
