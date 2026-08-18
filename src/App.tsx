@@ -393,7 +393,14 @@ export default function App() {
   // you rejoin the round in progress — and not on a casual game of the same
   // name, which would read as the contest being replayable at will.
   if (route.at === "daily") {
-    return <HeadToHead onBack={() => go({ at: "home" })} onStart={startMatch} />;
+    return (
+      <HeadToHead
+        onBack={() => go({ at: "home" })}
+        onAllGames={() => go({ at: "games" })}
+        onDuel={() => go({ at: "duel" })}
+        onStart={startMatch}
+      />
+    );
   }
 
   if (route.at === "duel") {

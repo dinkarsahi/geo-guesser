@@ -460,6 +460,16 @@
 /* Why you're looking at a table instead of a game. Said plainly and near the
    top, because being handed the standings when you asked to play reads as a
    fault until something says it isn't one. */
+/* Under a table the player was sent to rather than asked for: what they can
+   play instead, since being turned away from today's round is the one place in
+   the app where the answer is "not this, but here". */
+.h2h-elsewhere {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
 .h2h-locked {
   margin: 0;
   max-width: 460px;

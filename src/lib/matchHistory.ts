@@ -70,16 +70,41 @@ function readPlayed(): Played {
 }
 
 /**
- * Whether this device has a finished result for a code under a name.
+ * Whether this device has a finished result for a code under a *name*.
  *
- * Asked before a match starts, and answered without a network so that being
- * offline can't be a way of getting a second attempt. Scoped to the name rather
- * than the device, so that two people sharing a laptop each get their go.
+ * The narrow question, and it is asked for one purpose: telling this device's
+ * own row apart from a stranger's when the table refuses a name. See
+ * `publishResult`. What decides whether a player may start is the wider
+ * question below.
  */
 export function playedHere(code: string, player: string): boolean {
   const key = player.trim().toLowerCase();
   const names = readPlayed()[code];
   return Array.isArray(names) && names.includes(key);
+}
+
+/**
+ * Whether this device has finished a code at all, under any name.
+ *
+ * This is the one-go lock on today's round, and it is deliberately about the
+ * device rather than the name. Keyed on the name, the lock asked the player to
+ * enforce it: typing something else was a second go at a table the whole world
+ * is on, and nothing but manners stopped it. Keyed here it takes a private
+ * window to get past, which is a different sort of person.
+ *
+ * What it costs is the shared laptop — one household tablet is now one go at
+ * today's round, whoever picks it up — and that is the trade, made knowingly.
+ * The other six games and duels have no daily limit and are what that person is
+ * pointed at.
+ *
+ * Answered without a network, so pulling the plug can't buy a second attempt.
+ * A private window or a cleared storage still can: no web page can identify a
+ * device, and anything short of an account is a speed bump. This one stops the
+ * name change, which is what it is for.
+ */
+export function playedOnThisDevice(code: string): boolean {
+  const names = readPlayed()[code];
+  return Array.isArray(names) && names.length > 0;
 }
 
 /** Notes that this device finished a code under a name, and won't do so again. */

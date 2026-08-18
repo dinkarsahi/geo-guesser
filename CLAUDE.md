@@ -205,7 +205,8 @@ Three things follow, and they're the point rather than side effects:
   — so the way to stop a path replaying a round is to not put the round in it.
   (Scores were never resting on this: `checkEntry` plus the unique index on
   `(code, player)` is what makes today's round one go, "however the player got
-  there".) A room's code in `/headtohead/CVKQ7M` is the one exception and isn't
+  there" — and see "One go a device" for what each of those two halves actually
+  covers.) A room's code in `/headtohead/CVKQ7M` is the one exception and isn't
   really one: it is an invitation to a room that hasn't started, and it stops
   meaning anything at the exact moment it could have started replaying
   something — see below.
@@ -612,6 +613,41 @@ chosen by `gameOfDay` — a shuffled permutation of all seven per block of seven
 days, so every game gets exactly one day in seven and none can turn up twice in
 a week. No clock on a round — see above. Needs no server to work; falls back to
 a device-local table.
+
+### One go a device
+
+Two layers, and they are locks on different things — which is the whole of why
+both are needed:
+
+- **`playedOnThisDevice`** (`matchHistory.ts`, read by `checkEntry`) — has *this
+  browser* finished today's code, under **any** name. Answered from
+  localStorage, so no network is involved and pulling the plug is not a way
+  round it.
+- **The unique index on `(code, lower(btrim(player)))`** — has this *name*
+  already been filed for today, by anybody in the world. Postgres refuses the
+  second row, so it holds across devices.
+
+The first used to ask about the name as well, and that was the hole: typing
+something else was a fresh go at a table the whole world is on, and nothing but
+manners stopped it. Keyed on the device it takes a private window to get past.
+
+**Be honest about the ceiling.** No web page can identify a device — everything
+a browser stores, a browser can drop. A private window, a second browser or
+"clear site data" all buy another go, and a `device` column in Postgres would
+not change that, since the ID it keyed on would live in the same localStorage
+the private window doesn't have. The only version that actually holds is
+accounts, which is what GeoGuessr's daily challenge does and what this would
+need to become if the table ever matters that much. Wordle gets away with
+storing state in the browser and nothing else because it has **no leaderboard** —
+cheating it only cheats you. This game has a table, so it is one notch tighter,
+and that notch is all it is.
+
+**What it costs, knowingly:** the shared laptop. One household tablet is one go
+at today's round, whoever picks it up. So the block is written for a person who
+may not be the one who played — `Leaderboard`'s locked line says "This device
+has already played", never "you have" — and `HeadToHead` puts All Games and Duel
+a Friend under the table, since neither is rationed by the day. That offer only
+appears under a table the player was *sent* to, never one they asked to see.
 
 **Duel a Friend** (`kind: "room"`, code letter `V`). A drawn code, a lobby, and
 a moment when it starts. That moment is the only thing that travels — after it,

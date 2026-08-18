@@ -1,5 +1,11 @@
 import { rankResults, type SharedResult } from "./match";
-import { cacheResults, loadResults, playedHere, saveResult } from "./matchHistory";
+import {
+  cacheResults,
+  loadResults,
+  playedHere,
+  playedOnThisDevice,
+  saveResult,
+} from "./matchHistory";
 
 import { hasRemote, rest, RemoteError, UNIQUE_VIOLATION } from "./supabase";
 
@@ -126,21 +132,29 @@ export async function publishResult(result: SharedResult): Promise<Filing> {
   return { status: "filed", board: await fetchBoard(row.code) };
 }
 
-/** Whether a player can start this code, and if not, which of the two reasons. */
+/**
+ * Whether a player can start this code, and if not, which of the two reasons.
+ *
+ * `played` is about the **device**, not the name: this browser has finished
+ * today's round already. So it is also what the second person on a shared
+ * laptop is told, which is why the screen behind it says "this device" rather
+ * than "you" and offers the games that have no daily limit.
+ */
 export type Entry = "ok" | "played" | "name-taken";
 
 /**
  * Whether this player may have a go at this code.
  *
  * Two separate questions, asked in the order that keeps them honest. Has *this
- * device* finished it under this name — answered instantly and without a
- * network, so that pulling the plug can't buy a second attempt. Then: is the
- * name spoken for on today's table, which on a shared daily code is usually
+ * device* finished it — answered instantly and without a network, so that
+ * pulling the plug can't buy a second attempt, and asked of the device rather
+ * than of the name so that typing a different one isn't a second go. Then: is
+ * the name spoken for on today's table, which on a shared daily code is usually
  * somebody else entirely and wants saying so, since the answer is "pick another
  * name", not "you've already played".
  */
 export async function checkEntry(code: string, player: string): Promise<Entry> {
-  if (playedHere(key(code), player)) return "played";
+  if (playedOnThisDevice(key(code))) return "played";
   if (!hasRemote) return "ok";
 
   // The whole board rather than a query for the one name: a name is free text

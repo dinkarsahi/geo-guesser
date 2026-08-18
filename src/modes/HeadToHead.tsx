@@ -19,12 +19,20 @@ import Leaderboard from "../components/Leaderboard";
  * questions whenever their day allows, and a countdown there was rushing them
  * through the one thing the table is meant to measure.
  */
-const RULES = `${MATCH_ROUNDS} rounds, marked out of 100 a round as usual and averaged into one mark out of 100. No clock — take as long over each one as you like. One game a day and one go at it, for everyone, everywhere.`;
+const RULES = `${MATCH_ROUNDS} rounds, marked out of 100 a round as usual and averaged into one mark out of 100. No clock — take as long over each one as you like. One game a day and one go at it — a go a device, for everyone, everywhere.`;
 
 interface HeadToHeadProps {
   onBack: () => void;
   /** Play this match — the mode takes it from here. */
   onStart: (match: Match) => void;
+  /**
+   * Somewhere to go when today's round is spent. A player who has been turned
+   * away — or whose flatmate played it on this tablet — is told what the rest
+   * of the game is rather than left on a table with a back button, and these
+   * are the two things here that aren't rationed by the day.
+   */
+  onAllGames: () => void;
+  onDuel: () => void;
 }
 
 /**
@@ -54,7 +62,12 @@ interface HeadToHeadProps {
  * are what's being marked, so they're the only thing the table is drawn from:
  * how you'd rather see the world is your own business.
  */
-export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
+export default function HeadToHead({
+  onBack,
+  onStart,
+  onAllGames,
+  onDuel,
+}: HeadToHeadProps) {
   const [screen, setScreen] = useState<"pick" | "games" | "board">("pick");
   const [name, setName] = useState(loadName);
   // How this player likes the world drawn. Theirs alone now — everyone playing
@@ -74,6 +87,9 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
    * Off to play today's round of a game, under the name that will appear in
    * everyone's standings — unless this device has already had its go, or the
    * name is spoken for by one of the strangers sharing the table.
+   *
+   * The first of those is the device's and not the name's, so a second go can't
+   * be had by typing something else. See `playedOnThisDevice`.
    */
   const play = async () => {
     const code = parseMatchCode(dailyCode(today));
@@ -272,7 +288,28 @@ export default function HeadToHead({ onBack, onStart }: HeadToHeadProps) {
       )}
 
       {screen === "board" && (
-        <Leaderboard player={named ? name.trim() : undefined} locked={spent} />
+        <>
+          <Leaderboard player={named ? name.trim() : undefined} locked={spent} />
+          {/* Only under a table somebody was *sent* to. Printed under one they
+              asked to see, it would be a game offering the player a different
+              game for no reason. */}
+          {spent && (
+            <div className="h2h-elsewhere">
+              <p className="muted h2h-code-hint">
+                Today's round is one go a device, so the table means something.
+                Nothing else here is rationed.
+              </p>
+              <div className="button-row">
+                <button className="btn btn-ghost" onClick={onAllGames}>
+                  All Games ▸
+                </button>
+                <button className="btn btn-ghost" onClick={onDuel}>
+                  Duel a Friend ▸
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

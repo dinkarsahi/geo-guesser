@@ -11,7 +11,7 @@ interface LeaderboardProps {
   /** Whose row to mark as theirs, where they're on it. */
   player?: string;
   /**
-   * Arrived here from a game this player has already had their go at, rather
+   * Arrived here from a round this device has already had its go at, rather
    * than by asking. Worth saying out loud — otherwise being sent to a table
    * instead of a game reads as the game having broken.
    */
@@ -50,9 +50,13 @@ export default function Leaderboard({ mode, player, locked = false }: Leaderboar
   return (
     <div className="setup-panel h2h-code-panel">
       {locked && (
+        // "This device" rather than "you", and it is not a hedge: the lock is
+        // the device's, so this same line is what the second person on a shared
+        // laptop reads. Told "you've already played", they would be reading an
+        // accusation about a game they never had.
         <p className="h2h-locked">
-          You've already played today's {modeTitle(game)}. One go each — here's how it
-          went.
+          This device has already played today's {modeTitle(game)}. One go a day —
+          here's the table.
         </p>
       )}
 
