@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { TUBE_TAGLINE } from "./data/tube";
 import { type Match } from "./lib/match";
-import { spell, useRoute } from "./lib/useRoute";
+import { spellScreen, useRoute } from "./lib/useRoute";
 import CityLocator from "./modes/CityLocator";
 import CompanyGuesser from "./modes/CompanyGuesser";
 import CurrencyGuesser from "./modes/CurrencyGuesser";
@@ -323,7 +323,12 @@ export default function App() {
   const [session, setSession] = useState<Session>(NO_SESSION);
 
   const mode = route.at === "game" ? route.mode : null;
-  const path = spell(route);
+  // The screen's address rather than the literal path, which for a duel can
+  // carry the room code an invitation was followed on. That code is dropped the
+  // instant the room starts, and a session pinned to the whole path would read
+  // that as the player having left the screen and end the duel on its first
+  // round. See `spellScreen`.
+  const path = spellScreen(route);
 
   // A game belongs to the address it was started from, and moving anywhere else
   // ends it — including when the move was the browser's own back button rather
@@ -346,6 +351,16 @@ export default function App() {
   // dependencies — rebuilt every render, it would tear down and reset that
   // timer on every render too.
   const startMatch = useCallback((m: Match) => setSession({ path, started: false, match: m }), [path]);
+
+  // A room's code in the address bar, or out of it. Replaced rather than
+  // pushed: an invitation appearing when a room is made and going again when it
+  // starts are the same screen either way, and neither is a place the back
+  // button should be able to return to — least of all the second, which by then
+  // is a link that no longer lets anybody in.
+  const showInvite = useCallback(
+    (code: string | null) => go({ at: "duel", code: code ?? undefined }, true),
+    [go],
+  );
 
   const modeProps = { onExit: toMenu, settings };
 
@@ -382,7 +397,14 @@ export default function App() {
   }
 
   if (route.at === "duel") {
-    return <PlayFriend onBack={() => go({ at: "home" })} onStart={startMatch} />;
+    return (
+      <PlayFriend
+        invite={route.code}
+        onInvite={showInvite}
+        onBack={() => go({ at: "home" })}
+        onStart={startMatch}
+      />
+    );
   }
 
   if (mode && started) {

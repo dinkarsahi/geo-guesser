@@ -182,6 +182,7 @@ browser's own back button works without a line of wiring.
 | `/` | the three doors |
 | `/dailyround` | Today's Round — the `HeadToHead` component |
 | `/headtohead` | Duel a Friend — the `PlayFriend` component |
+| `/headtohead/CVKQ7M` | an invitation to one room — see "The invite link" |
 | `/allgames` | the shelf |
 | `/cityspotter`, `/flagspotter`, `/currencyspotter`, `/corporatehqspotter`, `/populationspotter`, `/tubestationspotter`, `/timezonespotter` | that game's setup screen, and the round itself |
 
@@ -204,7 +205,10 @@ Three things follow, and they're the point rather than side effects:
   — so the way to stop a path replaying a round is to not put the round in it.
   (Scores were never resting on this: `checkEntry` plus the unique index on
   `(code, player)` is what makes today's round one go, "however the player got
-  there".)
+  there".) A room's code in `/headtohead/CVKQ7M` is the one exception and isn't
+  really one: it is an invitation to a room that hasn't started, and it stops
+  meaning anything at the exact moment it could have started replaying
+  something — see below.
 - **A contest's round keeps the contest's address**, not the game's. A refresh
   mid-daily lands on `/dailyround`, where the one-go guard is, and mid-duel on
   `/headtohead`, where `joinedHere` puts the player back in the round in
@@ -214,7 +218,12 @@ Three things follow, and they're the point rather than side effects:
   it only while the two agree. Derived rather than cleared by an effect watching
   the path — cleared, there'd be a render where a finished game is still on
   screen because the tidying-up hasn't run, and `react-hooks` refuses the
-  `setState`-in-effect that would do it.
+  `setState`-in-effect that would do it. The path it carries is
+  **`spellScreen`'s**, not `spell`'s: an invitation's code is who sent you and
+  not where you are, so `/headtohead/CVKQ7M` and `/headtohead` are one screen.
+  Compared on the whole path instead, the code being dropped as the duel starts
+  reads as the player having walked off the screen, and the round ends a
+  fraction of a second after it begins.
 
 **The trap, and it only bites in production:** the host serves `/allgames` as a
 file that doesn't exist, so *clicking* to it works and refreshing or sharing the
@@ -222,10 +231,48 @@ link 404s. `vercel.json` rewrites everything to `index.html`, which is what make
 a deep link work at all. Vite's dev server already falls back, so this cannot be
 caught locally. Anything that replaces that file has to keep the rewrite.
 
-Not built, deliberately: **no code in any URL**. `/headtohead/MVVB5A9` would
-make a room code a link to send rather than a code to read out, and reloading it
-already works — but it was judged as one more path that could deal a round
-again, and left out until that's wanted.
+### The invite link
+
+`/headtohead/CVKQ7M` is a room, as a link to send. It was deliberately not built
+for a while — a path carrying a code is a path that could deal a round again —
+and what made it safe is that **the link dies the moment the room starts**,
+which is also the moment it could have become a way to replay anything.
+
+The code appears in the address bar as soon as there is a room to point at, so
+the host's link is the link they are looking at, and the lobby copies that
+rather than the bare code (`inviteLink`, and the "Copy invite link" button). The
+code is still printed large for reading out: a room fills up both ways.
+
+What a fresh visitor to the link gets is decided in one place, the invitation
+effect in `PlayFriend`, and it is decided against the room rather than the path:
+
+| The room | What happens |
+|---|---|
+| still `waiting` | the invite screen — which duel this is, and a name box |
+| already on this device's list (`joinedHere`) | straight back to the lobby or the round in progress; a reloaded lobby, a locked phone, the host reopening their own link |
+| `starting`, `playing` or `over`, and not theirs | `/headtohead`, with "this duel started without you" |
+| no such room, or a code the parser turns down | `/headtohead`, with a word about the code or none at all |
+
+Two things this leans on, and both are load-bearing:
+
+- **Everyone in the room loses the code from their bar when the round opens**,
+  not just the people who were too late. The link has to be dead in the address
+  bar of the players themselves, since they are the ones who might paste it on —
+  and a round belongs at the contest's own address anyway.
+- **The join is re-checked against the server** when the button is pressed, not
+  trusted from the lookup that drew the screen. The host may well have started
+  it in between, and the insert policy on `duel_players` refuses it a third time
+  from inside Postgres.
+
+**The trap, and it cost two rounds of debugging.** A `useRef` used as a
+ran-once flag inside that effect is broken under React's strict mode, which
+mounts every component twice in development: the first mount sets the flag and
+has its work cancelled by its own cleanup, the second finds the flag set and
+skips, and the invitation sits on "Looking up the room…" for ever. The ref there
+records only the codes *this screen put in the bar itself* — which is a fact
+about ownership rather than about having run — and that is what stops a host's
+own lobby from reading its address bar as an invitation to the room they are
+standing in.
 
 ## The seven games
 
@@ -569,7 +616,9 @@ a device-local table.
 **Duel a Friend** (`kind: "room"`, code letter `V`). A drawn code, a lobby, and
 a moment when it starts. That moment is the only thing that travels — after it,
 every device works out which round should be on screen from the shared clock, so
-there is no connection to lose. Rooms need Supabase outright.
+there is no connection to lose. Rooms need Supabase outright. The code is also a
+link while the room is open — see "The invite link" above, which is where the
+rule that shuts it is written down.
 
 **A room takes its players before it starts, and never during.** Pressing start
 shuts the code: `PlayFriend`'s join screen refuses anything whose `roomPhase`
