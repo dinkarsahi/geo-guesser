@@ -1,5 +1,6 @@
 import { MAX_ROUND_SCORE } from "../lib/geo";
 import { MATCH_MODES, MATCH_ROUNDS } from "../lib/match";
+import { CONTACT_EMAIL } from "../lib/site";
 import type { ModeId } from "../modes/ModeProps";
 
 /**
@@ -52,6 +53,7 @@ interface AboutProps {
   onBack: () => void;
   onPlay: () => void;
   onCredits: () => void;
+  onPrivacy: () => void;
 }
 
 /**
@@ -62,7 +64,7 @@ interface AboutProps {
  * than it looks like it should, and which games aren't marked on distance —
  * the last of which is the single most common way to misread a score here.
  */
-export default function About({ onBack, onPlay, onCredits }: AboutProps) {
+export default function About({ onBack, onPlay, onCredits, onPrivacy }: AboutProps) {
   return (
     <div className="menu doc">
       <div className="menu-bar">
@@ -185,6 +187,14 @@ export default function About({ onBack, onPlay, onCredits }: AboutProps) {
             filed against that game's code so the standings can be drawn. Your name, your
             results and a record of which rounds you have already played are also kept in
             your own browser, which is what lets the game remember you between visits.
+          </p>
+          <p>
+            The whole of it, including how to have a score taken off a table, is on the{" "}
+            <button className="doc-link" onClick={onPrivacy}>
+              privacy page
+            </button>
+            . Anything else, write to{" "}
+            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
           </p>
         </section>
       </div>

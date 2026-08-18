@@ -191,9 +191,24 @@ link to live, and it carries the two pages behind it:
   provided by Transport for London", and the MIT and ISC licences on React,
   three.js, react-globe.gl, react-simple-maps, prop-types and d3-geo require
   their notices to travel with what ships. Take a dependency, add it there.
+- **`Privacy`** — written from the code rather than from a template, and that
+  is the point: it names the four `localStorage` keys because those are the
+  four that exist, and says the scores sit in the EU because the Supabase
+  project is in `eu-central-1`. **Change what the app stores and this page is
+  part of the change** — a policy that lists storage the site doesn't use, or
+  misses what it does, is the one document here that can be checked against the
+  source. It also carries the erasure route, which is a person and an inbox
+  rather than a button: nothing can delete a filed score by design, so removal
+  is done by hand in the Supabase dashboard.
 
-Both are `.doc` in the stylesheet, which is the one place in this app where text
-is set left in a reading column rather than centred under a heading.
+All three are `.doc` in the stylesheet, which is the one place in this app where
+text is set left in a reading column rather than centred under a heading.
+
+**`src/lib/site.ts`** holds the facts about the site as opposed to the game —
+the contact address, the date the policy last moved, and where the data is kept.
+They are in one place because they appear in several, and an address that says
+one thing in the footer and another in the policy is a request that goes
+nowhere.
 
 The trademark disclaimer for the company logos is in **two** places on purpose:
 the credits page, and `smallprint` on the Corporate HQ card, which prints it on
@@ -215,6 +230,7 @@ browser's own back button works without a line of wiring.
 | `/allgames` | the shelf |
 | `/about` | what the game is and how it's marked |
 | `/credits` | where the maps, shapes, logos and code came from |
+| `/privacy` | what the game knows about the people who play it |
 | `/cityspotter`, `/flagspotter`, `/currencyspotter`, `/corporatehqspotter`, `/populationspotter`, `/tubestationspotter`, `/timezonespotter` | that game's setup screen, and the round itself |
 
 **The names crossed over and the file says so:** `/headtohead` is Duel a Friend,

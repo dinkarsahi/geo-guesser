@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import About from "./components/About";
 import Credits from "./components/Credits";
+import Privacy from "./components/Privacy";
 import SiteFooter from "./components/SiteFooter";
 import { TUBE_TAGLINE } from "./data/tube";
 import { type Match } from "./lib/match";
@@ -422,6 +423,7 @@ export default function App() {
         onBack={() => go({ at: "home" })}
         onPlay={() => go({ at: "games" })}
         onCredits={() => go({ at: "credits" })}
+        onPrivacy={() => go({ at: "privacy" })}
       />,
     );
   }
@@ -430,6 +432,10 @@ export default function App() {
     return page(
       <Credits onBack={() => go({ at: "home" })} onAbout={() => go({ at: "about" })} />,
     );
+  }
+
+  if (route.at === "privacy") {
+    return page(<Privacy onBack={() => go({ at: "home" })} />);
   }
 
   if (route.at === "daily") {

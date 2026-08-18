@@ -42,6 +42,8 @@ export type Route =
   | { at: "about" }
   /** Where the maps, the shapes, the logos and the code came from. */
   | { at: "credits" }
+  /** What the game knows about the people who play it. */
+  | { at: "privacy" }
   /** A game off the shelf: its setup screen, and the round itself. */
   | { at: "game"; mode: ModeId };
 
@@ -84,6 +86,7 @@ const GAMES = "allgames";
  */
 const ABOUT = "about";
 const CREDITS = "credits";
+const PRIVACY = "privacy";
 
 /** What a path means. Anything unrecognised is the front door. */
 function parse(path: string): Route {
@@ -105,6 +108,7 @@ function parse(path: string): Route {
   if (at === GAMES) return { at: "games" };
   if (at === ABOUT) return { at: "about" };
   if (at === CREDITS) return { at: "credits" };
+  if (at === PRIVACY) return { at: "privacy" };
   const mode = (Object.keys(MODE_PATHS) as ModeId[]).find((m) => MODE_PATHS[m] === at);
   return mode ? { at: "game", mode } : { at: "home" };
 }
@@ -122,6 +126,8 @@ export function spell(route: Route): string {
       return `/${ABOUT}`;
     case "credits":
       return `/${CREDITS}`;
+    case "privacy":
+      return `/${PRIVACY}`;
     case "game":
       return `/${MODE_PATHS[route.mode]}`;
     default:

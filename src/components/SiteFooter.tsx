@@ -1,4 +1,5 @@
 import { MATCH_ROUNDS } from "../lib/match";
+import { CONTACT_EMAIL } from "../lib/site";
 import type { Route } from "../lib/useRoute";
 
 interface SiteFooterProps {
@@ -14,6 +15,7 @@ const LINKS: { route: Route; label: string }[] = [
   { route: { at: "games" }, label: "All Games" },
   { route: { at: "about" }, label: "About" },
   { route: { at: "credits" }, label: "Credits" },
+  { route: { at: "privacy" }, label: "Privacy" },
 ];
 
 /**
@@ -42,6 +44,11 @@ export default function SiteFooter({ go, here }: SiteFooterProps) {
             {l.label}
           </button>
         ))}
+        {/* A real address rather than a form: there is no server here to take
+            one, and a game this small is better answered from an inbox. */}
+        <a className="site-footer-link" href={`mailto:${CONTACT_EMAIL}`}>
+          Contact
+        </a>
       </nav>
       {/* The one line that has to be here whatever else is: who the game
           belongs to, and the year it says so in. */}
