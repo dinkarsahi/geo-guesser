@@ -726,15 +726,20 @@
   gap: 8px;
   width: 100%;
 }
+/* Every colour below is written out rather than taken from the theme, and it
+   is the same reason the picked line is: this panel is dark whatever the page
+   is, and the day palette's near-black text on it came out invisible. The
+   marks were the worst of it — a column of points nobody could read is a
+   column that may as well not be printed. */
 .room-next {
   margin: 0;
   font-family: var(--heading);
   font-size: 16px;
-  color: var(--text);
+  color: #d1d5db;
 }
 .room-next strong {
   font-size: 20px;
-  color: var(--accent);
+  color: #c4b5fd;
   font-variant-numeric: tabular-nums;
 }
 /* The other kind of wait: names rather than a number, so they sit at the size
@@ -752,6 +757,7 @@
   margin: 0;
   font-size: 13px;
   text-align: center;
+  color: #9ca3af;
 }
 /* What the columns are, said once so they aren't guessed at. */
 .room-live-head {
@@ -762,8 +768,8 @@
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--text);
-  border-bottom: 1px solid var(--border);
+  color: #9ca3af;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 0;
   padding-bottom: 3px;
 }
@@ -799,20 +805,23 @@
 .room-live-round {
   grid-template-columns: 1fr 52px;
 }
+/* Your own line, and it has to survive being read in three seconds over a map:
+   a tenth of a purple — which is what the theme's accent wash is — is no row at
+   all on a panel this dark. */
 .room-live-row.is-you {
-  background: var(--accent-bg);
+  background: rgba(192, 132, 252, 0.24);
 }
 .room-live-name {
   text-align: left;
   font-weight: 600;
-  color: var(--text-h);
+  color: #fff;
   overflow-wrap: anywhere;
 }
 .room-live-score {
   text-align: right;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: var(--text-h);
+  color: #fff;
 }
 
 /* ---- Game shell ----------------------------------------------------- */
