@@ -318,6 +318,17 @@ export default function GlobeMap({
           if (countryAt(shapes, c)) onGuess(c);
         }}
         onPolygonHover={(polygon) => setOverLand(!!polygon)}
+        // In the scene from the first frame, and **measured to be the reason
+        // the arrival is often not seen**: building these 242 outlines blocks
+        // the main thread for about three seconds when a globe game starts, on
+        // the production build and warm, which is the whole of the count-in.
+        //
+        // Holding them back until the fall lands was tried and is worse: the
+        // glide becomes perfect and the freeze moves to the moment the round
+        // opens, which in a duel is answering time. The fix is to stop the
+        // build being on this path at all — most likely by having the globe
+        // built while the setup screen is up rather than when Start is pressed
+        // — and until then this stays where the cost is least harmful.
         polygonsData={polygons}
         // Kept as flat to the surface as the stroke allows: the polygons are
         // what you click, so the further they float the further a click at a

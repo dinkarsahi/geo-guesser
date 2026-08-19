@@ -8,6 +8,7 @@ import TopBar from "./components/TopBar";
 import { TUBE_TAGLINE } from "./data/tube";
 import { type Match } from "./lib/match";
 import { loadSettings, saveSettings } from "./lib/preferences";
+import { loadWorldShapes } from "./lib/worldShapes";
 import { spellScreen, useRoute, type Route } from "./lib/useRoute";
 import CityLocator from "./modes/CityLocator";
 import CityScrapbook, { SCRAPBOOK_TITLE } from "./modes/CityScrapbook";
@@ -106,12 +107,17 @@ const MODES: (GameCard & { id: Mode })[] = [
 /**
  * The bench: a copy of City Spotter kept aside to try things on.
  *
+ * **Off the shelf and reachable only at `/gamemakersscrapbook`.** Nothing is on
+ * trial there at the moment — the fall through space and the sky both
+ * graduated — and a card offering a copy of a game that scores nothing is an
+ * odd thing to put in front of a player who came to play. It is one line away
+ * from coming back: a `mode-card` in `AllGames` pressing `go({ at: "bench" })`.
+ *
  * A card of its own rather than a row in `MODES`, because it must never be a
  * `ModeId` — that would enter it in the daily rota and in duel codes, which is
  * the last place an experiment belongs. It is a `GameCard` and not a
  * `GameCard & { id }`, and the type split exists for exactly this. See
- * `CityScrapbook` for the rest of the rules it lives by, and take this
- * constant out with it.
+ * `CityScrapbook` for the rest of the rules it lives by.
  */
 const SCRAPBOOK: GameCard = {
   title: SCRAPBOOK_TITLE,
@@ -124,6 +130,7 @@ const SCRAPBOOK: GameCard = {
 /** Choose how to play before a mode starts. */
 function ModeSetup({
   mode,
+  warmWorld,
   onStart,
   onBack,
 }: {
@@ -131,9 +138,28 @@ function ModeSetup({
   // without being a game — a bench, next time there is one, which is a copy of
   // a game and wants the same screen in front of it.
   mode: GameCard;
+  /** Whether this game will want the country shapes. The tube won't. */
+  warmWorld: boolean;
   onStart: () => void;
   onBack: () => void;
 }) {
+  // Fetch and build the world while this screen is up, rather than at the
+  // moment the round opens.
+  //
+  // The shapes are a megabyte of Natural Earth that has to be parsed, coarsened
+  // for the globe and indexed by bounding box, and doing all of it on the first
+  // frame of a round blocked the main thread for **four seconds** on a cold
+  // start — long enough to swallow the count-in whole and skip the arrival
+  // entirely, since by the time anything could animate there was nothing left
+  // of the window to animate in. Started here it is usually finished before
+  // Start is pressed, and the fall has a free thread to glide on.
+  //
+  // `loadWorldShapes` caches its own promise, so this is a warm-up and not a
+  // second download however many times it is called.
+  useEffect(() => {
+    if (warmWorld) void loadWorldShapes().catch(() => {});
+  }, [warmWorld]);
+
   return (
     <div className="menu setup">
       <div className="menu-bar">
@@ -213,11 +239,9 @@ function DuelMark() {
  */
 function AllGames({
   onPick,
-  onBench,
   onBack,
 }: {
   onPick: (mode: Mode) => void;
-  onBench: () => void;
   onBack: () => void;
 }) {
   return (
@@ -240,16 +264,6 @@ function AllGames({
             <span className="muted mode-blurb">{m.blurb}</span>
           </button>
         ))}
-        {/* The bench, at the end of the shelf with the unfinished things
-            rather than among the games: it is a copy of one of them and a score
-            off it means nothing, so standing it eighth in the row would offer
-            it as a game to play. */}
-        <button className="mode-card" onClick={onBench}>
-          <span className="mode-emoji">{SCRAPBOOK.emoji}</span>
-          <span className="mode-title">{SCRAPBOOK.title}</span>
-          <span className="mode-hook">{SCRAPBOOK.hook}</span>
-          <span className="muted mode-blurb">{SCRAPBOOK.blurb}</span>
-        </button>
         {/* What's being built, on the shelf it will stand on. A div rather than
             a button because there is nothing behind it yet: a card that takes
             the press and does nothing reads as a broken game rather than an
@@ -478,6 +492,7 @@ export default function App() {
     return page(
       <ModeSetup
         mode={MODES.find((m) => m.id === mode)!}
+        warmWorld={mode !== "tube"}
         onStart={() => setSession({ path, started: true, match: null })}
         // Back to the shelf the game was picked off, not out to the home page:
         // somebody who opened the wrong one of seven wanted a different one.
@@ -495,6 +510,7 @@ export default function App() {
     return page(
       <ModeSetup
         mode={SCRAPBOOK}
+        warmWorld
         onStart={() => setSession({ path, started: true, match: null })}
         onBack={() => go({ at: "games" })}
       />,
@@ -505,7 +521,6 @@ export default function App() {
     return page(
       <AllGames
         onPick={(m) => go({ at: "game", mode: m })}
-        onBench={() => go({ at: "bench" })}
         onBack={() => go({ at: "home" })}
       />,
     );

@@ -25,12 +25,12 @@ export type Phase = "guessing" | "result" | "done";
  *
  * A whole number of seconds, because it is counted out loud on screen: 3.4
  * reads "Starting in 4" for the first tenth of a second, which is a countdown
- * that opens by lying about how long it is. Two rather than three because it
- * is a cover for a download and not a feature — long enough that the world has
- * usually arrived, short enough that somebody on their sixth game isn't
- * waiting on it.
+ * that opens by lying about how long it is. Three rather than two because the
+ * approach is meant to read as a glide towards the world rather than a rush at
+ * it, and two seconds of the same journey is the same distance covered in less
+ * time — which is exactly what being rushed is.
  */
-export const INTRO_MS = 2000;
+export const INTRO_MS = 3000;
 
 export interface RoundResult {
   /** Where the guess counts as having been made — see `guessAt`. Null if the clock beat the player to it. */

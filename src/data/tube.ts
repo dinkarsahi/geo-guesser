@@ -51,20 +51,23 @@ export const lineColors: Record<string, string> = {
 };
 
 /**
- * The one line that has to be repainted on a dark ground.
+ * Which lines need outlining to be seen on a dark ground.
  *
- * The Northern line is black, which is fine on white paper and invisible on a
- * dark map — a whole line simply missing. White is what dark transit maps
- * everywhere put in its place, and it is the one substitution that can't be
- * confused with another line here: the Jubilee is already the grey.
+ * The Northern line is black: fine on white paper, and on a dark map a whole
+ * line simply missing. It was painted white for a while, which solved the
+ * seeing and lost the line — the Northern line is *black*, and a white one is
+ * somebody else's map.
  *
- * **Only what disappears gets changed.** A line's colour is how a Londoner
- * reads this map at a glance, and a Piccadilly that isn't dark blue is a
- * different map however dark the background is. Every other line keeps TfL's
- * colour on both grounds.
+ * So it keeps its colour and gets a casing instead: a lighter stroke drawn
+ * underneath and a little wider, which is how paper maps have always separated
+ * a line from what it crosses. The black reads as black, darker than the
+ * ground it sits on, with a thin light edge that makes it impossible to lose.
+ *
+ * **Only what disappears is touched.** A line's colour is how a Londoner reads
+ * this map at a glance, and every line keeps TfL's on both grounds.
  */
-export const darkGroundColor = (color: string): string =>
-  color.toLowerCase() === "#000000" ? "#FFFFFF" : color;
+export const needsCasing = (color: string): boolean =>
+  color.toLowerCase() === "#000000";
 
 /** All 11 lines, in the palette actually drawn on the map (used by the key). */
 export const tubeLines: TubeLineDef[] = tubeLineDefs.map((l) => ({

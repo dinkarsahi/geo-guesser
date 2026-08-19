@@ -10,7 +10,7 @@ import { geoMercator } from "d3-geo";
 import type { Coord } from "../lib/geo";
 import type { GuessMapProps } from "./mapTypes";
 import {
-  darkGroundColor,
+  needsCasing,
   stationCoords,
   tubeConnections,
   tubeLines,
@@ -291,15 +291,30 @@ export default function LondonMap({
         bg: "#0d0f14", zoneOdd: "#141821", zoneEven: "#1c212c", borough: "#2b313d",
         dot: "#0d0f14", dotStroke: "#cbd2dc", labelBg: "#1c212c", labelStroke: "#5a6473",
         labelText: "#cbd2dc", thames: "#1d3a55", hoverRing: "#c084fc",
+        // The light edge under a line dark enough to be lost in the ground.
+        // Not pure white: at this width that reads as the line rather than as
+        // its outline, which is the mistake this replaced.
+        casing: "#aab3c0",
       }
     : {
         bg: "#ffffff", zoneOdd: "#ffffff", zoneEven: "#e6e6e6", borough: "#d3d3d3",
         dot: "#ffffff", dotStroke: "#222", labelBg: "#ffffff", labelStroke: "#8a8a8a",
         labelText: "#333", thames: "#9dc3e6", hoverRing: "#7c3aed",
+        // Never used on white paper, where a black line is the easiest thing
+        // on the map to see. Present so the two themes are the same shape.
+        casing: "#ffffff",
       };
-  // Every line colour passes through here on its way to the screen, so the map
-  // and its key can never disagree about what the Northern line looks like.
-  const ink = (color: string) => (dark ? darkGroundColor(color) : color);
+  // Which lines get a light casing under them: only on the dark ground, and
+  // only the ones that would otherwise vanish into it. Asked in one place so
+  // the map and its key can never disagree about how a line looks.
+  const cased = (color: string) => dark && needsCasing(color);
+  /**
+   * How much wider the casing is than the line it sits under, in the same
+   * units as the line — so it goes through `szStroke` with it and the light
+   * edge stays the same fraction of the line at every zoom. A flat pixel
+   * amount would be a fat outline zoomed out and a hairline zoomed in.
+   */
+  const CASING = 1.6;
 
   // Fit a Mercator projection to the width, then size the height to the data so
   // there's no empty band above/below the network.
@@ -809,10 +824,24 @@ export default function LondonMap({
               const off = szStroke(STRIPE_GAP) * c.slot;
               const ox = (-dy / len) * off;
               const oy = (dx / len) * off;
+              const x1 = qa[0] + ox;
+              const y1 = qa[1] + oy;
+              const x2 = qb[0] + ox;
+              const y2 = qb[1] + oy;
               return (
-                <line key={i} x1={qa[0] + ox} y1={qa[1] + oy} x2={qb[0] + ox} y2={qb[1] + oy}
-                  stroke={ink(c.color)} strokeWidth={szStroke(LINE_WIDTH)}
-                  strokeLinecap="round" />
+                <g key={i}>
+                  {/* The casing, where one is owed — drawn first so the line
+                      itself lands on top of it and only its edges show. */}
+                  {cased(c.color) && (
+                    <line x1={x1} y1={y1} x2={x2} y2={y2}
+                      stroke={theme.casing}
+                      strokeWidth={szStroke(LINE_WIDTH + CASING)}
+                      strokeLinecap="round" />
+                  )}
+                  <line x1={x1} y1={y1} x2={x2} y2={y2}
+                    stroke={c.color} strokeWidth={szStroke(LINE_WIDTH)}
+                    strokeLinecap="round" />
+                </g>
               );
             })}
 
@@ -889,7 +918,15 @@ export default function LondonMap({
           <ul className="tube-key" id="tube-key">
             {tubeLines.map((l) => (
               <li key={l.id}>
-                <span className="tube-key-swatch" style={{ background: ink(l.color) }} />
+                <span
+                  className="tube-key-swatch"
+                  style={{
+                    background: l.color,
+                    // The same casing the map draws, so a black swatch on a
+                    // dark panel is as findable as the line it stands for.
+                    boxShadow: cased(l.color) ? `0 0 0 2px ${theme.casing}` : undefined,
+                  }}
+                />
                 {l.name}
               </li>
             ))}

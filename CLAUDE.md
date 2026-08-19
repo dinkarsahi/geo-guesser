@@ -92,11 +92,11 @@ the ordinary reading, which is what an unanswered one wants.
 
 ### The arrival: `INTRO_MS`, and why a duel can afford it
 
-**A game on the 3D globe waits two seconds before its first round opens** —
+**A game on the 3D globe waits three seconds before its first round opens** —
 once a game, never between rounds. Press Start and the map is on screen before
 its imagery is, so a round used to open on an empty rectangle or a world that
 appeared a moment after the question. The pause covers that, the corner counts
-"Starting in 2, 1" where the round clock normally sits, and there is a fall
+"Starting in 3, 2, 1" where the round clock normally sits, and there is a fall
 through space to watch while it passes (`globeFlight.ts`).
 
 **Only the globe.** The flat map and the tube map are drawn by the time the
@@ -109,14 +109,27 @@ two that don't want it say so.
 `INTRO_MS` lives in `useGame.ts`, which owns when a round begins. A whole
 number of seconds because it is counted out loud: 3.4 reads "Starting in 4" for
 the first tenth of a second, a countdown that opens by lying about how long it
-is. Two rather than three because it is a cover for a download and not a
-feature.
+is. Three rather than two because the approach is meant to read as a glide
+towards the world rather than a rush at it, and the same journey in less time
+is exactly what being rushed is.
+
+**The unsolved half, measured rather than guessed.** Building the globe's 242
+country outlines blocks the main thread for **about three seconds** when a
+globe game starts — on the production build, warm, not just in dev. That is the
+whole count-in, so the fall is skipped about as often as it plays and the
+player sees the frozen black rectangle this was built to replace. Holding the
+outlines back until the fall lands was tried: the glide becomes perfect and the
+freeze moves to the moment the round opens, which in a duel is answering time.
+Strictly worse, so it was reverted. The fix is to take that build off this path
+altogether — most likely by building the globe while the setup screen is up
+rather than when Start is pressed. `loadWorldShapes()` is already warmed there
+for the same reason; it bought about a second and is not enough on its own.
 
 **The duel is the interesting half.** A room's rounds are worked out by
 arithmetic from `match.startAt` — every device decides which round is on screen
 from the room's clock, which is why a duel needs no connection once it has
 begun. So a *local* pause could never hold that clock: it would simply cost
-that player two seconds of a thirty-second round, and only the player whose
+that player three seconds of a thirty-second round, and only the player whose
 tiles were slow. `matchOptions` therefore moves the room's start **back** by
 `INTRO_MS`, so the pause is inside the timetable. Every device shifts by the
 same constant, the room stays in step, and nobody's round is any shorter. That

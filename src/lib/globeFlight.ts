@@ -43,14 +43,37 @@ import { INTRO_MS } from "./useGame";
  */
 export const FLIGHT_MS = INTRO_MS;
 
-/** How far out it starts, in globe radii — the Earth as a bright dot. */
-const START_ALTITUDE = 14;
+/**
+ * How far out it starts, in globe radii — the Earth as a distant marble.
+ *
+ * Chosen for how fast the journey *feels* rather than for how far it is. The
+ * distance covered and the time to cover it are the same knob: from fourteen
+ * radii the camera has to hurry to arrive, and the arrival read as being
+ * rushed at the world rather than gliding towards it. Ten over three seconds
+ * is a drift with somewhere to be.
+ */
+const START_ALTITUDE = 10;
 
-/** How far round the world turns on the way in. Most of a rotation. */
-const SPIN_DEGREES = 260;
+/**
+ * How far round the world turns on the way in.
+ *
+ * The other half of the same feeling. Two-thirds of a rotation across three
+ * seconds is a world turning under you; most of a rotation across the same
+ * three was a world being spun, and it fought the calm of the approach.
+ */
+const SPIN_DEGREES = 150;
 
-/** How long the planets take to fade once the fall is over. */
-const FADE_MS = 500;
+/**
+ * How long the planets take to fade, and they fade **into** the landing rather
+ * than after it.
+ *
+ * Cut at the end, a planet square in front of the player blinked out; faded
+ * afterwards, they were still dissolving over a globe that was already being
+ * played. Beginning the fade this long before the camera lands puts the last
+ * of them out exactly as the round opens — and slowly enough to read as the
+ * sky clearing rather than as scenery being taken away.
+ */
+const FADE_MS = 1400;
 
 interface Controls {
   maxDistance: number;
@@ -110,14 +133,14 @@ export function flyIn(
   };
 
   let fade = 0;
+  // The fade starts before the camera lands, so the sky is clear at the moment
+  // the round opens. On a fall too short to hold the whole fade, it simply
+  // starts at once and runs as long as there is.
+  const fadeMs = Math.min(FADE_MS, ms);
   const landed = window.setTimeout(() => {
-    controls.maxDistance = homeDistance;
-    // Faded rather than cut. At the end of the fall a planet can be square in
-    // front of the player, and having one blink out of existence is a worse
-    // interruption than the pause this was built to hide.
     const startedAt = performance.now();
     const dim = (now: number) => {
-      const gone = Math.min(1, (now - startedAt) / FADE_MS);
+      const gone = Math.min(1, (now - startedAt) / fadeMs);
       // Walked rather than reached into: a planet is a group now, and the
       // ringed one keeps its disc in a second mesh that has to dim with it.
       for (const planet of planets) {
@@ -128,11 +151,18 @@ export function flyIn(
           if (material) material.opacity = (1 - gone) * baseOpacity(material);
         });
       }
-      if (gone < 1) fade = requestAnimationFrame(dim);
-      else drop();
+      if (gone < 1) {
+        fade = requestAnimationFrame(dim);
+        return;
+      }
+      // The camera's leash comes back at the same moment the sky clears, which
+      // is the moment the round begins. Left open any longer, a player could
+      // pull the world away to a dot mid-round.
+      controls.maxDistance = homeDistance;
+      drop();
     };
     fade = requestAnimationFrame(dim);
-  }, ms);
+  }, ms - fadeMs);
 
   let dropped = false;
   const drop = () => {
