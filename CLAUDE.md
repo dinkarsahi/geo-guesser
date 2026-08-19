@@ -125,23 +125,25 @@ altogether — most likely by building the globe while the setup screen is up
 rather than when Start is pressed. `loadWorldShapes()` is already warmed there
 for the same reason; it bought about a second and is not enough on its own.
 
-**The duel is the interesting half.** A room's rounds are worked out by
-arithmetic from `match.startAt` — every device decides which round is on screen
-from the room's clock, which is why a duel needs no connection once it has
-begun. So a *local* pause could never hold that clock: it would simply cost
-that player three seconds of a thirty-second round, and only the player whose
-tiles were slow. `matchOptions` therefore moves the room's start **back** by
-`INTRO_MS`, so the pause is inside the timetable. Every device shifts by the
-same constant, the room stays in step, and nobody's round is any shorter. That
-one line is the whole mechanism, and it only works because the shift is a
-constant rather than "however long my map took".
+**A duel has none of this**, and that is a decision rather than an oversight.
+A room's rounds are worked out by arithmetic from `match.startAt` — every
+device decides which round is on screen from the room's clock, which is why a
+duel needs no connection once it has begun. A *local* pause therefore cannot
+hold that clock: it would simply cost that player three seconds of a
+thirty-second round, and only the player whose tiles were slow. It **can** be
+afforded by moving the room's whole start back by the same constant, which was
+built and worked; it came out again because it bought a nicety at the price of
+the most delicate arithmetic in the app, where a mistake means one player
+counting down while the rest are already answering. `matchOptions` passes
+`intro: false` for a room and leaves `startAt` alone.
 
-**The invariant to keep:** `onGlobe` in `match.ts` decides whether the room's
-timetable is shifted, and each mode's `intro` decides whether its player is
-counted in. They are the same question and must give the same answer — if they
-ever disagree, one device counts down while the others are already playing. A
-room is safe by construction today because `App` hands every player the host's
-`flat` and the room's mode, so both sides read the same two facts.
+Today's round keeps the arrival: it has no timetable to disturb.
+
+**The trap in that one line:** it is spread in only when false, never as
+`intro: undefined`. `matchOptions` is spread *over* the mode's own `intro`, and
+a key that is present and undefined still wins — it would take the option's
+default of true and switch the arrival on for the flat map, which has nothing
+to arrive from.
 
 Two things follow, both load-bearing:
 

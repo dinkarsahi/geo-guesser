@@ -115,11 +115,30 @@ export function flyIn(
   const homeDistance = controls.maxDistance;
   controls.maxDistance = flightDistance;
 
-  // Set instantly, then tweened on the next frame. Both in one call would be
-  // a tween from wherever the camera happened to be, which is the middle of
-  // the world on a globe that has only just been built.
-  pointOfView({ lat: target.lat, lng: target.lng - SPIN_DEGREES, altitude: START_ALTITUDE });
-  const opening = requestAnimationFrame(() => pointOfView(target, ms));
+  // Flown frame by frame rather than handed to `pointOfView`'s own tween, and
+  // the reason is the last half-second of it.
+  //
+  // That tween eases the *altitude*, and how big the world looks goes as one
+  // over the distance to it — so an altitude slowing evenly still swells on
+  // screen faster and faster the nearer it gets, and the glide ended in a lunge
+  // at the globe. Interpolating the altitude **geometrically** instead, each
+  // frame a fixed fraction of the last, makes the apparent size grow at an
+  // even rate; the easing on top is then free to decelerate into the landing,
+  // which is what it looks like it is doing.
+  const startLng = target.lng - SPIN_DEGREES;
+  let started = 0;
+  let frame = requestAnimationFrame(function glide(now) {
+    started ||= now;
+    const t = Math.min(1, (now - started) / ms);
+    // Slow in, quick through the middle, slow out.
+    const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    pointOfView({
+      lat: target.lat,
+      lng: startLng + (target.lng - startLng) * eased,
+      altitude: START_ALTITUDE * Math.pow(target.altitude / START_ALTITUDE, eased),
+    });
+    if (t < 1) frame = requestAnimationFrame(glide);
+  });
 
     // What a material was showing before the fade began, so a disc that starts
   // three-quarters transparent doesn't jump to fully solid on the first frame
@@ -179,7 +198,7 @@ export function flyIn(
   };
 
   return () => {
-    cancelAnimationFrame(opening);
+    cancelAnimationFrame(frame);
     cancelAnimationFrame(fade);
     clearTimeout(landed);
     controls.maxDistance = homeDistance;

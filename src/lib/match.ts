@@ -1,7 +1,7 @@
 import type { ModeId } from "../modes/ModeProps";
 import { roundClosedAt } from "./roomClock";
 import { serverNow } from "./supabase";
-import { INTRO_MS, type RoundSchedule } from "./useGame";
+import { type RoundSchedule } from "./useGame";
 
 /**
  * A game played against other people, which is nothing but a code.
@@ -367,6 +367,9 @@ export function matchPoints(accuracy: number, elapsedMs: number): number {
 
 /** What a match changes about a round, ready to spread into `useGame`. */
 export interface MatchGameOptions {
+  /** Withholds the count-in. A room's rounds turn over on a shared timetable
+      and a pause in front of one would put this device out of step with it. */
+  intro?: boolean;
   rounds: number;
   seed: number;
   roundLimitMs?: number;
@@ -391,46 +394,34 @@ export interface MatchGameOptions {
  *
  * A room also adds the timetable it runs to.
  */
-/**
- * Is this match being played on the 3D globe?
- *
- * The one map with an arrival to watch, and therefore the only one whose games
- * are counted in — see `intro` in `useGame`. The tube brings its own map and
- * ignores the world-map choice entirely, which is why the mode is asked about
- * as well as the setting.
- *
- * **A room has to agree with itself here.** This decides whether the room's
- * timetable is shifted; the mode decides whether its player is counted in. The
- * two are the same question and must give the same answer, or one device would
- * be counting down while the others were already playing.
- */
-const onGlobe = (match: Match): boolean => !match.flat && match.mode !== "tube";
-
 export function matchOptions(match?: Match): MatchGameOptions | undefined {
   if (!match) return undefined;
   const timed = match.kind === "room";
   return {
     rounds: MATCH_ROUNDS,
     seed: match.seed,
+    // **A duel has no arrival**, and this is the one place that decides it.
+    // The fall could be afforded — shifting the room's whole timetable back by
+    // the same constant keeps every device in step and costs nobody their
+    // thirty seconds — but it bought a nicety at the price of the most delicate
+    // arithmetic in the app, where a mistake means one player counting down
+    // while the rest are already answering. A duel starts the moment the host
+    // says so, as it always did. Today's round keeps the arrival: it has no
+    // timetable to disturb.
+    //
+    // Spread in only when it is false, never as `intro: undefined`. This whole
+    // object is spread *over* the mode's own `intro`, and a key that is present
+    // and undefined still wins — it would take the option's default of true
+    // and switch the arrival back on for the flat map, which has nothing to
+    // arrive from.
+    ...(timed ? { intro: false } : {}),
     roundLimitMs: timed ? MATCH_ROUND_MS : undefined,
     adjustScore: timed ? matchPoints : undefined,
     schedule:
       match.startAt === undefined
         ? undefined
         : {
-            // The room's own start, moved back by the intro where there is
-            // one. This is the whole of how a duel affords the fall through
-            // space: the pause is *in* the timetable rather than in front of
-            // it, so every device shifts by the same constant, they stay in
-            // step, and no player's thirty seconds is any shorter. A local
-            // pause could not do this — the rounds are worked out by
-            // arithmetic from this number, so a device that waited would
-            // simply lose the time it waited.
-            //
-            // Unshifted on the flat map and the tube, which have nothing to
-            // wait for: those rooms start the moment the host says so, exactly
-            // as they always did.
-            startAt: match.startAt + (onGlobe(match) ? INTRO_MS : 0),
+            startAt: match.startAt,
             roundMs: MATCH_ROUND_MS,
             revealMs: MATCH_REVEAL_MS,
             // The room's clock, not this device's: see `serverNow`.
