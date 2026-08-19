@@ -122,9 +122,9 @@ export default function About({ onBack, onPlay, onCredits, onPrivacy }: AboutPro
             </dd>
             <dt>All Games</dt>
             <dd>
-              All seven, as often as you like, on the globe or the flat map, with the
-              borders drawn on or left off. Nothing is filed anywhere and nothing is
-              rationed.
+              All seven, as often as you like. Nothing is filed anywhere and nothing is
+              rationed. Whether you play on the globe or the flat map, and whether
+              borders are drawn, is set once under Settings and used everywhere.
             </dd>
           </dl>
         </section>

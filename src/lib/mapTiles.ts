@@ -175,7 +175,7 @@ export const NASA_BLUE_MARBLE: TileSource = {
  * weather with it: cloud over whichever country it happened to be cloudy over,
  * and darkness at whichever pole is having its winter. Wonderful to look at and
  * a poor thing to be marked on — kept here because one level is one level, and
- * because the choice between the two is exactly what the bench is for.
+ * because a choice worth making is worth keeping the alternative to.
  *
  * Yesterday rather than today: the current day is still being assembled, and
  * the far side of the world hasn't been flown over yet.

@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import About from "./components/About";
 import Credits from "./components/Credits";
 import Privacy from "./components/Privacy";
+import Settings from "./components/Settings";
 import SiteFooter from "./components/SiteFooter";
 import { TUBE_TAGLINE } from "./data/tube";
 import { type Match } from "./lib/match";
+import { loadSettings, saveSettings } from "./lib/preferences";
 import { spellScreen, useRoute } from "./lib/useRoute";
 import CityLocator from "./modes/CityLocator";
-import CityScrapbook, { SCRAPBOOK_TITLE } from "./modes/CityScrapbook";
 import CompanyGuesser from "./modes/CompanyGuesser";
 import CurrencyGuesser from "./modes/CurrencyGuesser";
 import FlagGuesser from "./modes/FlagGuesser";
@@ -35,11 +36,6 @@ interface GameCard {
   blurb: string;
   emoji: string;
   tagline?: string;
-  /**
-   * The game brings its own map, so the world-map choices on the setup screen
-   * have nothing to offer it. The tube's alone.
-   */
-  ownMap?: boolean;
   /**
    * A line of small print under the blurb, for a game that shows somebody
    * else's property. Corporate HQ Spotter's alone: it puts real brand marks on
@@ -95,7 +91,6 @@ const MODES: (GameCard & { id: Mode })[] = [
     tagline: TUBE_TAGLINE,
     blurb: "With just the station name, can you spot it on the tube map?",
     emoji: "🚇",
-    ownMap: true,
   },
   {
     id: "timezone",
@@ -106,76 +101,19 @@ const MODES: (GameCard & { id: Mode })[] = [
   },
 ];
 
-/**
- * The bench: a copy of City Spotter kept aside to try things on.
- *
- * A card of its own rather than a row in `MODES`, because it must never be a
- * `ModeId` — that would enter it in the daily rota and in duel codes, which is
- * the last place an experiment belongs. It is a `GameCard` and not a
- * `GameCard & { id }`, and the type split exists for exactly this. See
- * `CityScrapbook` for the rest of the rules it lives by, and take this
- * constant out with it.
- */
-const SCRAPBOOK: GameCard = {
-  title: SCRAPBOOK_TITLE,
-  hook: "Fancy being the game maker?",
-  blurb:
-    "City Spotter, kept aside to try things on. Nothing here counts for anything.",
-  emoji: "🧪",
-};
-
-const DEFAULT_SETTINGS: GameSettings = { rounds: 5, flat: false, borders: true };
-
-/** A two-option toggle rendered as a pair of buttons. */
-function Choice<T extends string | number | boolean>({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: T;
-  options: { value: T; title: string; hint: string }[];
-  onChange: (v: T) => void;
-}) {
-  return (
-    <div className="setup-row">
-      <span className="setup-label">{label}</span>
-      <div className="setup-options">
-        {options.map((o) => (
-          <button
-            key={String(o.value)}
-            className={`setup-option${o.value === value ? " is-active" : ""}`}
-            onClick={() => onChange(o.value)}
-            aria-pressed={o.value === value}
-          >
-            <span className="setup-option-title">{o.title}</span>
-            <span className="muted setup-option-hint">{o.hint}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /** Choose how to play before a mode starts. */
 function ModeSetup({
   mode,
-  settings,
-  onChange,
   onStart,
   onBack,
 }: {
-  // A card rather than a mode, so the bench can have this screen too: it is a
-  // copy of a game and wants the same choices in front of it.
+  // A card rather than a mode id, so that something can have this screen
+  // without being a game — a bench, next time there is one, which is a copy of
+  // a game and wants the same screen in front of it.
   mode: GameCard;
-  settings: GameSettings;
-  onChange: (s: GameSettings) => void;
   onStart: () => void;
   onBack: () => void;
 }) {
-  const worldMap = !mode.ownMap;
-
   return (
     <div className="menu setup">
       <div className="menu-bar">
@@ -193,33 +131,14 @@ function ModeSetup({
       <p className="muted menu-sub">{mode.blurb}</p>
       {mode.smallprint && <p className="muted mode-smallprint">{mode.smallprint}</p>}
 
-      <div className="setup-panel">
-        {/* No length to choose: every game is five rounds, the same five rounds
-            that today's round and a duel are. One number for the whole app
-            means a score means one thing wherever it was got. */}
-        {worldMap && (
-          <>
-            <Choice<boolean>
-              label="Map"
-              value={settings.flat}
-              onChange={(flat) => onChange({ ...settings, flat })}
-              options={[
-                { value: false, title: "3D globe", hint: "Spin and zoom a real globe" },
-                { value: true, title: "Flat map", hint: "The whole world at once" },
-              ]}
-            />
-            <Choice<boolean>
-              label="Borders"
-              value={settings.borders}
-              onChange={(borders) => onChange({ ...settings, borders })}
-              options={[
-                { value: true, title: "Show borders", hint: "Country outlines drawn on" },
-                { value: false, title: "Hide borders", hint: "Coastlines only — harder" },
-              ]}
-            />
-          </>
-        )}
-      </div>
+      {/* Nothing to choose here any more, and that is the point of the screen
+          now: it names the game, says what a round is, prints the small print
+          where one is owed, and gets out of the way. The map questions it used
+          to ask are a preference rather than a decision about this round, so
+          they are answered once on the settings screen — asked here, they were
+          asked ten times over and answered the same way every time. Length was
+          never a question either: every game is five rounds, so a score means
+          one thing wherever it was got. */}
 
       <div className="button-row setup-start">
         <button className="btn btn-primary" onClick={onStart}>
@@ -274,11 +193,9 @@ function DuelMark() {
  */
 function AllGames({
   onPick,
-  onBench,
   onBack,
 }: {
   onPick: (mode: Mode) => void;
-  onBench: () => void;
   onBack: () => void;
 }) {
   return (
@@ -301,16 +218,6 @@ function AllGames({
             <span className="muted mode-blurb">{m.blurb}</span>
           </button>
         ))}
-        {/* The bench, at the end of the shelf with the unfinished things
-            rather than among the games: it is a copy of one of them and a score
-            off it means nothing, so standing it eighth in the row would offer
-            it as a game to play. */}
-        <button className="mode-card" onClick={onBench}>
-          <span className="mode-emoji">{SCRAPBOOK.emoji}</span>
-          <span className="mode-title">{SCRAPBOOK.title}</span>
-          <span className="mode-hook">{SCRAPBOOK.hook}</span>
-          <span className="muted mode-blurb">{SCRAPBOOK.blurb}</span>
-        </button>
         {/* What's being built, on the shelf it will stand on. A div rather than
             a button because there is nothing behind it yet: a card that takes
             the press and does nothing reads as a broken game rather than an
@@ -364,7 +271,10 @@ export default function App() {
   // under way, and which match it belongs to. Neither survives a refresh, and
   // that's the point of keeping them out of the path.
   const [route, go] = useRoute();
-  const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
+  // Read once, on the way in. A lazy initialiser rather than an effect: read
+  // afterwards, the first render is on the defaults and a player who chose the
+  // flat map watches the globe appear and be replaced.
+  const [settings, setSettings] = useState<GameSettings>(loadSettings);
   const [session, setSession] = useState<Session>(NO_SESSION);
 
   const mode = route.at === "game" ? route.mode : null;
@@ -389,7 +299,7 @@ export default function App() {
   // else; the URL says it now.
   const toMenu = useCallback(() => {
     setSession(NO_SESSION);
-    if (route.at === "game" || route.at === "bench") go({ at: "games" });
+    if (route.at === "game") go({ at: "games" });
   }, [route.at, go]);
 
   // Stable, because a room hands over on a timer that lists this among its
@@ -411,7 +321,7 @@ export default function App() {
 
   // A running game gets the whole window: the menu's fixed-width shell would
   // otherwise pen the map in well short of the screen edges.
-  const playing = ((mode !== null || route.at === "bench") && started) || match !== null;
+  const playing = (mode !== null && started) || match !== null;
   useEffect(() => {
     document.body.classList.toggle("playing", playing);
     return () => document.body.classList.remove("playing");
@@ -469,6 +379,22 @@ export default function App() {
     return page(<Privacy onBack={() => go({ at: "home" })} />);
   }
 
+  if (route.at === "settings") {
+    return page(
+      <Settings
+        settings={settings}
+        // Written through on every press rather than on a Save: the press is
+        // the change, and a preference that needed confirming would be a
+        // longer errand than the screen it replaced.
+        onChange={(next) => {
+          setSettings(next);
+          saveSettings(next);
+        }}
+        onBack={() => go({ at: "home" })}
+      />,
+    );
+  }
+
   if (route.at === "daily") {
     return page(
       <HeadToHead
@@ -499,28 +425,9 @@ export default function App() {
     return page(
       <ModeSetup
         mode={MODES.find((m) => m.id === mode)!}
-        settings={settings}
-        onChange={setSettings}
         onStart={() => setSession({ path, started: true, match: null })}
         // Back to the shelf the game was picked off, not out to the home page:
         // somebody who opened the wrong one of seven wanted a different one.
-        onBack={() => go({ at: "games" })}
-      />,
-    );
-  }
-
-  // The bench: the games' own setup screen, and a copy of a game behind it.
-  // `ModeSetup` takes a card rather than a mode id so that this screen can be
-  // had without a `ModeId` to go with it, and no `match` is passed on from
-  // here — there is nothing an experiment could file to.
-  if (route.at === "bench") {
-    if (started) return <CityScrapbook {...modeProps} />;
-    return page(
-      <ModeSetup
-        mode={SCRAPBOOK}
-        settings={settings}
-        onChange={setSettings}
-        onStart={() => setSession({ path, started: true, match: null })}
         onBack={() => go({ at: "games" })}
       />,
     );
@@ -530,7 +437,6 @@ export default function App() {
     return page(
       <AllGames
         onPick={(m) => go({ at: "game", mode: m })}
-        onBench={() => go({ at: "bench" })}
         onBack={() => go({ at: "home" })}
       />,
     );
@@ -572,6 +478,14 @@ export default function App() {
           </span>
         </button>
       </div>
+      {/* Under the three doors and deliberately quiet. It is not a fourth way
+          to play, and the two questions behind it have answers already — this
+          is for the player who wants to change one, not a step on the way in.
+          Which is the whole of why it moved here: in front of every game it
+          was a question, and here it is a door nobody has to open. */}
+      <button className="btn btn-ghost home-settings" onClick={() => go({ at: "settings" })}>
+        ⚙ Settings
+      </button>
     </div>,
   );
 }

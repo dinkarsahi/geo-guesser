@@ -99,7 +99,8 @@ Three of them, all satisfying `GuessMapProps` in `src/components/mapTypes.ts`:
 - **`GlobeMap.tsx`** — `react-globe.gl` (three.js). Draws from a **coarsened**
   copy of the country shapes; at full 1:50m detail the globe is a slideshow.
   Never score against the coarse copy. Skinned in `WORLD_TILES`, which also sets
-  how close the camera may get.
+  how close the camera may get. Wears the sky from `src/lib/globeSky.ts` — see
+  below.
 - **`LondonMap.tsx`** — bespoke SVG of the tube network. Also takes `rings` —
   the circle a tube guess is marked against, from `src/lib/tubeReach.tsx`. The
   game only ever hands it a circle on a round the circle actually paid for. The
@@ -113,6 +114,42 @@ toggle** any more: it was a second palette for every map — a grey globe, a dar
 tube map, a second set of line colours — and once the world was tiled, night's
 grey world was the one thing tiles couldn't replace, since a tile engine hides
 the photographed globe that grey world *was*. It went rather than being carried.
+
+### The sky: `src/lib/globeSky.ts`
+
+Stars behind the globe and cloud drifting over it, hung on the scene by
+`GlobeMap` and taken down again when the round's map goes. `addSky` returns its
+own teardown; call it, or a cloud shell keeps turning in a scene nobody draws.
+
+**Why it can exist at all is the point.** Both are objects standing *beside*
+the globe rather than paint on its surface, so neither cares that the surface
+is made of tiles — and a tiled surface can take nothing from a material:
+three-slippy-map-globe builds every tile as a `MeshLambertMaterial`, which has
+no specular term, and three-globe hides the photographed sphere (the Phong one,
+which does) the moment a tile URL is set. **A shine on the ocean or relief on
+the mountains is therefore impossible on this globe, permanently**, and no
+amount of material work will get it. That was judged on a bench against a
+photographed globe which could have all of it and was five kilometres to the
+pixel where the tiles are six hundred metres. The sky won on the arithmetic.
+
+Two decisions in there worth keeping:
+
+- **The clouds are NASA's Blue Marble composite, in `public/`** — Visible Earth
+  sends no `Access-Control-Allow-Origin`, and a texture without one cannot be
+  handed to WebGL at all, so it is served from our own domain. 830 KB. Used as
+  an **alpha** map with the white supplied by the material, so the image says
+  only where cloud is and how thick.
+- **The stars are drawn, not downloaded.** `makeStars` scatters 2,200 points on
+  a sphere of radius 3,000. A starfield photograph is most of a megabyte, the
+  one every three.js example reaches for travels with no licence at all, and
+  stretched across the whole sky it is soft where fixed-size points stay crisp.
+
+**Cloud opacity is 0.26 and that number was measured, not chosen.** NASA's is a
+real day's weather over the whole planet, far cloudier than the tidy wisps a
+globe usually wears: at 0.45 it whited out the north Atlantic and most of west
+Africa's coast. In a game whose answer is a coastline, cloud that hides one has
+stopped being decoration and become the difficulty. If it is ever turned up,
+look at the Atlantic before believing it.
 
 Reveal colouring comes in two flavours, and they are not interchangeable:
 
@@ -167,9 +204,26 @@ than a flag held deliberately out of step with everything else.
 A card's words are a `GameCard`, and `MODES` is that plus a `ModeId`. The split
 is what lets something have the same setup screen as a game without being a
 mode — a bench, next time there is one: `ModeSetup` takes a card, not an id.
-`ownMap` on a card says the game
-brings its own map and the world-map choices have nothing to offer it — the
-tube's alone, and data rather than the `id !== "tube"` test it replaced.
+
+**A game's setup screen asks nothing any more.** It names the game, says what a
+round involves, prints the small print where one is owed, and offers Start. The
+globe-or-flat and borders-or-not it used to ask stood in front of all seven
+games, in front of today's round and in front of a duel — the same two
+questions, ten times over, answered the same way every time by anybody who had
+a view. That is a **preference** wearing a decision's clothes, so it moved to a
+screen of its own: `Settings`, reached from a quiet button under the three
+doors on the home page, at `/settings`, and remembered in `spoton.prefs.v1`
+(`src/lib/preferences.ts`). **The defaults are the globe and no borders** — the
+globe because it is the thing this game is, and no borders because the question
+is where a place *is*, and an outlined world answers half of that before the
+player has looked.
+
+Two consequences worth knowing. `HeadToHead` and `PlayFriend` now *read* that
+preference instead of asking; in a duel it is the **host's** that the room
+plays on, which is the one setting in the app reaching past the device that
+chose it, so the settings screen says so and the lobby names the map. And
+`GameCard.ownMap` is gone — it existed to tell the setup screen it had nothing
+to offer the tube, and the setup screen now offers nothing to anybody.
 
 ### The footer, and the two pages that are read
 
@@ -206,8 +260,8 @@ The pages behind it:
   three.js, react-globe.gl, react-simple-maps, prop-types and d3-geo require
   their notices to travel with what ships. Take a dependency, add it there.
 - **`Privacy`** — written from the code rather than from a template, and that
-  is the point: it names the four `localStorage` keys because those are the
-  four that exist, and says the scores sit in the EU because the Supabase
+  is the point: it names the `localStorage` keys one by one because those are
+  the ones that exist, and says the scores sit in the EU because the Supabase
   project is in `eu-central-1`. **Change what the app stores and this page is
   part of the change** — a policy that lists storage the site doesn't use, or
   misses what it does, is the one document here that can be checked against the
@@ -245,7 +299,7 @@ browser's own back button works without a line of wiring.
 | `/about` | what the game is and how it's marked |
 | `/credits` | where the maps, shapes, logos and code came from |
 | `/privacy` | what the game knows about the people who play it |
-| `/gamemakersscrapbook` | the bench — see "The bench" below. Goes when it does |
+| `/settings` | how this device likes its map |
 | `/cityspotter`, `/flagspotter`, `/currencyspotter`, `/corporatehqspotter`, `/populationspotter`, `/tubestationspotter`, `/timezonespotter` | that game's setup screen, and the round itself |
 
 **The names crossed over and the file says so:** `/headtohead` is Duel a Friend,
@@ -557,108 +611,34 @@ Two things left open, both seen rather than guessed at:
   the green disc that looks right at reveal altitude swallows the city once you
   zoom past it. Pre-existing, and invisible until deep zoom was worth doing.
 
-### The bench
+### The bench, when one is next wanted
 
-`Game Maker's Scrapbook` — a copy of City Spotter, on the end of the shelf next
-to the coming-soon card, at `/gamemakersscrapbook`. It is back to try things on
-the **globe**. There was one before, for the tiled maps, and it came down when
-they graduated; this is the same file, and `git show 4d95689 --
-src/modes/CityScrapbook.tsx` is the version it came down as, back when modes
-still took the day/night props.
+There isn't one on the shelf. The last was `Game Maker's Scrapbook` — a copy of
+City Spotter that the globe's sky was judged on, against a photographed globe
+that could have a specular ocean but was five kilometres to the pixel where the
+tiles are six hundred metres. The sky won and shipped (`src/lib/globeSky.ts`),
+so the bench came down, which is the rule benches live by: a copy of a game
+kept past the question it was built to answer collects dust and confusion in
+equal measure. It is at **`669f41f`**, and `git show 669f41f --
+src/components/ScrapbookGlobe.tsx` brings the three-skinned globe back.
 
-It is three pieces and nothing else knows it exists: `CityScrapbook.tsx`, the
-`SCRAPBOOK` card and its branch in `App.tsx`, and `BENCH` in `useRoute.ts`.
-Deleting those takes it out cleanly — which is the point, because it comes down
-again once it has settled its argument. A copy of a game kept past the question
-it was built to answer collects dust and confusion in equal measure.
+Build the next one the same way, and the reasons are worth repeating:
 
-The rules a bench lives by, all four load-bearing:
-
-- **Never a `ModeId`** — a card and a route, and that's the lot. A `ModeId`
+- **Never a `ModeId`** — a card and a route, and nothing else. A `ModeId`
   enters the daily rota, needs a letter in a duel code and a re-run of
   `schema.sql`, and an experiment is the last thing to hand somebody as their
-  round of the day. The route is the one concession the URL era forces: every
-  screen needs an address, so the bench has `{ at: "bench" }` — which is *not*
-  a mode path, and `MODE_PATHS` still holds exactly the seven games.
-- **Nothing on it is scored anywhere**: no `match` is passed to it, so there's
-  no clock, no seeded deal and no leaderboard to file to. That missing
-  `...matchOptions(match)` is the only line separating it from `CityLocator`.
-- **It gets the games' setup screen**, because what's being tried touches the
-  map and the map is chosen there — that's what `GameCard` is for, and why
-  `ModeSetup` takes a card rather than a mode id.
+  round of the day. The route is the concession the URL era forces, since every
+  screen needs an address; keep it out of `MODE_PATHS`.
+- **Nothing on it is scored anywhere**: pass it no `match`, so there's no
+  clock, no seeded deal and no leaderboard to file to.
+- **Give it the games' setup screen** where what's being tried touches the map
+  — that's what `GameCard` is for, and why `ModeSetup` takes a card and not a
+  mode id.
+- **Put the comparison on the bench itself.** The globe's three skins were a
+  switch in the corner of the map, because two looks have to be judged in the
+  same second on the same view; a choice made on a setup screen is judged from
+  memory.
 - **What graduates replaces**, rather than standing beside what it replaced.
-
-It is on the public shelf, where the last one was. Taking the card out of
-`AllGames` leaves it reachable at its URL and invisible to players, which is the
-one-line version if that's ever wanted.
-
-**Remember the globe can't be clicked by automation** — its canvas raycasts
-from real pointer events, so a synthetic click on the world lands nowhere. The
-zoom buttons are ordinary DOM, and so is the tap cheat, which is how a reveal
-can be reached without clicking the world at all. Anything else is judged by
-hand.
-
-#### What is on the bench now: three globes
-
-`ScrapbookGlobe.tsx` is `GlobeMap` with a switch in the corner between three,
-cheapest first:
-
-| Skin | What it is | The catch |
-|---|---|---|
-| **Tiles** | what SpotOn draws today | nothing — this is the thing to beat |
-| **Tiles + sky** | the same, plus drifting clouds and a starfield | none found yet |
-| **Flat ocean** | MapTap's kind of globe: one 8192-wide photograph with an even sea, plus the sky and a shine on the water | blurry past a point, and 17 seconds to load |
-
-**What separates them is one question: is the surface made of tiles.** A shine
-needs a material that knows what shininess is, and three-slippy-map-globe gives
-every tile a `MeshLambertMaterial`, which has no specular term; three-globe
-hides the photographed sphere — the `MeshPhongMaterial` one, which does — the
-moment a tile URL is set. So the **shine and the bump map belong to the
-photograph and can never be had on tiles.** Everything else crosses over
-freely, and the middle skin is what that fact buys: clouds and stars are
-objects standing beside the globe rather than paint on its surface, so they
-don't care what it is made of.
-
-**The sharpness numbers, measured rather than estimated.** Tiles reach about
-600 m per pixel. The 8192-wide photograph is about 5 km. MapTap's own is
-8193x4096 — the same — which is why *their* globe doesn't offer deep zoom
-either. The look and the sharpness were never available together, from anyone.
-
-**The flat sea is NASA's, not something we painted.** It is
-`BlueMarble_ShadedRelief` where the game draws
-`BlueMarble_ShadedRelief_Bathymetry`; dropping the bathymetry is what empties
-the ocean of ridges and trenches. Its blue is nearly black, so the colour is
-lifted with an **emissive map** — the same water mask the shine uses, black
-over every inch of land, so the sea glows and the continents are untouched.
-The obvious alternative, repainting the image on a canvas, is a memory trap:
-three 8192x4096 canvases is over 400 MB to change one colour the GPU changes
-for free.
-
-Traps paid for, all recorded in the file:
-
-- **`globeMaterial` is a prop on react-globe.gl, not a bound ref method.** The
-  ref binds `pointOfView`, `scene`, `camera`, `controls`, `getGlobeRadius` and
-  a few more; asking it for the material throws. Hand a material *in* and
-  three-globe hangs the day texture and bump map on it.
-- **Nothing may go before the camera setup in `onGlobeReady`.** The throw above
-  took the rest of that function with it, leaving the skin at three-globe's
-  default distance — which reads as the skin being wrong rather than as one
-  line above it having thrown.
-- **The whole-world photograph takes 17 seconds to the first byte, every
-  time.** It is a WMS `GetMap` that NASA draws per request and caches nothing.
-  MapTap keep their copy on their own domain, which is why theirs is instant —
-  if that skin graduates, the image gets pulled once and served by us.
-- **A flip goes black for a second or two** while the remount refetches its
-  textures. `THREE.Cache.enabled` is not the fix: it is global, and the tiled
-  skins would then hold every tile they ever fetched.
-
-The cloud texture is **not shippable as it stands**: 5 MB, and three-globe's
-example credits it only to turban/webgl-earth with no licence travelling with
-the image. Every other texture here is NASA's or Natural Earth's and plainly
-free. If clouds graduate, they graduate on a NASA cloud layer.
-
-`@types/three` was added as a dev dependency for this — three 0.185 ships no
-declarations of its own. It is dev-only and nothing of it reaches the bundle.
 
 ### The last card: coming soon
 

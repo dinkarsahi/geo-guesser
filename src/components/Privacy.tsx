@@ -4,10 +4,11 @@ import { CONTACT_EMAIL, DATA_REGION, POLICY_UPDATED } from "../lib/site";
  * What SpotOn knows about the people who play it.
  *
  * Written from the code rather than from a template: every claim below is
- * something the app actually does, and the four browser keys are named because
- * they are the four that exist. A policy that lists cookies the site doesn't
- * set, or omits the ones it does, is worse than none — it is the one document
- * on the site that has to be checkable.
+ * something the app actually does, and the browser keys are named one by one
+ * because those are the ones that exist. A policy that lists cookies the site
+ * doesn't set, or omits the ones it does, is worse than none — it is the one
+ * document on the site that has to be checkable. **Store something new and
+ * this page is part of that change**, count and all.
  *
  * Kept in plain English on purpose. The reader is somebody who typed a name
  * into a box to play a geography game, and the honest summary of their position
@@ -64,7 +65,7 @@ export default function Privacy({ onBack }: { onBack: () => void }) {
         <section className="doc-section">
           <h2>What your own browser keeps</h2>
           <p>
-            SpotOn stores four things on your device, and they stay there — they are not
+            SpotOn stores five things on your device, and they stay there — they are not
             sent anywhere except as described above:
           </p>
           <ul className="doc-bullets">
@@ -84,9 +85,13 @@ export default function Privacy({ onBack }: { onBack: () => void }) {
               <code>spoton.rooms.v1</code> — the name this device joined each duel under,
               so a reloaded page can return to the room it was in.
             </li>
+            <li>
+              <code>spoton.prefs.v1</code> — whether you play on the globe or the flat
+              map, and whether borders are drawn, so you aren't asked every game.
+            </li>
           </ul>
           <p>
-            All four are needed for the game to work, so they are set without asking.
+            All five are needed for the game to work, so they are set without asking.
             Clearing your browser's data for this site removes them, and the game will
             treat you as a first-time visitor.
           </p>

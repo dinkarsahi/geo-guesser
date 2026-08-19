@@ -24,6 +24,7 @@ import {
   type Match,
 } from "../lib/match";
 import { loadName, saveName } from "../lib/playerName";
+import { loadSettings } from "../lib/preferences";
 import { serverNow } from "../lib/supabase";
 import { useCountdown } from "../lib/useRoom";
 import { inviteLink } from "../lib/useRoute";
@@ -143,7 +144,12 @@ export default function PlayFriend({
     invite ? "invite" : "pick",
   );
   const [name, setName] = useState(loadName);
-  const [setup, setSetup] = useState({ flat: false, borders: true });
+  // The host's saved preference, which in a room is everybody's: one contest
+  // means one world, so this is the single setting in the app that reaches
+  // past the device that chose it. Read rather than asked — a host who likes
+  // the globe has said so once already, and the join screen says whose map it
+  // is, so nobody arrives thinking their own setting failed.
+  const [setup] = useState(loadSettings);
   const [room, setRoom] = useState<Room | null>(null);
   const [players, setPlayers] = useState<string[]>([]);
   const [typed, setTyped] = useState("");
@@ -488,53 +494,6 @@ export default function PlayFriend({
 
       {screen === "make" && (
         <div className="setup-panel">
-          {/* The host's, and everyone's: a room is one contest, so the map has
-              to be the same for all of them. It's the one thing here that
-              isn't each player's own. */}
-          <div className="setup-row">
-            <span className="setup-label">Map</span>
-            <div className="setup-options">
-              <button
-                className={`setup-option${!setup.flat ? " is-active" : ""}`}
-                onClick={() => setSetup((s) => ({ ...s, flat: false }))}
-                aria-pressed={!setup.flat}
-              >
-                <span className="setup-option-title">3D globe</span>
-                <span className="muted setup-option-hint">Spin and zoom a real globe</span>
-              </button>
-              <button
-                className={`setup-option${setup.flat ? " is-active" : ""}`}
-                onClick={() => setSetup((s) => ({ ...s, flat: true }))}
-                aria-pressed={setup.flat}
-              >
-                <span className="setup-option-title">Flat map</span>
-                <span className="muted setup-option-hint">The whole world at once</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="setup-row">
-            <span className="setup-label">Borders</span>
-            <div className="setup-options">
-              <button
-                className={`setup-option${setup.borders ? " is-active" : ""}`}
-                onClick={() => setSetup((s) => ({ ...s, borders: true }))}
-                aria-pressed={setup.borders}
-              >
-                <span className="setup-option-title">Show borders</span>
-                <span className="muted setup-option-hint">Country outlines drawn on</span>
-              </button>
-              <button
-                className={`setup-option${!setup.borders ? " is-active" : ""}`}
-                onClick={() => setSetup((s) => ({ ...s, borders: false }))}
-                aria-pressed={!setup.borders}
-              >
-                <span className="setup-option-title">Hide borders</span>
-                <span className="muted setup-option-hint">Coastlines only — harder</span>
-              </button>
-            </div>
-          </div>
-
           <div className="setup-row">
             <span className="setup-label">Game</span>
             <div className="h2h-modes">
@@ -559,7 +518,7 @@ export default function PlayFriend({
             </div>
           </div>
           <p className="muted h2h-code-hint">
-            Everyone in the room plays this game on this map, so nobody is racing a
+            Everyone in the room plays this game, on your map, so nobody is racing a
             different question. Randomise draws one of the seven, and the lobby says
             which came up.
           </p>

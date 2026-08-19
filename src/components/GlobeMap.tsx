@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Globe, { type GlobeMethods } from "react-globe.gl";
+import { addSky } from "../lib/globeSky";
 import type { GuessMapProps, MapHighlight } from "./mapTypes";
 import { countryAt, useWorldShapes, type CountryFeature } from "../lib/worldShapes";
 import { WORLD_TILES } from "../lib/mapTiles";
@@ -71,6 +72,10 @@ export default function GlobeMap({
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const shapes = useWorldShapes();
   const wrapRef = useRef<HTMLDivElement>(null);
+  // Set once the globe has a scene to hang things on. Counted rather than
+  // flagged so that a globe rebuilt under us re-hangs the sky instead of
+  // leaving it in a scene that has been thrown away.
+  const [readyCount, setReadyCount] = useState(0);
   const [size, setSize] = useState({ w: 800, h: 520 });
   // Land is the only valid guess, so the cursor says so while it's over some.
   const [overLand, setOverLand] = useState(false);
@@ -101,6 +106,12 @@ export default function GlobeMap({
     controls.zoomSpeed = 1; // a touch faster so deep zoom isn't tedious
     // Close enough that the globe fills most of the window it now owns.
     g.pointOfView({ lat: 20, lng: 0, altitude: 2 });
+    // Counted last, and everything above it is the camera. Anything that
+    // throws in here takes the rest of the function with it, and the rest of
+    // the function is what decides where the player is standing — a fault
+    // above this line reads as the map being wrong rather than as a line
+    // having failed.
+    setReadyCount((n) => n + 1);
   };
 
   // Zoom by changing the camera altitude, keeping the current lat/lng centred.
@@ -114,6 +125,15 @@ export default function GlobeMap({
     );
     g.pointOfView({ altitude }, 350);
   };
+
+  // Stars behind the world and cloud drifting over it — see `globeSky`, which
+  // owns both and the reason they are objects beside the globe rather than
+  // anything painted on it.
+  useEffect(() => {
+    const g = globeRef.current;
+    if (!g || !readyCount) return;
+    return addSky(g.scene(), g.getGlobeRadius());
+  }, [readyCount]);
 
   // Fly to the true location when the answer is revealed — and, where the
   // answer is painted across half the world rather than pinned to one spot,

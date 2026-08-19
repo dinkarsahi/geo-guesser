@@ -11,6 +11,7 @@ import {
 } from "../lib/match";
 import { checkEntry } from "../lib/leaderboard";
 import { loadName, saveName } from "../lib/playerName";
+import { loadSettings } from "../lib/preferences";
 import Leaderboard from "../components/Leaderboard";
 
 /**
@@ -70,9 +71,11 @@ export default function HeadToHead({
 }: HeadToHeadProps) {
   const [screen, setScreen] = useState<"pick" | "games" | "board">("pick");
   const [name, setName] = useState(loadName);
-  // How this player likes the world drawn. Theirs alone now — everyone playing
-  // today's City Spotter is on one table whichever of these they chose.
-  const [setup, setSetup] = useState({ flat: false, borders: true });
+  // How this player likes the world drawn: their saved preference, not a
+  // question asked here. Theirs alone either way — everyone playing today's
+  // City Spotter is on one table whichever map they read it on, which is why
+  // this can be a setting rather than part of entering the contest.
+  const [setup] = useState(loadSettings);
   // Whether the player was sent to the standings because they've had their go,
   // rather than having asked to see them.
   const [spent, setSpent] = useState(false);
@@ -213,66 +216,6 @@ export default function HeadToHead({
               ))}
             </div>
           </div>
-
-          {/* Yours, not the table's. Kept here rather than buried because the
-              globe and the flat map are genuinely different games to look at,
-              and the choice no longer costs anyone their place in the ranking.
-              Gone entirely when today's game has its own map to draw. */}
-          {today !== "tube" && (
-            <>
-              <div className="setup-row">
-                <span className="setup-label">Map</span>
-                <div className="setup-options">
-                  <button
-                    className={`setup-option${!setup.flat ? " is-active" : ""}`}
-                    onClick={() => setSetup((s) => ({ ...s, flat: false }))}
-                    aria-pressed={!setup.flat}
-                  >
-                    <span className="setup-option-title">3D globe</span>
-                    <span className="muted setup-option-hint">
-                      Spin and zoom a real globe
-                    </span>
-                  </button>
-                  <button
-                    className={`setup-option${setup.flat ? " is-active" : ""}`}
-                    onClick={() => setSetup((s) => ({ ...s, flat: true }))}
-                    aria-pressed={setup.flat}
-                  >
-                    <span className="setup-option-title">Flat map</span>
-                    <span className="muted setup-option-hint">
-                      The whole world at once
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="setup-row">
-                <span className="setup-label">Borders</span>
-                <div className="setup-options">
-                  <button
-                    className={`setup-option${setup.borders ? " is-active" : ""}`}
-                    onClick={() => setSetup((s) => ({ ...s, borders: true }))}
-                    aria-pressed={setup.borders}
-                  >
-                    <span className="setup-option-title">Show borders</span>
-                    <span className="muted setup-option-hint">
-                      Country outlines drawn on
-                    </span>
-                  </button>
-                  <button
-                    className={`setup-option${!setup.borders ? " is-active" : ""}`}
-                    onClick={() => setSetup((s) => ({ ...s, borders: false }))}
-                    aria-pressed={!setup.borders}
-                  >
-                    <span className="setup-option-title">Hide borders</span>
-                    <span className="muted setup-option-hint">
-                      Coastlines only — harder
-                    </span>
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
 
           <div className="button-row setup-start">
             <button className="btn btn-primary" disabled={checking} onClick={play}>

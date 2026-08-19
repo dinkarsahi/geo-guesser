@@ -48,8 +48,9 @@ export default function Credits({ onBack, onAbout }: CreditsProps) {
           <p>
             <strong>Satellite imagery courtesy of NASA EOSDIS GIBS.</strong> Both world
             maps draw NASA's Blue Marble imagery, served as tiles from the Global Imagery
-            Browse Services. NASA's imagery is free to use and NASA does not endorse
-            SpotOn.
+            Browse Services, and the cloud layer over the globe is NASA's Blue Marble
+            cloud composite from Visible Earth. NASA's imagery is free to use and NASA
+            does not endorse SpotOn.
           </p>
           <p>
             <strong>Country shapes from Natural Earth.</strong> Every border, coastline

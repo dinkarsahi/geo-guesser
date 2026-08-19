@@ -18,7 +18,7 @@ export const CONTACT_EMAIL = "contactus@playspoton.com";
  * deployment tells the reader nothing and quietly claims something untrue.
  * Change it when the words change.
  */
-export const POLICY_UPDATED = "18 August 2026";
+export const POLICY_UPDATED = "19 August 2026";
 
 /**
  * Where the scores are kept, in the terms a privacy policy has to use.
