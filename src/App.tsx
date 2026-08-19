@@ -7,6 +7,7 @@ import { TUBE_TAGLINE } from "./data/tube";
 import { type Match } from "./lib/match";
 import { spellScreen, useRoute } from "./lib/useRoute";
 import CityLocator from "./modes/CityLocator";
+import CityScrapbook, { SCRAPBOOK_TITLE } from "./modes/CityScrapbook";
 import CompanyGuesser from "./modes/CompanyGuesser";
 import CurrencyGuesser from "./modes/CurrencyGuesser";
 import FlagGuesser from "./modes/FlagGuesser";
@@ -104,6 +105,24 @@ const MODES: (GameCard & { id: Mode })[] = [
     emoji: "🕰️",
   },
 ];
+
+/**
+ * The bench: a copy of City Spotter kept aside to try things on.
+ *
+ * A card of its own rather than a row in `MODES`, because it must never be a
+ * `ModeId` — that would enter it in the daily rota and in duel codes, which is
+ * the last place an experiment belongs. It is a `GameCard` and not a
+ * `GameCard & { id }`, and the type split exists for exactly this. See
+ * `CityScrapbook` for the rest of the rules it lives by, and take this
+ * constant out with it.
+ */
+const SCRAPBOOK: GameCard = {
+  title: SCRAPBOOK_TITLE,
+  hook: "Fancy being the game maker?",
+  blurb:
+    "City Spotter, kept aside to try things on. Nothing here counts for anything.",
+  emoji: "🧪",
+};
 
 const DEFAULT_SETTINGS: GameSettings = { rounds: 5, flat: false, borders: true };
 
@@ -255,9 +274,11 @@ function DuelMark() {
  */
 function AllGames({
   onPick,
+  onBench,
   onBack,
 }: {
   onPick: (mode: Mode) => void;
+  onBench: () => void;
   onBack: () => void;
 }) {
   return (
@@ -280,6 +301,16 @@ function AllGames({
             <span className="muted mode-blurb">{m.blurb}</span>
           </button>
         ))}
+        {/* The bench, at the end of the shelf with the unfinished things
+            rather than among the games: it is a copy of one of them and a score
+            off it means nothing, so standing it eighth in the row would offer
+            it as a game to play. */}
+        <button className="mode-card" onClick={onBench}>
+          <span className="mode-emoji">{SCRAPBOOK.emoji}</span>
+          <span className="mode-title">{SCRAPBOOK.title}</span>
+          <span className="mode-hook">{SCRAPBOOK.hook}</span>
+          <span className="muted mode-blurb">{SCRAPBOOK.blurb}</span>
+        </button>
         {/* What's being built, on the shelf it will stand on. A div rather than
             a button because there is nothing behind it yet: a card that takes
             the press and does nothing reads as a broken game rather than an
@@ -358,7 +389,7 @@ export default function App() {
   // else; the URL says it now.
   const toMenu = useCallback(() => {
     setSession(NO_SESSION);
-    if (route.at === "game") go({ at: "games" });
+    if (route.at === "game" || route.at === "bench") go({ at: "games" });
   }, [route.at, go]);
 
   // Stable, because a room hands over on a timer that lists this among its
@@ -380,7 +411,7 @@ export default function App() {
 
   // A running game gets the whole window: the menu's fixed-width shell would
   // otherwise pen the map in well short of the screen edges.
-  const playing = (mode !== null && started) || match !== null;
+  const playing = ((mode !== null || route.at === "bench") && started) || match !== null;
   useEffect(() => {
     document.body.classList.toggle("playing", playing);
     return () => document.body.classList.remove("playing");
@@ -478,10 +509,28 @@ export default function App() {
     );
   }
 
+  // The bench: the games' own setup screen, and a copy of a game behind it.
+  // `ModeSetup` takes a card rather than a mode id so that this screen can be
+  // had without a `ModeId` to go with it, and no `match` is passed on from
+  // here — there is nothing an experiment could file to.
+  if (route.at === "bench") {
+    if (started) return <CityScrapbook {...modeProps} />;
+    return page(
+      <ModeSetup
+        mode={SCRAPBOOK}
+        settings={settings}
+        onChange={setSettings}
+        onStart={() => setSession({ path, started: true, match: null })}
+        onBack={() => go({ at: "games" })}
+      />,
+    );
+  }
+
   if (route.at === "games") {
     return page(
       <AllGames
         onPick={(m) => go({ at: "game", mode: m })}
+        onBench={() => go({ at: "bench" })}
         onBack={() => go({ at: "home" })}
       />,
     );

@@ -245,6 +245,7 @@ browser's own back button works without a line of wiring.
 | `/about` | what the game is and how it's marked |
 | `/credits` | where the maps, shapes, logos and code came from |
 | `/privacy` | what the game knows about the people who play it |
+| `/gamemakersscrapbook` | the bench — see "The bench" below. Goes when it does |
 | `/cityspotter`, `/flagspotter`, `/currencyspotter`, `/corporatehqspotter`, `/populationspotter`, `/tubestationspotter`, `/timezonespotter` | that game's setup screen, and the round itself |
 
 **The names crossed over and the file says so:** `/headtohead` is Duel a Friend,
@@ -468,8 +469,8 @@ This arrived on a bench of its own — `Game Maker Test Version`, a second copy 
 the tube game that marked a click both ways side by side — and was judged there
 before it was let near a score. Having graduated it **replaced** the ride rather
 than standing beside it, and that bench has since been taken down: there is one
-tube rule and it is that file. Benches come and go this way — see "The bench,
-when one is next wanted" below.
+tube rule and it is that file. Benches come and go this way — see "The bench"
+below, which is about the one standing now.
 
 **The trap, and it cost a round trip:** membership is the station's dot inside
 the circle, and it has to stay something a player can *count off the screen*.
@@ -556,26 +557,45 @@ Two things left open, both seen rather than guessed at:
   the green disc that looks right at reveal altitude swallows the city once you
   zoom past it. Pre-existing, and invisible until deep zoom was worth doing.
 
-### The bench, when one is next wanted
+### The bench
 
-There isn't one on the shelf. `Game Maker's Scrapbook` — a copy of City Spotter
-that the tiled maps above were tried on before they went near a real game — came
-down once they graduated, which is the rule benches live by: a copy of a game
-kept past the question it was built to answer collects dust and confusion in
-equal measure. It is `src/modes/CityScrapbook.tsx` at **`4d95689`**, and
-`git show 4d95689 -- src/modes/CityScrapbook.tsx` brings it back.
+`Game Maker's Scrapbook` — a copy of City Spotter, on the end of the shelf next
+to the coming-soon card, at `/gamemakersscrapbook`. It is back to try things on
+the **globe**. There was one before, for the tiled maps, and it came down when
+they graduated; this is the same file, and `git show 4d95689 --
+src/modes/CityScrapbook.tsx` is the version it came down as, back when modes
+still took the day/night props.
 
-Build the next one the same way, and the reasons are worth repeating:
+It is three pieces and nothing else knows it exists: `CityScrapbook.tsx`, the
+`SCRAPBOOK` card and its branch in `App.tsx`, and `BENCH` in `useRoute.ts`.
+Deleting those takes it out cleanly — which is the point, because it comes down
+again once it has settled its argument. A copy of a game kept past the question
+it was built to answer collects dust and confusion in equal measure.
 
-- **Never a `ModeId`** — a flag in `App.tsx` and nothing else. A `ModeId` enters
-  the daily rota, needs a letter in a duel code and a re-run of `schema.sql`,
-  and an experiment is the last thing to hand somebody as their round of the day.
-- **Nothing on it is scored anywhere**: pass it no `match`, so there's no clock,
-  no seeded deal and no leaderboard to file to.
-- **Give it the games' setup screen** where what's being tried touches the map —
-  that's what `GameCard` is for, and it's why `ModeSetup` takes a card and not a
-  mode id.
+The rules a bench lives by, all four load-bearing:
+
+- **Never a `ModeId`** — a card and a route, and that's the lot. A `ModeId`
+  enters the daily rota, needs a letter in a duel code and a re-run of
+  `schema.sql`, and an experiment is the last thing to hand somebody as their
+  round of the day. The route is the one concession the URL era forces: every
+  screen needs an address, so the bench has `{ at: "bench" }` — which is *not*
+  a mode path, and `MODE_PATHS` still holds exactly the seven games.
+- **Nothing on it is scored anywhere**: no `match` is passed to it, so there's
+  no clock, no seeded deal and no leaderboard to file to. That missing
+  `...matchOptions(match)` is the only line separating it from `CityLocator`.
+- **It gets the games' setup screen**, because what's being tried touches the
+  map and the map is chosen there — that's what `GameCard` is for, and why
+  `ModeSetup` takes a card rather than a mode id.
 - **What graduates replaces**, rather than standing beside what it replaced.
+
+It is on the public shelf, where the last one was. Taking the card out of
+`AllGames` leaves it reachable at its URL and invisible to players, which is the
+one-line version if that's ever wanted.
+
+**Remember the globe can't be clicked by automation** — its canvas raycasts
+from real pointer events, so a synthetic click on the world lands nowhere. The
+zoom buttons are ordinary DOM. Anything tried here is judged by hand or checked
+on the flat map with the globe path read.
 
 ### The last card: coming soon
 
