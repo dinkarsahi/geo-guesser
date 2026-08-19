@@ -594,8 +594,48 @@ one-line version if that's ever wanted.
 
 **Remember the globe can't be clicked by automation** — its canvas raycasts
 from real pointer events, so a synthetic click on the world lands nowhere. The
-zoom buttons are ordinary DOM. Anything tried here is judged by hand or checked
-on the flat map with the globe path read.
+zoom buttons are ordinary DOM, and so is the tap cheat, which is how a reveal
+can be reached without clicking the world at all. Anything else is judged by
+hand.
+
+#### What is on the bench now: the globe's two skins
+
+`ScrapbookGlobe.tsx` is `GlobeMap` with a switch in the corner between the
+globe SpotOn ships and a photographed one — Blue Marble as a single texture,
+a bump map, a **specular map** so the oceans take a highlight, a **drifting
+cloud shell** above the surface, and a starfield behind. MapTap's globe is
+that, which is what prompted it: theirs is one self-hosted JPEG with stars, not
+live tiles, and it is why theirs can look the way it does.
+
+**The two are mutually exclusive, and the reason is in the libraries.**
+three-slippy-map-globe builds every tile as a `MeshLambertMaterial`, which has
+no specular term at all, and three-globe hides the photographed sphere — the
+`MeshPhongMaterial` one, which does — the moment a tile URL is set. So a shine
+on the water costs the tiles, and the tiles cost the shine. No amount of
+material work gets both.
+
+Three things that cost time getting there, all in the file:
+
+- **`globeMaterial` is a prop on react-globe.gl, not a bound ref method.** The
+  ref binds `pointOfView`, `scene`, `camera`, `controls`, `getGlobeRadius` and
+  a few more; asking it for the material throws. Hand a material *in* and
+  three-globe hangs the day texture and bump map on it.
+- **Nothing may go before the camera setup in `onGlobeReady`.** The throw above
+  took the rest of that function with it, leaving the skin at three-globe's
+  default distance — which reads as the skin being wrong rather than as one
+  line above it having thrown.
+- **The first flip sits black for a second or two.** The remount refetches
+  about eight megabytes of texture, five of it the cloud PNG. Not a fault, and
+  `THREE.Cache.enabled` is not the fix — it is global, and the tiled skin would
+  then hold every tile it ever fetched.
+
+The cloud texture is **not shippable as it stands**: 5 MB, and three-globe's
+example credits it only to turban/webgl-earth with no licence travelling with
+the image. Every other texture here is NASA's or Natural Earth's and plainly
+free. If clouds graduate, they graduate on a NASA cloud layer.
+
+`@types/three` was added as a dev dependency for this — three 0.185 ships no
+declarations of its own. It is dev-only and nothing of it reaches the bundle.
 
 ### The last card: coming soon
 

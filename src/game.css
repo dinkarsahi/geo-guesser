@@ -1995,3 +1995,51 @@ body:has(.game-play) {
     font-size: 40px;
   }
 }
+
+/* --- The bench's globe switch. Delete with `ScrapbookGlobe`. ------------- */
+.bench-skins {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 10px;
+  background: rgba(12, 14, 20, 0.62);
+}
+.bench-skins-label {
+  align-self: center;
+  padding: 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+.bench-skin {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 7px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  text-align: left;
+}
+.bench-skin:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.bench-skin.is-active {
+  border-color: #c084fc;
+  background: rgba(192, 132, 252, 0.16);
+  color: #fff;
+}
+.bench-skin-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+.bench-skin-note {
+  font-size: 10px;
+}

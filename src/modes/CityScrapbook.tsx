@@ -1,6 +1,6 @@
 import FactCard from "../components/FactCard";
 import GameFrame from "../components/GameFrame";
-import GlobeMap from "../components/GlobeMap";
+import ScrapbookGlobe from "../components/ScrapbookGlobe";
 import WorldMap from "../components/WorldMap";
 import { cities, type City } from "../data/cities";
 import { useGame } from "../lib/useGame";
@@ -84,7 +84,7 @@ export default function CityScrapbook({ onExit, settings }: ModeProps) {
         settings.flat ? (
           <WorldMap {...props} borders={settings.borders} />
         ) : (
-          <GlobeMap {...props} borders={settings.borders} />
+          <ScrapbookGlobe {...props} borders={settings.borders} />
         )
       }
     />
