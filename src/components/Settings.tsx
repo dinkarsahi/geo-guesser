@@ -55,16 +55,21 @@ export default function Settings({
   settings,
   onChange,
   onBack,
+  backLabel,
 }: {
   settings: GameSettings;
   onChange: (s: GameSettings) => void;
   onBack: () => void;
+  /** Named by the caller, because this screen is reached from two places and
+      a "Home" that goes back to a game's setup screen is a lie about where
+      the press leads. */
+  backLabel: string;
 }) {
   return (
     <div className="menu setup">
       <div className="menu-bar">
         <button className="btn btn-ghost" onClick={onBack}>
-          ← Home
+          {backLabel}
         </button>
       </div>
       <h1>Settings</h1>

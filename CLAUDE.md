@@ -211,12 +211,24 @@ globe-or-flat and borders-or-not it used to ask stood in front of all seven
 games, in front of today's round and in front of a duel — the same two
 questions, ten times over, answered the same way every time by anybody who had
 a view. That is a **preference** wearing a decision's clothes, so it moved to a
-screen of its own: `Settings`, reached from a quiet button under the three
-doors on the home page, at `/settings`, and remembered in `spoton.prefs.v1`
+screen of its own: `Settings`, reached from a **top-right button on the home
+page and on every game's setup screen**, at `/settings`, and remembered in
+`spoton.prefs.v1`
 (`src/lib/preferences.ts`). **The defaults are the globe and no borders** — the
 globe because it is the thing this game is, and no borders because the question
 is where a place *is*, and an outlined world answers half of that before the
 player has looked.
+
+The button is on the setup screen as well as home because that is the last
+moment before a round when changing the map still means anything, and it is
+where somebody realises they want to — they can see which game they are about
+to play. It is **not** on a round in progress: the map is drawn by then, and
+swapping the globe for the flat map halfway through five questions changes the
+thing a player is being marked on. Which screen sent you is `settingsFrom` in
+`App`, held in state rather than in the path — `/settings` is one screen
+however it was reached, and a path carrying its own origin would give the same
+screen two addresses. A refresh loses it and lands on Home, which is the honest
+answer to "where was I?" when the answer wasn't written down.
 
 Two consequences worth knowing. `HeadToHead` and `PlayFriend` now *read* that
 preference instead of asking; in a duel it is the **host's** that the room
@@ -300,6 +312,7 @@ browser's own back button works without a line of wiring.
 | `/credits` | where the maps, shapes, logos and code came from |
 | `/privacy` | what the game knows about the people who play it |
 | `/settings` | how this device likes its map |
+| `/gamemakersscrapbook` | the bench — see "The bench" below. Goes when it does |
 | `/cityspotter`, `/flagspotter`, `/currencyspotter`, `/corporatehqspotter`, `/populationspotter`, `/tubestationspotter`, `/timezonespotter` | that game's setup screen, and the round itself |
 
 **The names crossed over and the file says so:** `/headtohead` is Duel a Friend,
@@ -611,18 +624,39 @@ Two things left open, both seen rather than guessed at:
   the green disc that looks right at reveal altitude swallows the city once you
   zoom past it. Pre-existing, and invisible until deep zoom was worth doing.
 
-### The bench, when one is next wanted
+### The bench
 
-There isn't one on the shelf. The last was `Game Maker's Scrapbook` — a copy of
-City Spotter that the globe's sky was judged on, against a photographed globe
-that could have a specular ocean but was five kilometres to the pixel where the
-tiles are six hundred metres. The sky won and shipped (`src/lib/globeSky.ts`),
-so the bench came down, which is the rule benches live by: a copy of a game
-kept past the question it was built to answer collects dust and confusion in
-equal measure. It is at **`669f41f`**, and `git show 669f41f --
-src/components/ScrapbookGlobe.tsx` brings the three-skinned globe back.
+`Game Maker's Scrapbook` — a copy of City Spotter, on the end of the shelf next
+to the coming-soon card, at `/gamemakersscrapbook`. Two things are on it.
 
-Build the next one the same way, and the reasons are worth repeating:
+**A sky switch**, bottom-left of the map: the sky as it ships against the same
+sky with the clouds off. That is the live argument — the cloud layer is the
+half costing 830 KB and laying weather over the coastlines the game is asking
+about, and the stars are the half that costs nothing and hides nothing. It
+works because `addSky` takes `{ clouds: false }`, which exists for this and
+nothing else. Flipping it deliberately does **not** re-fly the camera: the
+whole point is comparing the same view.
+
+**The arrival** — `src/lib/globeFlight.ts`, bench-only. Press Start and the map
+is on screen before its imagery is, so a round opened on an empty rectangle or
+a globe that popped in a moment late. `flyIn` starts the camera fourteen globe
+radii out and falls inward over 3.4 seconds while the world turns 260° under
+it, and the tiles get three seconds they didn't have. Two things about it worth
+keeping if it graduates:
+
+- **The planets are not animated.** They are placed in the corridor the camera
+  is about to fall down, and the camera's own motion sweeps them past — near
+  ones faster than far ones, which is what sells it, and is free. Their angles
+  are fixed rather than random so the fall is the same fall every round.
+- **Everything in it draws instantly** — spheres and points, no textures,
+  nothing fetched. That is the trick: the one thing that has to travel is the
+  Earth, and by the time the camera is near enough for its surface to matter,
+  it has arrived. A loading animation that itself has to load is no animation.
+
+Guesses are ignored while the camera is falling, since a click on a world
+sliding under the cursor is nobody's answer.
+
+The rules a bench lives by, all of them load-bearing:
 
 - **Never a `ModeId`** — a card and a route, and nothing else. A `ModeId`
   enters the daily rota, needs a letter in a duel code and a re-run of
@@ -631,14 +665,17 @@ Build the next one the same way, and the reasons are worth repeating:
   screen needs an address; keep it out of `MODE_PATHS`.
 - **Nothing on it is scored anywhere**: pass it no `match`, so there's no
   clock, no seeded deal and no leaderboard to file to.
-- **Give it the games' setup screen** where what's being tried touches the map
-  — that's what `GameCard` is for, and why `ModeSetup` takes a card and not a
-  mode id.
-- **Put the comparison on the bench itself.** The globe's three skins were a
-  switch in the corner of the map, because two looks have to be judged in the
-  same second on the same view; a choice made on a setup screen is judged from
-  memory.
-- **What graduates replaces**, rather than standing beside what it replaced.
+- **It is a copy, not a flag inside the real thing.** `ScrapbookGlobe` is
+  `GlobeMap` duplicated, and everything below what is being tried is meant to
+  stay verbatim — a copy that drifts is a copy that gets judged instead of the
+  thing it stands in for.
+- **Put the comparison on the bench itself**, as a switch in the corner of the
+  map: two looks have to be judged in the same second on the same view, and a
+  choice made on a setup screen is judged from memory.
+- **What graduates replaces**, rather than standing beside what it replaced,
+  and the bench comes down with the argument it settled. The last one did, at
+  `669f41f`, which is where the three-skinned globe (tiles, tiles + sky, and an
+  8k flat-ocean photograph) still lives.
 
 ### The last card: coming soon
 

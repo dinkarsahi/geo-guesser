@@ -21,10 +21,28 @@ import { CLOUD_TEXTURE } from "./textures";
  * way to take them down again. Call that on unmount — a round ends, the map
  * goes, and a cloud shell still turning in a scene nobody is drawing is a
  * timer and a texture nothing will ever collect.
+ *
+ * `clouds: false` leaves the weather off and keeps the stars. Only the bench
+ * asks for it, and only so the two can be looked at side by side — the cloud
+ * layer is the half of this that costs 830 KB and covers the coastlines the
+ * game is asking about, so it is the half worth being able to switch off and
+ * argue with.
  */
-export function addSky(scene: THREE.Scene, globeRadius: number): () => void {
+export function addSky(
+  scene: THREE.Scene,
+  globeRadius: number,
+  { clouds: wanted = true }: { clouds?: boolean } = {},
+): () => void {
   const stars = makeStars();
   scene.add(stars);
+
+  if (!wanted) {
+    return () => {
+      scene.remove(stars);
+      stars.geometry.dispose();
+      (stars.material as THREE.Material).dispose();
+    };
+  }
 
   // How far above the surface the weather hangs, in globe radii. Small enough
   // to read as cloud on the world rather than a second shell around it, and

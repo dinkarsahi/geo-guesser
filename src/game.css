@@ -39,8 +39,16 @@
 .menu-bar {
   display: flex;
   justify-content: flex-start;
+  align-items: center;
   max-width: 820px;
   margin: 0 auto 8px;
+}
+/* Pushes whatever follows it to the far end of the bar. Used for the settings
+   button, which sits opposite Back rather than beside it — the two are
+   opposites in what they do, and a pair of buttons in the same corner reads as
+   a pair of ways out. */
+.menu-bar-gap {
+  flex: 1;
 }
 .menu-sub {
   margin-bottom: 32px;
@@ -1997,8 +2005,10 @@ body:has(.game-play) {
 }
 
 /* The quiet way to the settings, under the three doors on the home page. */
-.home-settings {
-  margin-top: 22px;
+/* The settings button, in the top-right of every screen that offers it. Quiet
+   next to Back: it is not a way out of the screen, it is a thing to adjust
+   before going on. */
+.btn-settings {
   font-size: 14px;
 }
 
@@ -2010,4 +2020,52 @@ body:has(.game-play) {
   margin: 26px auto 0;
   font-size: 12px;
   line-height: 1.5;
+}
+
+/* --- The bench's sky switch. Delete with `ScrapbookGlobe`. --------------- */
+.bench-skins {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 10px;
+  background: rgba(12, 14, 20, 0.62);
+}
+.bench-skins-label {
+  align-self: center;
+  padding: 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+.bench-skin {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 7px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  text-align: left;
+}
+.bench-skin:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.bench-skin.is-active {
+  border-color: #c084fc;
+  background: rgba(192, 132, 252, 0.16);
+  color: #fff;
+}
+.bench-skin-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+.bench-skin-note {
+  font-size: 10px;
 }

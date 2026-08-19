@@ -7,8 +7,9 @@ import SiteFooter from "./components/SiteFooter";
 import { TUBE_TAGLINE } from "./data/tube";
 import { type Match } from "./lib/match";
 import { loadSettings, saveSettings } from "./lib/preferences";
-import { spellScreen, useRoute } from "./lib/useRoute";
+import { spellScreen, useRoute, type Route } from "./lib/useRoute";
 import CityLocator from "./modes/CityLocator";
+import CityScrapbook, { SCRAPBOOK_TITLE } from "./modes/CityScrapbook";
 import CompanyGuesser from "./modes/CompanyGuesser";
 import CurrencyGuesser from "./modes/CurrencyGuesser";
 import FlagGuesser from "./modes/FlagGuesser";
@@ -101,11 +102,47 @@ const MODES: (GameCard & { id: Mode })[] = [
   },
 ];
 
+/**
+ * The bench: a copy of City Spotter kept aside to try things on.
+ *
+ * A card of its own rather than a row in `MODES`, because it must never be a
+ * `ModeId` — that would enter it in the daily rota and in duel codes, which is
+ * the last place an experiment belongs. It is a `GameCard` and not a
+ * `GameCard & { id }`, and the type split exists for exactly this. See
+ * `CityScrapbook` for the rest of the rules it lives by, and take this
+ * constant out with it.
+ */
+const SCRAPBOOK: GameCard = {
+  title: SCRAPBOOK_TITLE,
+  hook: "Fancy being the game maker?",
+  blurb:
+    "City Spotter, kept aside to try things on. Nothing here counts for anything.",
+  emoji: "🧪",
+};
+
+/**
+ * The way to the settings, top-right, on the two screens that offer it.
+ *
+ * The home page, where it is one of the things you can do; and a game's setup
+ * screen, which is the last moment before a round when changing the map still
+ * means anything. Not during a round — the map is already drawn, and swapping
+ * the globe for the flat map halfway through five questions would be changing
+ * the game somebody is being marked on.
+ */
+function SettingsButton({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button className="btn btn-ghost btn-settings" onClick={onOpen}>
+      ⚙ Settings
+    </button>
+  );
+}
+
 /** Choose how to play before a mode starts. */
 function ModeSetup({
   mode,
   onStart,
   onBack,
+  onSettings,
 }: {
   // A card rather than a mode id, so that something can have this screen
   // without being a game — a bench, next time there is one, which is a copy of
@@ -113,6 +150,7 @@ function ModeSetup({
   mode: GameCard;
   onStart: () => void;
   onBack: () => void;
+  onSettings: () => void;
 }) {
   return (
     <div className="menu setup">
@@ -123,6 +161,12 @@ function ModeSetup({
         <button className="btn btn-ghost" onClick={onBack}>
           ← Back
         </button>
+        <span className="menu-bar-gap" />
+        {/* Here rather than only on the home page, because this is the last
+            screen before a round and the map is the thing somebody realises
+            they want to change once they can see which game they are about to
+            play. Sending them home to change it would lose their place. */}
+        <SettingsButton onOpen={onSettings} />
       </div>
       <h1>
         <span className="mode-emoji">{mode.emoji}</span> {mode.title}
@@ -193,9 +237,11 @@ function DuelMark() {
  */
 function AllGames({
   onPick,
+  onBench,
   onBack,
 }: {
   onPick: (mode: Mode) => void;
+  onBench: () => void;
   onBack: () => void;
 }) {
   return (
@@ -218,6 +264,16 @@ function AllGames({
             <span className="muted mode-blurb">{m.blurb}</span>
           </button>
         ))}
+        {/* The bench, at the end of the shelf with the unfinished things
+            rather than among the games: it is a copy of one of them and a score
+            off it means nothing, so standing it eighth in the row would offer
+            it as a game to play. */}
+        <button className="mode-card" onClick={onBench}>
+          <span className="mode-emoji">{SCRAPBOOK.emoji}</span>
+          <span className="mode-title">{SCRAPBOOK.title}</span>
+          <span className="mode-hook">{SCRAPBOOK.hook}</span>
+          <span className="muted mode-blurb">{SCRAPBOOK.blurb}</span>
+        </button>
         {/* What's being built, on the shelf it will stand on. A div rather than
             a button because there is nothing behind it yet: a card that takes
             the press and does nothing reads as a broken game rather than an
@@ -276,6 +332,19 @@ export default function App() {
   // flat map watches the globe appear and be replaced.
   const [settings, setSettings] = useState<GameSettings>(loadSettings);
   const [session, setSession] = useState<Session>(NO_SESSION);
+  // Where the settings screen sends you back to. Kept out of the URL on
+  // purpose: `/settings` is one screen however it was reached, and a path that
+  // carried its own origin would give the same screen two addresses. A refresh
+  // loses it and lands on Home, which is the honest answer to "where was I?"
+  // when the answer wasn't written down.
+  const [settingsFrom, setSettingsFrom] = useState<Route>({ at: "home" });
+  const openSettings = useCallback(
+    (from: Route) => {
+      setSettingsFrom(from);
+      go({ at: "settings" });
+    },
+    [go],
+  );
 
   const mode = route.at === "game" ? route.mode : null;
   // The screen's address rather than the literal path, which for a duel can
@@ -299,7 +368,7 @@ export default function App() {
   // else; the URL says it now.
   const toMenu = useCallback(() => {
     setSession(NO_SESSION);
-    if (route.at === "game") go({ at: "games" });
+    if (route.at === "game" || route.at === "bench") go({ at: "games" });
   }, [route.at, go]);
 
   // Stable, because a room hands over on a timer that lists this among its
@@ -321,7 +390,7 @@ export default function App() {
 
   // A running game gets the whole window: the menu's fixed-width shell would
   // otherwise pen the map in well short of the screen edges.
-  const playing = (mode !== null && started) || match !== null;
+  const playing = ((mode !== null || route.at === "bench") && started) || match !== null;
   useEffect(() => {
     document.body.classList.toggle("playing", playing);
     return () => document.body.classList.remove("playing");
@@ -383,6 +452,9 @@ export default function App() {
     return page(
       <Settings
         settings={settings}
+        // Back to whichever screen sent you, which for a game's setup screen
+        // is the difference between changing the map and losing your place.
+        backLabel={settingsFrom.at === "home" ? "← Home" : "← Back"}
         // Written through on every press rather than on a Save: the press is
         // the change, and a preference that needed confirming would be a
         // longer errand than the screen it replaced.
@@ -390,7 +462,7 @@ export default function App() {
           setSettings(next);
           saveSettings(next);
         }}
-        onBack={() => go({ at: "home" })}
+        onBack={() => go(settingsFrom)}
       />,
     );
   }
@@ -429,6 +501,23 @@ export default function App() {
         // Back to the shelf the game was picked off, not out to the home page:
         // somebody who opened the wrong one of seven wanted a different one.
         onBack={() => go({ at: "games" })}
+        onSettings={() => openSettings(route)}
+      />,
+    );
+  }
+
+  // The bench: the games' own setup screen, and a copy of a game behind it.
+  // `ModeSetup` takes a card rather than a mode id so that this screen can be
+  // had without a `ModeId` to go with it, and no `match` is passed on from
+  // here — there is nothing an experiment could file to.
+  if (route.at === "bench") {
+    if (started) return <CityScrapbook {...modeProps} />;
+    return page(
+      <ModeSetup
+        mode={SCRAPBOOK}
+        onStart={() => setSession({ path, started: true, match: null })}
+        onBack={() => go({ at: "games" })}
+        onSettings={() => openSettings(route)}
       />,
     );
   }
@@ -437,6 +526,7 @@ export default function App() {
     return page(
       <AllGames
         onPick={(m) => go({ at: "game", mode: m })}
+        onBench={() => go({ at: "bench" })}
         onBack={() => go({ at: "home" })}
       />,
     );
@@ -449,6 +539,12 @@ export default function App() {
   // read as two more of them.
   return page(
     <div className="menu">
+      {/* Nothing on the left: there is nowhere above home to go back to, so
+          the bar exists only to hang the settings off the right. */}
+      <div className="menu-bar">
+        <span className="menu-bar-gap" />
+        <SettingsButton onOpen={() => openSettings({ at: "home" })} />
+      </div>
       <h1>SpotOn</h1>
       <p className="muted menu-sub">Play the world, play a friend, or just play.</p>
       <div className="mode-grid mode-grid-trio">
@@ -478,14 +574,6 @@ export default function App() {
           </span>
         </button>
       </div>
-      {/* Under the three doors and deliberately quiet. It is not a fourth way
-          to play, and the two questions behind it have answers already — this
-          is for the player who wants to change one, not a step on the way in.
-          Which is the whole of why it moved here: in front of every game it
-          was a question, and here it is a door nobody has to open. */}
-      <button className="btn btn-ghost home-settings" onClick={() => go({ at: "settings" })}>
-        ⚙ Settings
-      </button>
     </div>,
   );
 }

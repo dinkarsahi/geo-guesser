@@ -47,7 +47,16 @@ export type Route =
   /** How this device likes its map — the two questions the games stopped asking. */
   | { at: "settings" }
   /** A game off the shelf: its setup screen, and the round itself. */
-  | { at: "game"; mode: ModeId };
+  | { at: "game"; mode: ModeId }
+  /**
+   * The bench — a copy of a game kept aside to try things on.
+   *
+   * A route of its own rather than a `ModeId` with a path, and that is the
+   * whole arrangement: a mode letter would enter it in the daily rota and in
+   * duel codes, so the address bar is the only thing here that knows it
+   * exists. It comes out again with the bench.
+   */
+  | { at: "bench" };
 
 /**
  * The seven games, as they're spelled in an address bar.
@@ -97,6 +106,13 @@ const PRIVACY = "privacy";
  */
 const SETTINGS = "settings";
 
+/**
+ * The bench, spelled the way the games are — its own name run together. Not
+ * `/bench` or `/test`, which read as somewhere the game is broken rather than
+ * somewhere it is being made. Delete this line with the bench.
+ */
+const BENCH = "gamemakersscrapbook";
+
 /** What a path means. Anything unrecognised is the front door. */
 function parse(path: string): Route {
   const [at = "", second = ""] = path
@@ -119,6 +135,7 @@ function parse(path: string): Route {
   if (at === CREDITS) return { at: "credits" };
   if (at === PRIVACY) return { at: "privacy" };
   if (at === SETTINGS) return { at: "settings" };
+  if (at === BENCH) return { at: "bench" };
   const mode = (Object.keys(MODE_PATHS) as ModeId[]).find((m) => MODE_PATHS[m] === at);
   return mode ? { at: "game", mode } : { at: "home" };
 }
@@ -140,6 +157,8 @@ export function spell(route: Route): string {
       return `/${PRIVACY}`;
     case "settings":
       return `/${SETTINGS}`;
+    case "bench":
+      return `/${BENCH}`;
     case "game":
       return `/${MODE_PATHS[route.mode]}`;
     default:
