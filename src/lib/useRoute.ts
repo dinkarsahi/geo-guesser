@@ -35,11 +35,23 @@ import { parseMatchCode } from "./match";
 export type Route =
   | { at: "home" }
   | { at: "daily" }
+  /**
+   * Today's table, on an address of its own.
+   *
+   * Separate from `/` because the two are different errands: `/` is "play
+   * today's round" and this is "how did it go". A device that has had its go is
+   * sent home from `/` rather than to the table, and reaches the table by
+   * asking for it — which is the press on Today's Round that would otherwise
+   * deal a round it can't have.
+   */
+  | { at: "leaderboard" }
   /** Duel a Friend, optionally as an invitation to one particular room. */
   | { at: "duel"; code?: string }
   | { at: "games" }
-  /** What the game is and how it's marked — and the page the footer links to. */
+  /** What the game is, at a glance: the shortest honest answer. */
   | { at: "about" }
+  /** The long answer: every rule, every curve, and the graphs behind them. */
+  | { at: "faq" }
   /** Where the maps, the shapes, the logos and the code came from. */
   | { at: "credits" }
   /** What the game knows about the people who play it. */
@@ -95,6 +107,7 @@ const MODE_PATHS: Record<ModeId, string> = {
  */
 const DAILY = "dailyround";
 const HOME = "home";
+const LEADERBOARD = "leaderboard";
 const DUEL = "headtohead";
 const GAMES = "allgames";
 
@@ -106,6 +119,7 @@ const GAMES = "allgames";
  * the web spells them this way.
  */
 const ABOUT = "about";
+const FAQ = "faq";
 const CREDITS = "credits";
 const PRIVACY = "privacy";
 
@@ -130,6 +144,7 @@ function parse(path: string): Route {
     .toLowerCase()
     .split("/");
   if (at === HOME) return { at: "home" };
+  if (at === LEADERBOARD) return { at: "leaderboard" };
   // The root, and the one path that means a game rather than a menu.
   if (at === "" || at === DAILY) return { at: "daily" };
   // A code after the duel's path is an invitation to a room, and it is read
@@ -144,6 +159,7 @@ function parse(path: string): Route {
   }
   if (at === GAMES) return { at: "games" };
   if (at === ABOUT) return { at: "about" };
+  if (at === FAQ) return { at: "faq" };
   if (at === CREDITS) return { at: "credits" };
   if (at === PRIVACY) return { at: "privacy" };
   if (at === SETTINGS) return { at: "settings" };
@@ -160,12 +176,16 @@ export function spell(route: Route): string {
       return "/";
     case "home":
       return `/${HOME}`;
+    case "leaderboard":
+      return `/${LEADERBOARD}`;
     case "duel":
       return route.code ? `/${DUEL}/${route.code}` : `/${DUEL}`;
     case "games":
       return `/${GAMES}`;
     case "about":
       return `/${ABOUT}`;
+    case "faq":
+      return `/${FAQ}`;
     case "credits":
       return `/${CREDITS}`;
     case "privacy":

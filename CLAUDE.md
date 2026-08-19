@@ -256,6 +256,16 @@ wrong.
 the round on sight, so returning there would put the player straight back into
 the game they just left. `toMenu` in `App` is where that is done.
 
+**A device that has had its go is sent home from `/`, not to the table.** Being
+shown the standings for a game you can't play, at the address that exists to
+play it, reads as the site being broken. Home is a screen full of things you
+*can* do — and its Today's Round card leads to `/leaderboard` instead of `/`
+when the day is spent, so the table is reached by asking for it. There is
+nothing under that table but the table: a refresh button, a line about the day
+being rationed and a pair of buttons offering other games were three different
+ways of saying "and now what?" beneath something somebody came to read, and the
+bar across the top is where the way out lives.
+
 The three doors moved to `/home` and are one press away from anywhere — the
 wordmark in the top bar. That page asks one question — **who are you playing** —
 and answers it with three cards: `Today's Round`, `Duel a Friend`, and `All Games`. The games
@@ -394,10 +404,19 @@ imagery is drawn (Esri does) means putting `.map-credit` back in `WorldMap` and
 
 The pages behind it:
 
-- **`About`** — what the game is, how a round is marked, the three ways to play,
-  and a table of all seven games saying what each is marked on. Its numbers come
-  from `MAX_ROUND_SCORE` and `MATCH_ROUNDS`, and its list from `MATCH_MODES`, so
-  a game added to the app appears here without anyone remembering to.
+- **`About`** — what SpotOn is, the table of games, the three ways to play, and
+  where the idea came from. **Deliberately short**, and it used to be long: it
+  carried the scoring curve, every marking rule and the storage policy at once,
+  which is everything true about the app on one page, read by nobody.
+- **`FAQ`** — the long answer, in question-and-answer cards, with a **graph for
+  every scoring curve** and a diagram of the middle-to-middle rule. Its curves
+  are drawn by `ScoreCurve`, which is handed **the game's own scoring function**
+  — `scoreFromDistance`, `scoreFromStops`, `scoreFromClockGap`,
+  `scoreFromPopulationRatio` — so a graph here cannot quietly disagree with the
+  game. Change a scale and these redraw. **Never write a curve out by hand on
+  that page**: a copy is right on the day it is written and wrong ever after.
+  (`scoreFromPopulationRatio` was moved into `data/populations.ts` for this —
+  exporting it from the mode's own file breaks fast refresh.)
 - **`Credits`** — the attributions, and four of them are **owed rather than
   offered**: NASA asks for its imagery line, TfL's open data asks for "Data
   provided by Transport for London", and the MIT and ISC licences on React,
@@ -435,13 +454,15 @@ browser's own back button works without a line of wiring.
 
 | Path | Screen |
 |---|---|
-| `/` | **Today's Round** — dealt on arrival, or its table if this device has played |
+| `/` | **Today's Round** — dealt on arrival, or a redirect home if this device has played |
 | `/dailyround` | the same screen, kept so older links still work |
+| `/leaderboard` | today's table |
 | `/home` | the three doors |
 | `/headtohead` | Duel a Friend — the `PlayFriend` component |
 | `/headtohead/CVKQ7M` | an invitation to one room — see "The invite link" |
 | `/allgames` | the shelf |
-| `/about` | what the game is and how it's marked |
+| `/about` | what the game is, in the time somebody will give it |
+| `/faq` | every rule, with the curve behind each one |
 | `/credits` | where the maps, shapes, logos and code came from |
 | `/privacy` | what the game knows about the people who play it |
 | `/settings` | how this device likes its map |

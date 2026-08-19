@@ -9,28 +9,20 @@ import {
 } from "../lib/match";
 import { spentOnThisDevice } from "../lib/leaderboard";
 import { loadSettings } from "../lib/preferences";
-import Leaderboard from "../components/Leaderboard";
-
-/**
- * No clock in it any more. A duel is a race because everybody is playing at
- * once; today's round is people all over the world getting to the same five
- * questions whenever their day allows, and a countdown there was rushing them
- * through the one thing the table is meant to measure.
- */
-const RULES = `${MATCH_ROUNDS} rounds, marked out of 100 a round as usual and averaged into one mark out of 100. No clock — take as long over each one as you like. One game a day and one go at it — a go a device, for everyone, everywhere.`;
 
 interface HeadToHeadProps {
-  onBack: () => void;
   /** Play this match — the mode takes it from here. */
   onStart: (match: Match) => void;
   /**
-   * Somewhere to go when today's round is spent. A player who has been turned
-   * away — or whose flatmate played it on this tablet — is told what the rest
-   * of the game is rather than left on a table with a back button, and these
-   * are the two things here that aren't rationed by the day.
+   * Called when this device has already had its go, instead of dealing.
+   *
+   * The player is sent **home** rather than to the table. Being shown the
+   * standings for a game you can't play, at the address that exists to play it,
+   * reads as the site being broken; home is a screen full of things you *can*
+   * do, and Today's Round there takes you to the table when the table is what
+   * is left of it.
    */
-  onAllGames: () => void;
-  onDuel: () => void;
+  onSpent: () => void;
 }
 
 /**
@@ -56,8 +48,10 @@ interface HeadToHeadProps {
  * goes. The name is asked for at the end instead, where there is a score to
  * put it to and where somebody who never finishes is never asked at all.
  *
- * What is left of this component is the other half: the table, for a device
- * that has already had its go.
+ * What is left of this component is a doorway: it deals the round, or hands
+ * back to whoever asked when the day has already been spent here. The table
+ * lives at `/leaderboard` and is reached on purpose rather than by being turned
+ * away onto it.
  *
  * There's no code to be seen here any more. There never was much point in
  * showing one — it's worked out from the game and the date rather than issued,
@@ -71,12 +65,7 @@ interface HeadToHeadProps {
  * are what's being marked, so they're the only thing the table is drawn from:
  * how you'd rather see the world is your own business.
  */
-export default function HeadToHead({
-  onBack,
-  onStart,
-  onAllGames,
-  onDuel,
-}: HeadToHeadProps) {
+export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
   // How this player likes the world drawn: their saved preference, not a
   // question asked here. Theirs alone either way — everyone playing today's
   // City Spotter is on one table whichever map they read it on.
@@ -92,62 +81,33 @@ export default function HeadToHead({
   // own unique index is what actually enforces it.
   const spent = code ? spentOnThisDevice(code.code) : false;
 
-  // Straight into the round. The ref is what stops a second deal if this
-  // renders again before `onStart` has taken effect; it is not a ran-once flag
-  // of the kind that breaks under strict mode, because nothing here cancels
-  // what the first run did.
+  // Straight into the round, or straight back out again. The ref is what stops
+  // a second deal if this renders again before `onStart` has taken effect; it
+  // is not a ran-once flag of the kind that breaks under strict mode, because
+  // nothing here cancels what the first run did.
   const dealt = useRef(false);
   useEffect(() => {
-    if (!code || spent || dealt.current) return;
+    if (!code || dealt.current) return;
     dealt.current = true;
+    if (spent) {
+      onSpent();
+      return;
+    }
     // No name: this player has one at the end if they finish, and none of
     // their business until then.
     onStart({ ...code, player: "", flat: setup.flat, borders: setup.borders });
-  }, [code, spent, onStart, setup]);
+  }, [code, spent, onStart, onSpent, setup]);
 
+  // Never on screen for more than a frame or two — this component's whole job
+  // is to decide which of two places the player belongs and send them there.
   return (
     <div className="menu setup">
-      <div className="menu-bar">
-        <button className="btn btn-ghost" onClick={onBack}>
-          Home
-        </button>
-      </div>
-      <h1>
-        <span className="mode-emoji mode-mark" aria-hidden="true">
-          🌍
-          <span className="mode-mark-badge">⚔️</span>
-        </span>{" "}
-        Today's Round
-      </h1>
+      <h1>Today's Round</h1>
       <p className="muted menu-sub">
-        You against everyone else in the world playing it. {RULES}
+        {MATCH_ROUNDS} rounds of {modeTitle(today)}, the same five as everyone else
+        today.
       </p>
-
-      {spent ? (
-        <>
-          <Leaderboard locked />
-          {/* Only under a table somebody was *sent* to, which is now the only
-              way to arrive at one: a player who can still play is playing. */}
-          <div className="h2h-elsewhere">
-            <p className="muted h2h-code-hint">
-              Today's {modeTitle(today)} is one go a device, so the table means
-              something. Nothing else here is rationed.
-            </p>
-            <div className="button-row">
-              <button className="btn btn-ghost" onClick={onAllGames}>
-                All Games
-              </button>
-              <button className="btn btn-ghost" onClick={onDuel}>
-                Duel a Friend
-              </button>
-            </div>
-          </div>
-        </>
-      ) : (
-        // The blink between arriving and the round being dealt. Almost never
-        // seen, and worth having for the moment the shapes are still coming.
-        <p className="muted h2h-code-hint">Dealing today's {modeTitle(today)}…</p>
-      )}
+      <p className="muted h2h-code-hint">Dealing…</p>
     </div>
   );
 }

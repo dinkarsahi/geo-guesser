@@ -323,3 +323,49 @@ export function populationPool(countries: Country[]): PopulationTarget[] {
   cached = out;
   return cached;
 }
+
+/**
+ * How forgiving the scoring is, in natural logs of the ratio between the two
+ * populations. Every other mode marks a guess on how far away it landed, which
+ * here would reward knowing that Japan is near Korea over knowing how many
+ * people live in either. So the only thing that counts is the number: a country
+ * with the right sort of population scores well wherever on Earth it is.
+ *
+ * Squared in the exponent, like the distance modes and the tube map: the curve
+ * leaves its top slowly and then falls off, rather than charging most for the
+ * first step away from the answer. At 2, and marked out of `NEAR_COUNTRY_MAX`,
+ * being out by half again scores 91 and a factor of two 84 — both of which are
+ * knowing roughly how many people live there, which is most of what the
+ * question asked. A factor of ten is 25 and a factor of fifty near enough
+ * nothing.
+ */
+const RATIO_SCALE = 2;
+
+/**
+ * The most a country that isn't the answer can be worth.
+ *
+ * The question is which country has that many people in it, and there is one
+ * right answer to it. Marked on the number alone, a guess at the wrong country
+ * with a population within a few per cent of the right one rounded to a full
+ * hundred — the game's word for "you found it" — handed out for not finding it.
+ *
+ * So the whole curve is marked out of this instead, and the last five points
+ * belong to the country. Nothing else changes: knowing that about 12 million
+ * people live somewhere is still nearly all of the question, and is still paid
+ * as such. What it stops is the panel calling a miss a perfect answer.
+ */
+const NEAR_COUNTRY_MAX = 95;
+
+/**
+ * What a wrong country with that population is worth, given how many times out
+ * its population is.
+ *
+ * Pulled out of the round so the FAQ can draw this exact curve rather than a
+ * second copy of it written from the prose. A page explaining the scoring is
+ * the last place a scoring formula should be duplicated: the copy is right on
+ * the day it is written and quietly wrong ever after.
+ */
+export function scoreFromPopulationRatio(ratio: number): number {
+  const off = Math.abs(Math.log(ratio)) / RATIO_SCALE;
+  return Math.round(NEAR_COUNTRY_MAX * Math.exp(-off * off));
+}

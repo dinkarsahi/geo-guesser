@@ -41,12 +41,6 @@ export default function Leaderboard({ mode, player, locked = false }: Leaderboar
     load(game);
   }, [game, load]);
 
-  /** From the button: the same lookup, with the screen put into its wait. */
-  const look = () => {
-    setLoading(true);
-    load(game);
-  };
-
   return (
     <div className="setup-panel h2h-code-panel">
       {locked && (
@@ -79,12 +73,13 @@ export default function Leaderboard({ mode, player, locked = false }: Leaderboar
             </p>
           )}
 
-          <button className="btn btn-ghost" onClick={look}>
-            Refresh
-          </button>
         </>
       )}
 
+      {/* No Refresh button. The table is fetched when the screen is opened,
+          and today's round is a day long — a score that landed a second after
+          you looked is not news worth a button. Opening the page again is the
+          refresh, and the way back to it is the bar at the top. */}
       {!hasRemote && (
         <p className="muted h2h-code-hint">
           No shared leaderboard is set up, so this only shows games finished on this

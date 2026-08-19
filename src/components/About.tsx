@@ -1,6 +1,5 @@
 import { MAX_ROUND_SCORE } from "../lib/geo";
 import { MATCH_MODES, MATCH_ROUNDS } from "../lib/match";
-import { CONTACT_EMAIL } from "../lib/site";
 import type { ModeId } from "../modes/ModeProps";
 
 /**
@@ -50,29 +49,24 @@ const GAMES: Record<ModeId, { asks: string; marked: string }> = {
 };
 
 interface AboutProps {
-  onBack: () => void;
   onPlay: () => void;
   onCredits: () => void;
-  onPrivacy: () => void;
+  onFaq: () => void;
 }
 
 /**
- * What the game is, and how it is marked.
+ * What SpotOn is, in the time somebody will actually give it.
  *
- * Every screen in SpotOn is a thing to press. This is the one page that is a
- * thing to read: what a round is worth, why a near miss scores so much better
- * than it looks like it should, and which games aren't marked on distance —
- * the last of which is the single most common way to misread a score here.
+ * **Deliberately short, and it used to be long.** This page carried the
+ * scoring curve, every game's marking rule, the three contests and the storage
+ * policy all at once — everything true about the app, on one page, read by
+ * nobody. It is now the answer to "what is this?", which is the question
+ * somebody arriving actually has, and the FAQ answers "why did I score that?",
+ * which is a different person on a different day.
  */
-export default function About({ onBack, onPlay, onCredits, onPrivacy }: AboutProps) {
+export default function About({ onPlay, onCredits, onFaq }: AboutProps) {
   return (
     <div className="menu doc">
-      <div className="menu-bar">
-        <button className="btn btn-ghost" onClick={onBack}>
-          Home
-        </button>
-      </div>
-
       <h1>About SpotOn</h1>
       <p className="muted menu-sub">
         A geography guessing game. You are shown something — a city's name, a flag, a
@@ -81,60 +75,25 @@ export default function About({ onBack, onPlay, onCredits, onPrivacy }: AboutPro
 
       <div className="doc-body">
         <section className="doc-section">
-          <h2>How a round is marked</h2>
+          <h2>What it is</h2>
           <p>
-            Every round is worth up to {MAX_ROUND_SCORE} points, and a game is{" "}
-            {MATCH_ROUNDS} rounds averaged into one mark out of {MAX_ROUND_SCORE}. So a
-            score means the same thing whichever game you played it in.
+            SpotOn is a geography guessing game made of {MATCH_MODES.length} smaller
+            ones. Each shows you something — a city's name, a flag, a currency, a
+            company's logo, a population figure, a station name, a running clock — and
+            asks you to say where in the world it belongs by pressing the map.
           </p>
           <p>
-            Being nearly right is worth a great deal. The scoring curve leaves full
-            marks slowly and then falls away: on the games marked by distance, 500 km
-            out still scores 94, 1,200 km scores 70, and 3,000 km scores 11. Pointing at
-            the right continent is not the same as pointing at the right country, and
-            the marking says so — but it is not the wipe-out that a plain
-            further-is-worse rule would hand you.
-          </p>
-          <p>
-            Land inside the country being asked for and you get all{" "}
-            {MAX_ROUND_SCORE} of it, wherever in that country you pressed. Cities are a
-            point rather than an area, so they carry 50 km of free ground around them: a
-            city is one coordinate in the data and forty miles of streets in life.
+            A game is {MATCH_ROUNDS} rounds. Every round is marked out of{" "}
+            {MAX_ROUND_SCORE} and the {MATCH_ROUNDS} are averaged into one mark out of{" "}
+            {MAX_ROUND_SCORE}, so a score means the same thing whichever game you
+            played. Being nearly right is worth a great deal: the marking leaves full
+            marks slowly and then falls away, so pointing at the right part of the
+            world is paid properly rather than treated as a miss.
           </p>
         </section>
 
         <section className="doc-section">
-          <h2>Three ways to play</h2>
-          <dl className="doc-list">
-            <dt>Today's Round</dt>
-            <dd>
-              One game a day, the same one for everybody, on a table the whole world
-              shares. There is no clock — take as long over each round as you like — and
-              one go a device, so the table means something. Tomorrow it is a different
-              game.
-            </dd>
-            <dt>Duel a Friend</dt>
-            <dd>
-              A room with a code and a link to send. Everybody answers the same round at
-              the same moment, 30 seconds each, and the first ten seconds of a round are
-              free before the clock starts costing you. One table at the end, and then
-              the code is done.
-            </dd>
-            <dt>All Games</dt>
-            <dd>
-              All seven, as often as you like. Nothing is filed anywhere and nothing is
-              rationed. Whether you play on the globe or the flat map, and whether
-              borders are drawn, is set once under Settings and used everywhere.
-            </dd>
-          </dl>
-        </section>
-
-        <section className="doc-section">
-          <h2>The seven games</h2>
-          <p>
-            Four of them are marked on something other than distance, which is worth
-            knowing before you read a score as a mistake.
-          </p>
+          <h2>The games</h2>
           <div className="doc-table-wrap">
             <table className="doc-table">
               <thead>
@@ -160,41 +119,77 @@ export default function About({ onBack, onPlay, onCredits, onPrivacy }: AboutPro
               </tbody>
             </table>
           </div>
+          <p>
+            Three of them are not marked on distance at all, which is worth knowing
+            before you read a good score as a mistake. The{" "}
+            <button className="doc-link" onClick={onFaq}>
+              FAQ
+            </button>{" "}
+            has the curve behind each one.
+          </p>
         </section>
 
         <section className="doc-section">
-          <h2>The maps</h2>
+          <h2>Three ways to play</h2>
+          <dl className="doc-list">
+            <dt>Today's Round</dt>
+            <dd>
+              One game a day, the same one for everybody, on a table the whole world
+              shares. No clock — take as long over each round as you like — and one go
+              a device, so the table means something. Tomorrow it is a different game.
+            </dd>
+            <dt>Duel a Friend</dt>
+            <dd>
+              A room with a code and a link to send. Everybody answers the same round at
+              the same moment, against the clock, and the room gets one table at the end.
+            </dd>
+            <dt>All Games</dt>
+            <dd>
+              All {MATCH_MODES.length}, as often as you like. Nothing is filed anywhere
+              and nothing is rationed.
+            </dd>
+          </dl>
+        </section>
+
+        <section className="doc-section">
+          <h2>Where it came from</h2>
           <p>
-            The world is drawn from satellite imagery published by NASA, cut into tiles
-            so that it sharpens as you zoom rather than being one photograph magnified.
-            The borders and coastlines are Natural Earth's. The London Underground map
-            is drawn from the stations' own coordinates — it is a geographic map of the
-            network rather than a copy of the famous diagram, which is why it looks
-            unfamiliar if you know the poster by heart.
+            The obvious ancestor is GeoGuessr, which asks where a photograph was taken.
+            SpotOn asks the question the other way round: it gives you the answer — the
+            name, the flag, the clock — and asks for the place. That flip is what lets
+            one engine carry {MATCH_MODES.length} different games, because the only
+            thing that changes between them is what the question is and how a miss is
+            measured.
+          </p>
+          <p>
+            The daily habit is Wordle's: one puzzle a day, the same one for everybody,
+            and it is over when it is over. The difference is that Wordle has no
+            leaderboard, so cheating it only cheats you — SpotOn has a shared table,
+            which is why today's round is one go a device.
+          </p>
+          <p>
+            The Underground game owes its look to the map on the wall of every station
+            in London, though it is not that map: it is drawn from the stations' real
+            coordinates, so it is a geographic map of the network rather than a copy of
+            the famous diagram. That is why it looks unfamiliar if you know the poster
+            by heart.
+          </p>
+        </section>
+
+        <section className="doc-section">
+          <h2>The world it draws</h2>
+          <p>
+            The globe and the flat map are satellite imagery published by NASA, cut into
+            tiles so the world sharpens as you zoom rather than being one photograph
+            magnified. Every border and coastline is Natural Earth's.
           </p>
           <p>
             <button className="btn btn-ghost" onClick={onCredits}>
               Where everything came from
+            </button>{" "}
+            <button className="btn btn-ghost" onClick={onFaq}>
+              How the scoring works
             </button>
-          </p>
-        </section>
-
-        <section className="doc-section">
-          <h2>What SpotOn keeps</h2>
-          <p>
-            There are no accounts and nothing to sign into. If you play a round that
-            goes on a table, the name you typed, your score and how long you took are
-            filed against that game's code so the standings can be drawn. Your name, your
-            results and a record of which rounds you have already played are also kept in
-            your own browser, which is what lets the game remember you between visits.
-          </p>
-          <p>
-            The whole of it, including how to have a score taken off a table, is on the{" "}
-            <button className="doc-link" onClick={onPrivacy}>
-              privacy page
-            </button>
-            . Anything else, write to{" "}
-            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
           </p>
         </section>
       </div>

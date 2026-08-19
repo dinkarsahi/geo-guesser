@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import About from "./components/About";
 import Credits from "./components/Credits";
+import Faq from "./components/Faq";
+import DailyBoard from "./components/DailyBoard";
 import Privacy from "./components/Privacy";
 import Settings from "./components/Settings";
 import SiteFooter from "./components/SiteFooter";
@@ -8,6 +10,8 @@ import TopBar from "./components/TopBar";
 import { TUBE_TAGLINE } from "./data/tube";
 import { type Match } from "./lib/match";
 import { loadSettings, saveSettings } from "./lib/preferences";
+import { dailyCode, gameOfDay, parseMatchCode } from "./lib/match";
+import { spentOnThisDevice } from "./lib/leaderboard";
 import { loadWorldShapes } from "./lib/worldShapes";
 import { spellScreen, useRoute, type Route } from "./lib/useRoute";
 import CityLocator from "./modes/CityLocator";
@@ -382,6 +386,13 @@ export default function App() {
 
   const modeProps = { onExit: toMenu, settings };
 
+  // Whether today's round has already been had on this device, which decides
+  // where the home page's first card leads. Read on every render rather than
+  // held: it changes the moment a game is filed, and that happens on a screen
+  // this one doesn't own.
+  const todaysCode = parseMatchCode(dailyCode(gameOfDay()));
+  const spentToday = todaysCode ? spentOnThisDevice(todaysCode.code) : false;
+
   // A running game gets the whole window: the menu's fixed-width shell would
   // otherwise pen the map in well short of the screen edges.
   const playing = ((mode !== null || route.at === "bench") && started) || match !== null;
@@ -429,11 +440,16 @@ export default function App() {
   if (route.at === "about") {
     return page(
       <About
-        onBack={() => go({ at: "home" })}
         onPlay={() => go({ at: "games" })}
         onCredits={() => go({ at: "credits" })}
-        onPrivacy={() => go({ at: "privacy" })}
+        onFaq={() => go({ at: "faq" })}
       />,
+    );
+  }
+
+  if (route.at === "faq") {
+    return page(
+      <Faq onAbout={() => go({ at: "about" })} onPrivacy={() => go({ at: "privacy" })} />,
     );
   }
 
@@ -466,14 +482,13 @@ export default function App() {
     );
   }
 
+  if (route.at === "leaderboard") {
+    return page(<DailyBoard />);
+  }
+
   if (route.at === "daily") {
     return page(
-      <HeadToHead
-        onBack={() => go({ at: "home" })}
-        onAllGames={() => go({ at: "games" })}
-        onDuel={() => go({ at: "duel" })}
-        onStart={startMatch}
-      />,
+      <HeadToHead onSpent={() => go({ at: "home" }, true)} onStart={startMatch} />,
     );
   }
 
@@ -540,7 +555,13 @@ export default function App() {
       <h1>SpotOn</h1>
       <p className="muted menu-sub">Play the world, play a friend, or just play.</p>
       <div className="mode-grid mode-grid-trio">
-        <button className="mode-card" onClick={() => go({ at: "daily" })}>
+        {/* To the round, or to its table where the round has been had. The
+            card says the same thing either way: this is where today's game
+            lives, and what is left of it depends on whether you've played. */}
+        <button
+          className="mode-card"
+          onClick={() => go({ at: spentToday ? "leaderboard" : "daily" })}
+        >
           <WorldDuelMark />
           <span className="mode-title">Today's Round</span>
           {/* The game of the day is deliberately not named here any more: the

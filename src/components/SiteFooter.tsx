@@ -17,11 +17,15 @@ interface SiteFooterProps {
  * has to say rather than a second copy of the offer — listed down here it read
  * as though the shelf were paperwork too.
  *
+ * No Home here either, and for a plainer reason: the bar across the top has it
+ * on every screen, and the same link twice on one page is a reader wondering
+ * whether the two go to different places.
+ *
  * Written out rather than built from `at`, so the union's shape is respected.
  */
 const LINKS: { route: Route; label: string }[] = [
-  { route: { at: "home" }, label: "Home" },
   { route: { at: "about" }, label: "About" },
+  { route: { at: "faq" }, label: "FAQ" },
   { route: { at: "credits" }, label: "Credits" },
   { route: { at: "privacy" }, label: "Privacy" },
 ];
