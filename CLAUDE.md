@@ -207,7 +207,7 @@ counting down while the rest are already answering. `matchOptions` passes
 `intro: false` for a room and leaves `startAt` alone.
 
 Today's round keeps the arrival: it has no timetable to disturb. It also now
-has the draw in front of it, which is nine seconds of the world being fetched
+has the draw in front of it, which is seven seconds of the world being fetched
 and built behind a screen the player is reading — see "The way in". That is the
 other half of why the arrival is worth five seconds there.
 
@@ -334,18 +334,26 @@ the same card twice running, and the hop before the last is never today's game,
 so the landing is always a move the eye can follow. The holds grow as a cube,
 so the last is ten times the first, and they are **scaled to `DRAW_MS` rather
 than added up** — the draw is the same length on every device and however many
-hops it is next tuned to. **The draw is three beats, and the middle one is the point.** `DRAW_MS` (5 s)
-is the light going round, and **nothing is said under the shelf while it does**
-— a line under a shelf that is still deciding is a line nobody reads, because
-the eye is on the movement, and a standing "Today's game is…" made the answer
-feel already given rather than arriving. `READ_MS` (2.6 s) is the beat nothing
-moves in: the light has stopped, the six it isn't have gone quiet, the name is
-printed, and the player is left alone with it long enough to actually read it.
-`BEGIN_MS` (1.5 s) is the handover — "Let's begin", and then the screen fading
-out under it, with the fade *delayed* inside the beat (`.daily-draw.is-leaving`
-delays its own animation) so the words are read at full strength before they
-are taken away. The globe behind it fades in on its own
-(`.globe-wrap.is-arriving`), so the two read as one handover rather than a cut.
+hops it is next tuned to. **The draw is three beats, the middle one is the point, and the last one says
+nothing.** `DRAW_MS` (4 s) is the light going round, and **nothing is said
+under the shelf while it does** — a line under a shelf that is still deciding
+is a line nobody reads, because the eye is on the movement, and a standing
+"Today's game is…" made the answer feel already given rather than arriving.
+`READ_MS` (2.6 s) is the beat nothing moves in: the light has stopped, the six
+it isn't have gone quiet, the name is printed, and the player is left alone
+with it long enough to actually read it. `LEAVE_MS` (0.7 s) is the screen
+fading out **still showing that same answer**, while the globe behind it fades
+in on its own (`.globe-wrap.is-arriving`), so the two read as one handover
+rather than a cut.
+
+**One line on that screen and nothing under it**, and both of the things that
+were there have been tried and removed. "Let's begin" over the fade was a
+second thing to read at the moment the first was being taken away, and it
+pushed the name of the game off screen to make room for a line carrying no
+news — faded out under its own answer, the last thing the player sees is the
+thing they are about to play. "Five rounds, the same five as everyone else
+today" was true, is said on the round itself anyway, and read as small print
+beneath the one thing the screen exists to say.
 
 Cut straight from the last hop to the globe and the name is on screen for a
 tenth of a second, which is the same as not showing it — that was the first
@@ -360,8 +368,8 @@ nothing, because it dealt on arrival. Now it has this, which is why the arrival
 after it is worth five seconds. See "The arrival".
 
 A device that has already had its go is sent home before the draw rather than
-after it: nine seconds of ceremony in front of "you have already played" is
-nine seconds of being told nothing.
+after it: seven seconds of ceremony in front of "you have already played" is
+seven seconds of being told nothing.
 
 **The name is asked for at the end**, in `MatchResult`, where there is a score
 to put it to. Two things follow that are better than they sound: a player who

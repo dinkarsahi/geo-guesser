@@ -2313,24 +2313,13 @@ body:has(.game-play) {
   color: var(--accent);
   font-weight: 600;
 }
-.draw-note {
-  margin-top: 8px;
-  font-size: 15px;
-  /* Held whether or not there is anything in it, like the line above. Nothing
-     is said under the shelf while the light is going round, and a page that
-     grows two lines when the answer lands is a page that moves at the one
-     moment the player is trying to read something. */
-  min-height: 1.4em;
-}
-/* The handover: "Let's begin", read at full strength, and only then taken
-   away. The delay inside the animation is what buys that — a fade filling the
-   whole beat would have the words going the moment they arrived, and this
-   screen's last job is to be legible.
-
-   It fades out while the globe behind it fades in (`.globe-wrap.is-arriving`),
-   so the two read as one handover rather than as a cut. */
+/* The handover: the screen fading out with the answer still on it. No delay
+   inside the animation any more — there is nothing new to read by this point,
+   because the beat before it was the reading. It fades out while the globe
+   behind it fades in (`.globe-wrap.is-arriving`), so the two read as one
+   handover rather than as a cut. */
 .daily-draw.is-leaving {
-  animation: draw-out 600ms ease-in 900ms both;
+  animation: draw-out 700ms ease-in both;
 }
 @keyframes draw-out {
   to {

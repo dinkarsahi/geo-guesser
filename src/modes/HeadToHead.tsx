@@ -4,7 +4,6 @@ import {
   gameOfDay,
   parseMatchCode,
   MATCH_MODES,
-  MATCH_ROUNDS,
   modeTitle,
   type Match,
 } from "../lib/match";
@@ -28,7 +27,7 @@ interface HeadToHeadProps {
 }
 
 /**
- * The three beats of the draw, and why there are three rather than two.
+ * The three beats of the draw, and the third one says nothing.
  *
  * `DRAW_MS` is the light going round: long enough that a player can see what
  * kind of thing is happening and start to guess where it will stop, which
@@ -38,17 +37,19 @@ interface HeadToHeadProps {
  * `READ_MS` is the beat nothing moves in. The light has stopped, the six it
  * isn't have gone quiet and the name is printed under the shelf, and the
  * player is left alone with it long enough to actually read it. This is the
- * beat that was missing: the answer landed and the globe took the screen
- * before anybody had finished looking at what they had been told.
+ * beat that was missing at first: the answer landed and the globe took the
+ * screen before anybody had finished looking at what they had been told.
  *
- * `BEGIN_MS` is the handover — "Let's begin", and then the screen fading out
- * under it. The fade is late inside this beat rather than filling it (see
- * `.daily-draw.is-leaving`, which delays its own animation), so the words are
- * read at full strength and only then taken away.
+ * `LEAVE_MS` is the screen fading out — **still showing the answer**, which is
+ * the whole of why there is nothing else to say by then. A "Let's begin" here
+ * was a second thing to read at the moment the first one was being taken away,
+ * and it pushed the name of the game off screen to make room for a line that
+ * carried no news. Faded out under its own answer, the last thing the player
+ * sees is the thing they are about to play.
  */
-const DRAW_MS = 5000;
+const DRAW_MS = 4000;
 const READ_MS = 2600;
-const BEGIN_MS = 1500;
+const LEAVE_MS = 700;
 
 /**
  * How many games are lit on the way, counting the one it stops on.
@@ -168,9 +169,9 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
   const [step, setStep] = useState(0);
 
   // Which of the three beats is on screen. `drawing` is the light going round
-  // with nothing said under it; `drawn` is the answer, held; `begin` is the
-  // handover and the fade out.
-  const [beat, setBeat] = useState<"drawing" | "drawn" | "begin">("drawing");
+  // with nothing said under it; `drawn` is the answer, held; `leaving` is the
+  // same answer, fading out.
+  const [beat, setBeat] = useState<"drawing" | "drawn" | "leaving">("drawing");
 
   // Somebody who has asked not to be animated is told the answer instead of
   // shown it: the same screen, the same words, without the light going round.
@@ -223,8 +224,8 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
     const settle = () => {
       setBeat("drawn");
       id = window.setTimeout(() => {
-        setBeat("begin");
-        id = window.setTimeout(deal, BEGIN_MS);
+        setBeat("leaving");
+        id = window.setTimeout(deal, LEAVE_MS);
       }, READ_MS);
     };
 
@@ -264,11 +265,11 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
   const lit = plan[shown].lit;
 
   return (
-    // `is-leaving` fades the whole screen out under "Let's begin", and the
-    // globe behind it fades in on its own — see `.globe-wrap.is-arriving`. The
-    // two together are the handover: this screen goes and the world arrives,
-    // rather than one being cut to the other.
-    <div className={`menu setup daily-draw${beat === "begin" ? " is-leaving" : ""}`}>
+    // `is-leaving` fades the whole screen out with the answer still on it, and
+    // the globe behind it fades in on its own — see `.globe-wrap.is-arriving`.
+    // The two together are the handover: this screen goes and the world
+    // arrives, rather than one being cut to the other.
+    <div className={`menu setup daily-draw${beat === "leaving" ? " is-leaving" : ""}`}>
       <h1>Today's Round</h1>
       <p className="muted menu-sub">
         One game a day, and the day picks it — the same one for everybody.
@@ -294,24 +295,24 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
           that is still deciding is a line nobody reads — the eye is on the
           movement — and "Today's game is…" sitting there through the whole
           draw made the answer feel like something already said rather than
-          something arriving. Both boxes keep their height either way, so the
-          words appear rather than push the page around under them.
+          something arriving. The box keeps its height either way, so the words
+          appear rather than push the page around under them.
 
-          This is also the one part of the screen that is read rather than
+          One line, and no second one under it. "Five rounds, the same five as
+          everyone else today" was true, is said on the round itself anyway,
+          and read as small print beneath the one thing this screen exists to
+          say.
+
+          It is also the one part of the screen that is read rather than
           watched, so it is the one that is announced: the shelf above is the
           same news told in light, and a screen reader given both would hear
           seven games change state. */}
       <p className="draw-call" aria-live="polite">
-        {beat === "begin" && "Let's begin"}
-        {beat === "drawn" && (
+        {beat !== "drawing" && (
           <>
             Today's game is <strong>{modeTitle(today)}</strong>
           </>
         )}
-      </p>
-      <p className="muted draw-note">
-        {beat === "drawn" &&
-          `${MATCH_ROUNDS} rounds, the same five as everyone else today.`}
       </p>
     </div>
   );
