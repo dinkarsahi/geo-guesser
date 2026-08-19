@@ -90,7 +90,16 @@ export interface TileSource {
    * stop rather than carrying on into mush.
    */
   minAltitude: number;
-  /** Printed on the map. Every source here wants it, for its own reasons. */
+  /**
+   * Who the imagery belongs to, in the words that source asks for.
+   *
+   * Printed on the credits page and not on the map itself: NASA's GIBS asks to
+   * be acknowledged without saying where, so one page carries it. Kept per
+   * source rather than written out once on that page, because the two that
+   * aren't mounted are not free of the question — Esri's terms want their line
+   * where the imagery is drawn, so swapping `WORLD_TILES` to it means putting
+   * this back on the map as well as changing the page.
+   */
   credit: string;
   /** The same imagery cut for the flat map, where the service publishes it. */
   flat?: FlatTiles;

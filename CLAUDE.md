@@ -183,9 +183,16 @@ It exists because there was nowhere for a credit, a copyright line or a policy
 link to live. It holds Home, About, Credits, Privacy and Contact — and
 deliberately **not** All Games, which is one of the three cards the home page is
 made of: a footer is where a site keeps what it has to say, and the shelf listed
-down there read as paperwork too. The NASA and Natural Earth credit is printed
-in full rather than linked, since Credits is three words to its left and a
-second route to one page reads as a route to a different one.
+down there read as paperwork too.
+
+**The attributions are on Credits alone** — not in the footer, and not on the
+map. They were in all three, and the two extra copies were owed to nobody:
+NASA's GIBS asks to be acknowledged without saying where, Natural Earth asks
+for nothing, so one page discharges both. What NASA does insist on is the other
+half — that its name never imply it endorses this — and that sentence is on
+Credits with the rest. Mounting a source that does want its line where the
+imagery is drawn (Esri does) means putting `.map-credit` back in `WorldMap` and
+`GlobeMap`; `TileSource.credit` is still per-source for exactly that reason.
 
 The pages behind it:
 

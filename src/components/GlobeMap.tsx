@@ -302,10 +302,6 @@ export default function GlobeMap({
         onZoomIn={() => zoomBy(0.6)}
         onZoomOut={() => zoomBy(1 / 0.6)}
       />
-      {/* Whose imagery this is, printed wherever it's drawn. Required by the
-          people it belongs to, and the one part of borrowing a tile service
-          that isn't optional. */}
-      <p className="map-credit">{WORLD_TILES.credit}</p>
       {!shapes && <p className="map-loading muted">Loading the world…</p>}
     </div>
   );

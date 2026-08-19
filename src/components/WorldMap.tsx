@@ -568,10 +568,6 @@ export default function WorldMap({
         </ZoomableGroup>
       </ComposableMap>
       <MapZoomControls onZoomIn={() => zoomBy(1.6)} onZoomOut={() => zoomBy(1 / 1.6)} />
-      {/* Whose imagery this is, printed wherever it's drawn — and only where it
-          actually is: a source with nothing in this projection leaves the
-          photograph up, and crediting it for that would be a lie. */}
-      <p className="map-credit">{WORLD_TILES.credit}</p>
       {!shapes && <p className="map-loading muted">Loading the world…</p>}
     </div>
   );

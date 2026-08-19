@@ -35,6 +35,12 @@ const LINKS: { route: Route; label: string }[] = [
  * plain: a row of links and a copyright, quiet enough that a menu still reads
  * as the offer of a game rather than as the bottom of a document.
  *
+ * The attributions themselves are on Credits and nowhere else, deliberately.
+ * GIBS asks to be acknowledged without saying where, Natural Earth asks for
+ * nothing at all, and a credit repeated on every screen is a game announcing
+ * whose photographs it borrowed rather than asking where Lima is. One honest
+ * page carries them; the link to it is three words to the left.
+ *
  * Kept off a round in progress. There the map is pinned to the window and the
  * page doesn't scroll, so a footer would either be drawn over the map or never
  * reached — see `body.playing` in the stylesheet.
@@ -62,15 +68,6 @@ export default function SiteFooter({ go, here }: SiteFooterProps) {
           belongs to, and the year it says so in. */}
       <p className="site-footer-note">
         © {new Date().getFullYear()} SpotOn · Around the world in {MATCH_ROUNDS} rounds.
-      </p>
-      {/* The credits themselves rather than a pointer to them: NASA asks for
-          this line, and printing it costs less than sending somebody to another
-          page to read it. No link on the end — Credits is three words to the
-          left of here, and a second way to the same page reads as a different
-          one. */}
-      <p className="muted site-footer-note">
-        Satellite imagery courtesy of NASA EOSDIS GIBS. Country shapes from Natural
-        Earth.
       </p>
     </footer>
   );
