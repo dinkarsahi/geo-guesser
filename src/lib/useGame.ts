@@ -25,12 +25,22 @@ export type Phase = "guessing" | "result" | "done";
  *
  * A whole number of seconds, because it is counted out loud on screen: 3.4
  * reads "Starting in 4" for the first tenth of a second, which is a countdown
- * that opens by lying about how long it is. Three rather than two because the
- * approach is meant to read as a glide towards the world rather than a rush at
- * it, and two seconds of the same journey is the same distance covered in less
- * time — which is exactly what being rushed is.
+ * that opens by lying about how long it is.
+ *
+ * **Five rather than three**, and the change is the whole of what "premium"
+ * means here: the distance covered and the time to cover it are one knob, so
+ * the same fall in less time is simply the same fall hurried. At three the
+ * approach read as a rush at the world; at five it reads as a glide towards
+ * one, and the last second of it is nearly still — which is where an arrival
+ * is judged. It also buys the thing the fall was competing with: the globe's
+ * country outlines are built while it runs (see `GlobeMap`, which now feeds
+ * them in slices), and five seconds is enough room for both.
+ *
+ * A room is untouched by this. `matchOptions` passes `intro: false` for a
+ * duel, so no room's timetable moves when this number does — which is exactly
+ * why this number *can* move.
  */
-export const INTRO_MS = 3000;
+export const INTRO_MS = 5000;
 
 export interface RoundResult {
   /** Where the guess counts as having been made — see `guessAt`. Null if the clock beat the player to it. */
@@ -188,7 +198,7 @@ export interface GameOptions<T> {
    * **Only where there is something to watch while it passes**, which today
    * means the 3D globe and its fall through space. The flat map and the tube
    * map are drawn by the time the round opens, so a countdown in front of them
-   * is two seconds of nothing — they keep what they always had, which is a
+   * is five seconds of nothing — they keep what they always had, which is a
    * game that begins when you press Start.
    *
    * Defaults to true because the globe is the default map, so a game added
@@ -227,8 +237,8 @@ export interface Game<T> {
    *
    * The map is given this rather than a duration so it can land its arrival
    * *on* it. A globe takes a second or two to build before it can animate
-   * anything, and a fall that started when it was ready and ran for a fixed
-   * three seconds would still be falling after the round had begun — the
+   * anything, and a fall that started when it was ready and ran for the whole
+   * of `INTRO_MS` would still be falling after the round had begun — the
    * player watching the world rush past while the clock ran. Given the moment,
    * the fall simply takes however long is left.
    */

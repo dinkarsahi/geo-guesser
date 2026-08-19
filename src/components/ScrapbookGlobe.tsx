@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Globe, { type GlobeMethods } from "react-globe.gl";
-import { flyIn } from "../lib/globeFlight";
+import { ARRIVAL, MIN_FLIGHT_MS, flightStart, flyIn } from "../lib/globeFlight";
+import { addGround } from "../lib/globeGround";
 import { addSky } from "../lib/globeSky";
+import { usePolygonFeed } from "../lib/polygonFeed";
 
 /**
  * The bench's globe: what ships, with two things being argued about.
@@ -123,9 +125,14 @@ export default function ScrapbookGlobe({
     controls.maxDistance = 520; // how far you can zoom out
     controls.rotateSpeed = 0.6;
     controls.zoomSpeed = 1; // a touch faster so deep zoom isn't tedious
-    // Where the fall ends, rather than where the camera starts. `flyIn` puts
-    // it far out first and tweens it here — see the effect below, which owns
-    // the flight so that leaving the round mid-fall can cancel it.
+    // Stand the camera at the top of the fall *here*, synchronously, and not
+    // in the effect that flies it. An effect runs after the browser has
+    // painted, and the globe draws on a loop of its own besides, so between
+    // those two moments there were frames of the library's own default view —
+    // a half-size Earth over the Gulf of Guinea — which then leapt out to a
+    // marble as the fall took over. The flight owns everything after this
+    // frame; this is only where it begins. See `flightStart`.
+    if ((arriveAt ?? 0) - Date.now() >= MIN_FLIGHT_MS) g.pointOfView(flightStart());
     // Counted last, and everything above it is the camera. Anything that
     // throws in here takes the rest of the function with it, and the rest of
     // the function is what decides where the player is standing — a fault
@@ -146,13 +153,18 @@ export default function ScrapbookGlobe({
     g.pointOfView({ altitude }, 350);
   };
 
-  // Stars behind the world and cloud drifting over it — see `globeSky`, which
-  // owns both and the reason they are objects beside the globe rather than
-  // anything painted on it.
+  // Stars behind the world and an ocean under it — see `globeSky` and
+  // `globeGround`, and the reason both stand beside the globe rather than
+  // being painted on it: a tiled surface can take nothing from a material.
   useEffect(() => {
     const g = globeRef.current;
     if (!g || !readyCount) return;
-    return addSky(g.scene(), g.getGlobeRadius());
+    const sky = addSky(g.scene(), g.getGlobeRadius());
+    const ground = addGround(g.scene(), g.getGlobeRadius());
+    return () => {
+      sky();
+      ground();
+    };
   }, [readyCount]);
 
   // The arrival. Its own effect rather than a few lines in `handleReady`,
@@ -167,7 +179,14 @@ export default function ScrapbookGlobe({
     // first, and on any machine slow enough to have spent the whole intro
     // getting here.
     const left = (arriveAt ?? 0) - Date.now();
-    if (left < 400) return;
+    if (left < MIN_FLIGHT_MS) return;
+    // The fade in front of the fall, put on the element rather than held as
+    // state — it is a one-shot animation being triggered, not a fact about the
+    // map, and nothing renders differently for knowing it. Never taken off:
+    // the animation ends by itself and the class carries no meaning after it.
+    // A round that arrives from nowhere — a duel, and every round after the
+    // first — has already returned above and never fades, which is the point.
+    wrapRef.current?.classList.add("is-arriving");
     // Wrapped rather than handed over bare: a method pulled off the instance
     // and called elsewhere is one library refactor away from losing what it
     // was attached to, and this one is called from a timer.
@@ -175,7 +194,7 @@ export default function ScrapbookGlobe({
       g.scene(),
       g.controls(),
       (pov, ms) => g.pointOfView(pov, ms),
-      { lat: 20, lng: 0, altitude: 2 },
+      ARRIVAL,
       left,
     );
     return stop;
@@ -274,6 +293,11 @@ export default function ScrapbookGlobe({
     ],
     [shapes, highlights],
   );
+  // Handed over a slice at a time rather than in one go: building all 242 at
+  // once is about three seconds of blocked main thread, and it was landing
+  // squarely on the fall through space. See `polygonFeed`, which also says why
+  // the two tidier fixes are both worse than this one.
+  const feeding = usePolygonFeed(polygons);
 
   const arcs = useMemo(() => {
     if (painted) return [];
@@ -333,7 +357,7 @@ export default function ScrapbookGlobe({
           if (countryAt(shapes, c)) onGuess(c);
         }}
         onPolygonHover={(polygon) => setOverLand(!!polygon)}
-        polygonsData={polygons}
+        polygonsData={feeding}
         // Kept as flat to the surface as the stroke allows: the polygons are
         // what you click, so the further they float the further a click at a
         // shallow angle lands from the spot under the cursor. One height for

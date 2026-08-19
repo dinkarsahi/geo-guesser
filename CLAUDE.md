@@ -92,15 +92,15 @@ the ordinary reading, which is what an unanswered one wants.
 
 ### The arrival: `INTRO_MS`, and why a duel can afford it
 
-**A game on the 3D globe waits three seconds before its first round opens** —
+**A game on the 3D globe waits five seconds before its first round opens** —
 once a game, never between rounds. Press Start and the map is on screen before
 its imagery is, so a round used to open on an empty rectangle or a world that
 appeared a moment after the question. The pause covers that, the corner counts
-"Starting in 3, 2, 1" where the round clock normally sits, and there is a fall
-through space to watch while it passes (`globeFlight.ts`).
+"Starting in 5, 4, 3, 2, 1" where the round clock normally sits, and there is a
+fall through space to watch while it passes (`globeFlight.ts`).
 
 **Only the globe.** The flat map and the tube map are drawn by the time the
-round opens, so a countdown in front of them is two seconds of nothing: they
+round opens, so a countdown in front of them is five seconds of nothing: they
 begin the moment you press Start, exactly as they always did. `intro` on
 `useGame` says which, and **defaults to true** so that a game added without a
 thought about it gets the right answer — the globe is the default map, and the
@@ -109,27 +109,64 @@ two that don't want it say so.
 `INTRO_MS` lives in `useGame.ts`, which owns when a round begins. A whole
 number of seconds because it is counted out loud: 3.4 reads "Starting in 4" for
 the first tenth of a second, a countdown that opens by lying about how long it
-is. Three rather than two because the approach is meant to read as a glide
-towards the world rather than a rush at it, and the same journey in less time
-is exactly what being rushed is.
+is. **Five rather than three**, because the distance covered and the time to
+cover it are one knob: the same fall in less time is the same fall hurried, and
+the honest measure of the two together is the rate the world swells at, which
+is `ln(start / end) / ms` and nothing else. Ten radii over three seconds was
+5.4 parts in ten thousand a millisecond; twelve over five is 3.6, a third
+slower, and the last second of it is nearly still — which is where an arrival
+is judged.
 
-**The unsolved half, measured rather than guessed.** Building the globe's 242
-country outlines blocks the main thread for **about three seconds** when a
-globe game starts — on the production build, warm, not just in dev. That is the
-whole count-in, so the fall is skipped about as often as it plays and the
-player sees the frozen black rectangle this was built to replace. Holding the
-outlines back until the fall lands was tried: the glide becomes perfect and the
-freeze moves to the moment the round opens, which in a duel is answering time.
-Strictly worse, so it was reverted. The fix is to take that build off this path
-altogether — most likely by building the globe while the setup screen is up
-rather than when Start is pressed. `loadWorldShapes()` is already warmed there
-for the same reason; it bought about a second and is not enough on its own.
+**What was making it look broken, and it wasn't the easing.** Building the
+globe's 242 country outlines is **about three seconds** of geometry on the main
+thread when a globe game starts — production build, warm, not just in dev — and
+it was landing on exactly the seconds the fall needed. The camera froze at the
+top and jumped most of the way down when the thread came back, which is what
+"messy at the start and a jerk at the end" actually was. No easing can help
+where there are no frames to ease.
+
+The fix is `src/lib/polygonFeed.ts`: **the outlines are handed to the globe a
+slice at a time**, and the slice size is measured rather than guessed — the gap
+between frames is timed, and the slice halves when the last one cost more than
+about a frame and a half and doubles when it cost little. It costs nothing,
+because three-globe's polygon layer is a data join keyed on the feature: a
+country already in the scene keeps its geometry, so slicing builds each country
+exactly once, in the same total time, with the browser free to draw in between.
+The freeze becomes a fall.
+
+Both tidier fixes are worse and were tried. Holding the outlines back until the
+fall lands moves the freeze to the moment the round opens, which in a duel is
+answering time. Coarsening them further costs accuracy in the one place the
+globe is already known to drift from the ground.
+
+**Three smaller things the arrival is now made of**, all in the same commit and
+all worth keeping:
+
+- **The camera is stood at the top of the fall synchronously, in
+  `handleReady`** — `flightStart()` in `globeFlight.ts` — and not in the effect
+  that flies it. An effect runs after the browser has painted and the globe
+  draws on a loop of its own besides, so there were frames of react-globe.gl's
+  own default view, a half-size Earth over the Gulf of Guinea, which then leapt
+  out to a marble as the fall took over.
+- **The fall is eased by smootherstep**, `t³(6t²−15t+10)`, which is the quintic
+  with a zero *second* derivative at each end as well as a zero first. A cubic
+  ease-in-out leaves no speed at the ends but still arrives with acceleration
+  on, and a sudden change in acceleration reads as a jolt however slowly the
+  thing is moving by then. That was the stop that could still be felt at the
+  bottom.
+- **There is a sea under the tiles** — `src/lib/globeGround.ts`, one unlit
+  sphere at 0.998 of the radius, invisible to the raycaster so it cannot
+  swallow a click. Given a tile engine, three-globe hides the photographed
+  sphere outright, so until the first squares came back there was no Earth in
+  the scene at all: a ring of atmosphere round nothing, filling in square by
+  square. It stays for the whole game, so a gap when the zoom crosses a tile
+  level shows sea rather than a hole through the planet.
 
 **A duel has none of this**, and that is a decision rather than an oversight.
 A room's rounds are worked out by arithmetic from `match.startAt` — every
 device decides which round is on screen from the room's clock, which is why a
 duel needs no connection once it has begun. A *local* pause therefore cannot
-hold that clock: it would simply cost that player three seconds of a
+hold that clock: it would simply cost that player five seconds of a
 thirty-second round, and only the player whose tiles were slow. It **can** be
 afforded by moving the room's whole start back by the same constant, which was
 built and worked; it came out again because it bought a nicety at the price of
@@ -137,7 +174,10 @@ the most delicate arithmetic in the app, where a mistake means one player
 counting down while the rest are already answering. `matchOptions` passes
 `intro: false` for a room and leaves `startAt` alone.
 
-Today's round keeps the arrival: it has no timetable to disturb.
+Today's round keeps the arrival: it has no timetable to disturb. It also now
+has the draw in front of it, which is four and a half seconds of the world
+being fetched and built behind a screen the player is reading — see "The way
+in". That is the other half of why the arrival is worth five seconds there.
 
 **The trap in that one line:** it is spread in only when false, never as
 `intro: undefined`. `matchOptions` is spread *over* the mode's own `intro`, and
@@ -147,13 +187,15 @@ to arrive from.
 
 Two things follow, both load-bearing:
 
-- **The fall takes however much of the intro is left, not a fixed three
+- **The fall takes however much of the intro is left, not a fixed five
   seconds.** A globe costs a second or two to build before it can animate
   anything, and a fixed fall started from there was still falling after the
   countdown had finished — the world rushing past while the clock ran. So
   `GuessMapProps.arriveAt` carries the *moment* the round opens and the map
-  lands on it. Under 400 ms left, there is no fall at all, which is also how
-  "every round after the first" is expressed: `arriveAt` is long past.
+  lands on it. Under `MIN_FLIGHT_MS` (400 ms) left, there is no fall at all,
+  which is also how "every round after the first" is expressed: `arriveAt` is
+  long past. The half-second fade on `.globe-wrap.is-arriving` is hung off the
+  same test, which is why a duel never fades.
 - **`submitGuess` refuses anything before that moment**, read off the stored
   timestamp rather than off the countdown's state so it can't be a render
   behind. Otherwise a click during the fall would be marked — and in a room,
@@ -171,7 +213,9 @@ Three of them, all satisfying `GuessMapProps` in `src/components/mapTypes.ts`:
   copy of the country shapes; at full 1:50m detail the globe is a slideshow.
   Never score against the coarse copy. Skinned in `WORLD_TILES`, which also sets
   how close the camera may get. Wears the sky from `src/lib/globeSky.ts` — see
-  below.
+  below — and stands on the sea from `src/lib/globeGround.ts`. Its outlines are
+  fed in by `src/lib/polygonFeed.ts` rather than handed over whole; both of
+  those are explained under "The arrival".
 - **`LondonMap.tsx`** — bespoke SVG of the tube network. Also takes `rings` —
   the circle a tube guess is marked against, from `src/lib/tubeReach.tsx`. The
   game only ever hands it a circle on a round the circle actually paid for. The
@@ -236,12 +280,43 @@ for, so it can never cost anyone a round.
 
 ## The way in
 
-**The front door is today's round, and it deals it.** Land on `/` and the round
-is on screen: no name to type, no card to press, no screen naming the game
-first. Which game the day landed on is said in the corner of the round itself —
-`GameFrame` prints "Today's Round: Currency Spotter" where the title goes, and
-that is the only place it is said. A device that has already had its go gets the
-table instead, with All Games and Duel a Friend under it.
+**The front door is today's round, and it draws it.** Land on `/` and the
+seven games are laid out with a light going round them; it slows, stops on
+today's, the other six fade back, the name is printed under the shelf, and
+*then* the world is flown to. No name to type and no card to press — the only
+thing between arriving and playing is being told what is being played.
+
+It used to deal on sight, straight into the fall through space, with the name
+of the game going past in the corner of a round that had already begun. That is
+the one thing about today's round worth a moment of its own: it is a different
+game every day, and a player dropped onto the globe without being told which
+never learns that. `GameFrame` still prints "Today's Round: Currency Spotter"
+where the title goes, and it is now the second time they are told rather than
+the first.
+
+**The draw is theatre and says so.** `gameOfDay` settled today's game for the
+whole world from the date, days ago, and nothing on this screen gets a vote —
+`drawPlan` in `HeadToHead.tsx` builds a list of hops that ends on the answer.
+Two rules make it read as a stop rather than a cut: the light never lands on
+the same card twice running, and the hop before the last is never today's game,
+so the landing is always a move the eye can follow. The holds grow as a cube,
+so the last is ten times the first, and they are **scaled to `DRAW_MS` rather
+than added up** — the draw is the same length on every device and however many
+hops it is next tuned to. `HOLD_MS` after it is the beat the answer is read in;
+cut straight to the globe and the name is on screen for a tenth of a second,
+which is the same as not showing it. Somebody who has asked for reduced motion
+is shown the answer outright and gets the hold alone.
+
+**It also pays for itself.** `loadWorldShapes()` runs while the light goes
+round — a megabyte of Natural Earth to download, parse, coarsen and index,
+which on the first frame of a round used to swallow the count-in whole. Every
+game off the shelf has a setup screen to do that behind; today's round had
+nothing, because it dealt on arrival. Now it has this, which is why the arrival
+after it is worth five seconds. See "The arrival".
+
+A device that has already had its go is sent home before the draw rather than
+after it: four and a half seconds of ceremony in front of "you have already
+played" is four and a half seconds of being told nothing.
 
 **The name is asked for at the end**, in `MatchResult`, where there is a score
 to put it to. Two things follow that are better than they sound: a player who
@@ -252,9 +327,9 @@ one press from done, and the name-taken path that already existed handles a
 collision — the score is made by then and cannot be lost by getting the name
 wrong.
 
-**Leaving today's round goes to `/home`, not back to `/`.** The front door deals
-the round on sight, so returning there would put the player straight back into
-the game they just left. `toMenu` in `App` is where that is done.
+**Leaving today's round goes to `/home`, not back to `/`.** The front door
+draws and deals on sight, so returning there would put the player straight back
+into the game they just left. `toMenu` in `App` is where that is done.
 
 **A device that has had its go is sent home from `/`, not to the table.** Being
 shown the standings for a game you can't play, at the address that exists to
@@ -454,7 +529,7 @@ browser's own back button works without a line of wiring.
 
 | Path | Screen |
 |---|---|
-| `/` | **Today's Round** — dealt on arrival, or a redirect home if this device has played |
+| `/` | **Today's Round** — the draw, then the round, or a redirect home if this device has played |
 | `/dailyround` | the same screen, kept so older links still work |
 | `/leaderboard` | today's table |
 | `/home` | the three doors |
@@ -1053,6 +1128,16 @@ well as Production. README has the details.
   flight.
 
 ### Browser automation, when checking work
+
+**The arrival cannot be checked this way at all**, and it cost part of a
+session to establish. A tab driven by the browser extension is
+`document.hidden`, and Chrome freezes `requestAnimationFrame` in a hidden tab
+and clamps its timers to about one a second. So the fall through space never
+animates, a recorder hung off `rAF` collects exactly one frame, and the draw's
+timings are nothing like the ones the code asks for. Screenshots still work,
+because a screenshot forces a paint — which is why the *result* of a sequence
+can be checked here even though the motion between the frames cannot. Anything
+about how the arrival **feels** has to be looked at by hand, in a real window.
 
 The flat map takes synthetic clicks fine. The **globe does not** — its WebGL
 canvas raycasts from real pointer events, so automated clicks land nowhere.

@@ -1422,6 +1422,25 @@ body:has(.game-play) {
 .globe-wrap canvas {
   display: block;
 }
+/* The first half-second of a game on the globe, and only ever the first.
+   Everything else about the arrival is the camera's; this is the cut before
+   it — a black page becoming a lit scene in one frame reads as a switch being
+   thrown, however gently the fall then goes. The class is put on when a fall
+   actually begins and left there afterwards, so a round that arrives from
+   nowhere (a duel, and every round after the first) never fades at all. */
+.globe-wrap.is-arriving {
+  animation: globe-arrive 700ms ease-out both;
+}
+@keyframes globe-arrive {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .globe-wrap.is-arriving {
+    animation: none;
+  }
+}
 /* Whose imagery the tiled globe is drawing. Bottom left, out of the way of the
    zoom buttons on the right and of the result panel in the middle — it has to
    be readable and it has to be there, and nothing more than that. */
@@ -2207,4 +2226,88 @@ body:has(.game-play) {
 .anchor-measure {
   stroke: var(--accent);
   stroke-width: 2.5;
+}
+
+/* ---- Today's draw ---------------------------------------------------- */
+/* The light going round the seven games before one of them stays lit — see
+   `HeadToHead`, which owns the timing and the reason the screen exists.
+
+   Built out of `.h2h-mode` rather than out of `.mode-card`: this is a shelf
+   being read at a glance while something moves along it, and seven cards with
+   three lines apiece is a page nobody finishes looking at before the light has
+   stopped. */
+/* Flex rather than the grid `.h2h-modes` is: seven cards can't sit in one row
+   at a readable width, and a grid leaves the last three hard against the left
+   where the row above them is full. Wrapped and centred, the shelf reads as one
+   shape with a light going round it rather than as a table with a gap in it. */
+.draw-shelf {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 980px;
+  margin: 0 auto;
+}
+.draw-slot {
+  /* Sized whole rather than by its content box, so the row arithmetic is the
+     number written here: four of these and three gaps is 964 of the 980
+     above, and the seventh game wraps to a second row of three. */
+  box-sizing: border-box;
+  flex: 0 1 232px;
+  font-size: 16px;
+  /* Tall enough for the one title that takes two lines, so a row holding it is
+     no taller than a row that doesn't. Flex already levels the cards within a
+     row; this is what levels the two rows against each other. */
+  min-height: 76px;
+  /* Only the border, the wash and the glow move while the light goes round.
+     Anything that changes the box — a scale, a shadow with spread — makes the
+     shelf twitch under the light rather than the light travel over it. The
+     three are timed together so a card can't be lit by one and dark by
+     another, which at a fifty-millisecond hop is two cards lit at once. */
+  transition: border-color 0.09s, background-color 0.09s, box-shadow 0.09s,
+    opacity 0.45s ease;
+}
+/* Lit: the app's own purple, and the same purple the round is marked in.
+   Never a weight change, whatever `.h2h-mode` does when it is picked — a
+   bolder card is a wider card, so the light going past would nudge its
+   neighbours along the shelf, and the shelf has to be still while the light
+   moves over it. */
+.draw-slot.is-active {
+  box-shadow: 0 0 22px rgba(192, 132, 252, 0.35);
+  font-weight: inherit;
+}
+/* Where it stopped. The glow is held rather than pulsed — a card still
+   flashing after the draw has finished reads as a draw that hasn't. */
+.draw-slot.is-drawn {
+  box-shadow: 0 0 30px rgba(192, 132, 252, 0.5);
+}
+/* The six it isn't. They fade rather than vanish: a game you can't play today
+   is still a game you can play this week, and an empty shelf around one lit
+   card says the opposite. Slower than the light was, so the answer settles
+   instead of being snapped to. */
+.draw-slot.is-off {
+  opacity: 0.26;
+  border-color: var(--border);
+  box-shadow: none;
+}
+/* The line the answer is actually read off, under the shelf where the eye
+   already is. */
+.draw-call {
+  margin-top: 28px;
+  font-family: var(--heading);
+  font-size: 22px;
+  color: var(--text-h);
+  min-height: 1.4em;
+}
+.draw-call strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+.draw-note {
+  margin-top: 8px;
+  font-size: 15px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .draw-slot {
+    transition: none;
+  }
 }

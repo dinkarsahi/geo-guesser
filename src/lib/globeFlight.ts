@@ -27,19 +27,21 @@ import { INTRO_MS } from "./useGame";
  * whole trick: this exists to cover a download, so anything in it that had to
  * download first would be covering itself. The one thing on screen that does
  * have to travel is the Earth, and by the time the camera is near enough for
- * its surface to matter, the tiles have had three seconds they didn't have.
+ * its surface to matter, the tiles have had the whole intro they didn't have.
  */
 
 /**
  * How long the fall takes — the intro window itself, so the two can never
  * disagree about when the game begins.
  *
- * **Why a duel can afford it.** A room's rounds are worked out by arithmetic
- * from `match.startAt`, so a *local* pause could never hold the clock: it
- * would simply cost that player the seconds they spent watching, and only the
- * player whose tiles were slow. `matchOptions` moves the room's start back by
- * this instead, so the pause is inside the timetable — every device shifts by
- * the same constant and nobody's thirty seconds is any shorter.
+ * **A duel has none of it**, which is why this number is free to grow. A
+ * room's rounds are worked out by arithmetic from `match.startAt`, so a local
+ * pause could never hold the clock: it would simply cost that player the
+ * seconds they spent watching, and only the player whose tiles were slow.
+ * Moving the room's whole start back by the same constant was built and did
+ * work, and came out again because it bought a nicety at the price of the most
+ * delicate arithmetic in the app. So `matchOptions` passes `intro: false` and
+ * a room never sees this at all.
  */
 export const FLIGHT_MS = INTRO_MS;
 
@@ -47,21 +49,62 @@ export const FLIGHT_MS = INTRO_MS;
  * How far out it starts, in globe radii — the Earth as a distant marble.
  *
  * Chosen for how fast the journey *feels* rather than for how far it is. The
- * distance covered and the time to cover it are the same knob: from fourteen
- * radii the camera has to hurry to arrive, and the arrival read as being
- * rushed at the world rather than gliding towards it. Ten over three seconds
- * is a drift with somewhere to be.
+ * distance covered and the time to cover it are the same knob, and the honest
+ * measure of the two together is the rate the world swells at: the altitude is
+ * flown geometrically, so that rate is `ln(start / end) / ms` and nothing
+ * else. Ten radii over three seconds was 5.4 parts in ten thousand a
+ * millisecond and read as a hurry; twelve over five is 3.6, a third slower,
+ * and reads as a drift with somewhere to be. Raising the start without the
+ * time to spend on it would simply put the hurry back.
  */
-const START_ALTITUDE = 10;
+const START_ALTITUDE = 12;
 
 /**
  * How far round the world turns on the way in.
  *
- * The other half of the same feeling. Two-thirds of a rotation across three
- * seconds is a world turning under you; most of a rotation across the same
- * three was a world being spun, and it fought the calm of the approach.
+ * The other half of the same feeling, and read the same way: as degrees a
+ * second rather than as a fraction of a turn. Most of a rotation across three
+ * seconds was a world being spun and fought the calm of the approach; the same
+ * arc spread over five is thirty-two degrees a second, which is a world
+ * turning under you.
  */
-const SPIN_DEGREES = 150;
+const SPIN_DEGREES = 160;
+
+/**
+ * Where every fall ends: the Atlantic, far enough out to hold a hemisphere.
+ *
+ * Here rather than written into each map, because both globes fly to it and a
+ * pair of literals a file apart is a pair that drifts. The maps also need it
+ * *before* the flight starts — see `flightStart`.
+ */
+export const ARRIVAL = { lat: 20, lng: 0, altitude: 2 };
+
+/**
+ * A fall shorter than this isn't one, and the map should simply be where the
+ * round begins.
+ *
+ * Every round after the first is expressed this way rather than by a flag: by
+ * then `arriveAt` is long past, so there is nothing left to arrive from.
+ */
+export const MIN_FLIGHT_MS = 400;
+
+/**
+ * Where the camera stands before the fall begins, given where it is to end.
+ *
+ * Exported because the map has to put the camera there **synchronously, the
+ * moment the globe is ready**, and not in the effect that starts the flight.
+ * React's effects run after the browser has painted, and the globe draws on a
+ * loop of its own besides — so between the globe being built and the first
+ * frame of the fall there were frames showing the library's own default view,
+ * a half-size Earth at the Gulf of Guinea, which then leapt out to a marble as
+ * the fall took over. That leap was most of what made the arrival read as
+ * messy before it read as anything.
+ */
+export const flightStart = (target = ARRIVAL) => ({
+  lat: target.lat,
+  lng: target.lng - SPIN_DEGREES,
+  altitude: START_ALTITUDE,
+});
 
 /**
  * How long the planets take to fade, and they fade **into** the landing rather
@@ -74,6 +117,25 @@ const SPIN_DEGREES = 150;
  * sky clearing rather than as scenery being taken away.
  */
 const FADE_MS = 1400;
+
+/**
+ * The shape of the fall: smootherstep, and the choice is the whole answer to
+ * "why does it jerk at the end?".
+ *
+ * A cubic ease in and out leaves the camera with no *speed* at either end,
+ * which is what it was picked for — but it still arrives with acceleration on,
+ * and the eye reads a sudden change in acceleration as a jolt however slowly
+ * the thing is moving by then. That is what was left at the bottom of the
+ * fall: not a lunge any more, but a stop that could be felt.
+ *
+ * Smootherstep is the quintic that has **both** a zero first and a zero second
+ * derivative at each end, so the fall starts from rest without a shove and
+ * settles without a stop — there is no moment at which anything changes
+ * abruptly, which is what "premium" turns out to mean when it is written down.
+ * It buys that with a quicker middle, 1.875 times the average speed against
+ * cubic's 1.5, and the extra seconds are what make room for that.
+ */
+const eased = (t: number) => t * t * t * (t * (6 * t - 15) + 10);
 
 interface Controls {
   maxDistance: number;
@@ -125,17 +187,21 @@ export function flyIn(
   // frame a fixed fraction of the last, makes the apparent size grow at an
   // even rate; the easing on top is then free to decelerate into the landing,
   // which is what it looks like it is doing.
+  //
+  // The camera is put at the start of the arc before the first frame is asked
+  // for. `flightStart` has usually done this already, the moment the globe was
+  // ready — but "usually" is not a guarantee worth the frame it costs, and a
+  // fall whose first frame is a jump is the fault this is here to fix.
   const startLng = target.lng - SPIN_DEGREES;
+  pointOfView({ lat: target.lat, lng: startLng, altitude: START_ALTITUDE });
   let started = 0;
   let frame = requestAnimationFrame(function glide(now) {
     started ||= now;
     const t = Math.min(1, (now - started) / ms);
-    // Slow in, quick through the middle, slow out.
-    const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     pointOfView({
       lat: target.lat,
-      lng: startLng + (target.lng - startLng) * eased,
-      altitude: START_ALTITUDE * Math.pow(target.altitude / START_ALTITUDE, eased),
+      lng: startLng + (target.lng - startLng) * eased(t),
+      altitude: START_ALTITUDE * Math.pow(target.altitude / START_ALTITUDE, eased(t)),
     });
     if (t < 1) frame = requestAnimationFrame(glide);
   });
@@ -221,10 +287,10 @@ export function flyIn(
  * exists to cover a download, so anything in it that had to download first
  * would be covering itself.
  *
- * Placed rather than animated. The camera falls from fourteen globe radii to
- * two along an arc, so anything standing between those two distances sweeps
- * past on its own, and the near ones sweep faster — which is the thing that
- * sells the motion, and is free.
+ * Placed rather than animated. The camera falls from twelve globe radii to two
+ * along an arc, so anything standing between those two distances sweeps past
+ * on its own, and the near ones sweep faster — which is the thing that sells
+ * the motion, and is free.
  */
 type Surface = "bands" | "rings" | "rust" | "ice" | "rock";
 
