@@ -21,7 +21,7 @@ export default function Privacy({ onBack }: { onBack: () => void }) {
     <div className="menu doc">
       <div className="menu-bar">
         <button className="btn btn-ghost" onClick={onBack}>
-          ← Home
+          Home
         </button>
       </div>
 
@@ -87,7 +87,8 @@ export default function Privacy({ onBack }: { onBack: () => void }) {
             </li>
             <li>
               <code>spoton.prefs.v1</code> — whether you play on the globe or the flat
-              map, and whether borders are drawn, so you aren't asked every game.
+              map, whether borders are drawn, and whether the tube map is white or
+              dark, so you aren't asked every game.
             </li>
           </ul>
           <p>

@@ -84,7 +84,9 @@ export default function TubeGuesser({
       renderResultExtra={(station) => (
         <FactCard title={station.name} fact={station.fact} />
       )}
-      renderMap={(props) => <LondonMap {...props} rings={rings} />}
+      renderMap={(props) => (
+        <LondonMap {...props} rings={rings} dark={settings.tubeDark} />
+      )}
     />
   );
 }

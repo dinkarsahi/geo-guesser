@@ -230,12 +230,58 @@ however it was reached, and a path carrying its own origin would give the same
 screen two addresses. A refresh loses it and lands on Home, which is the honest
 answer to "where was I?" when the answer wasn't written down.
 
+**A third setting is the tube map's alone**: white, which is the paper map
+everyone has seen, or dark for a dark room. It is the tube's because the tube's
+map is the only one the app *draws* — every other map is a photograph of the
+Earth, and there is no dark version of a photograph, which is exactly why the
+old app-wide day/night toggle came out. Only the **ground** changes; line
+colours are how a Londoner reads that map at a glance. The one exception is the
+Northern line, which is black and simply vanishes on a dark ground, so
+`darkGroundColor` in `data/tube.ts` paints it white — and every colour reaching
+the screen goes through that one call, so the map and its key can't disagree.
+In a duel the tube's colours stay each player's own, unlike the world map:
+white or dark decides how comfortable it is to look at, not what the question
+is.
+
+It lives in Settings rather than as a button on the tube map for the same
+reason the other two moved there — it's a preference, not a decision about this
+round — and the tube's own setup screen has Settings one press away in the bar
+above it.
+
 Two consequences worth knowing. `HeadToHead` and `PlayFriend` now *read* that
 preference instead of asking; in a duel it is the **host's** that the room
 plays on, which is the one setting in the app reaching past the device that
 chose it, so the settings screen says so and the lobby names the map. And
 `GameCard.ownMap` is gone — it existed to tell the setup screen it had nothing
 to offer the tube, and the setup screen now offers nothing to anybody.
+
+### The chrome: one bar, one colour, no arrows
+
+**A top bar across every screen that isn't a round** — `SiteFooter`'s opposite
+number, and drawn by the same `page()` wrapper. SpotOn on the left (the way
+home, and just a label on the home page itself), Settings on the right. Both
+were loose buttons before, in a different place on each screen; a thing that
+appears everywhere belongs in the same place everywhere.
+
+It is **outside the reading column** so it runs the full width of the window,
+which is why `#root` is now full width and the 1126px column moved down to
+`.page-body`. A round renders neither, and takes the whole window as it always
+did.
+
+**The screen's own back button stays**, and is not the same thing: the bar is
+the way *out* — home, or to the settings — while several screens have a way
+*back* that means something else. A game's setup screen returns to the shelf it
+was picked off; the duel's steps back through its own screens without leaving.
+
+**One palette, and it is dark.** The app used to carry two and let
+`prefers-color-scheme` choose, so a player whose laptop was set to light got a
+white page around a black globe. `--bg` is `#000` on `:root` with no media
+query, `color-scheme: dark` so the browser draws scrollbars and form fields to
+match, and `html, body` painted too — `:root` alone leaves the area past the
+last element to the browser's default, which is white.
+
+**No arrows in button labels.** "← Home" and "Start ▸" are gone; the words say
+where they lead.
 
 ### The footer, and the two pages that are read
 
@@ -648,10 +694,21 @@ keeping if it graduates:
   is about to fall down, and the camera's own motion sweeps them past — near
   ones faster than far ones, which is what sells it, and is free. Their angles
   are fixed rather than random so the fall is the same fall every round.
-- **Everything in it draws instantly** — spheres and points, no textures,
-  nothing fetched. That is the trick: the one thing that has to travel is the
-  Earth, and by the time the camera is near enough for its surface to matter,
-  it has arrived. A loading animation that itself has to load is no animation.
+- **Everything in it is drawn, not downloaded.** The planets' surfaces —
+  banded, ringed, rusty, icy, cratered — are painted onto canvases at load, a
+  few dozen fills apiece. That is the trick: this exists to cover a download,
+  so anything in it that had to download first would be covering itself. Plain
+  coloured balls read as marbles, which is what they were before they had
+  surfaces.
+- **A duel cannot afford it as it stands, and this is the trap.** A room's
+  rounds run off a shared timetable worked out from `match.startAt` — every
+  device decides which round is on screen from the room's clock, which is why a
+  duel needs no connection once it has begun. So a local animation *cannot*
+  hold the timer: 3.4 seconds of falling is 3.4 seconds of a thirty-second
+  round gone, and gone only for the player whose tiles were slow. Whatever
+  ships has to play the fall in the ten seconds between rounds, where it costs
+  nobody anything, or not play it in a room at all. Today's round has no clock,
+  so it is free there.
 
 Guesses are ignored while the camera is falling, since a click on a world
 sliding under the cursor is nobody's answer.

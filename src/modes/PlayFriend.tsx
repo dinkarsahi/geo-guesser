@@ -442,7 +442,7 @@ export default function PlayFriend({
     <div className="menu setup">
       <div className="menu-bar">
         <button className="btn btn-ghost" onClick={back}>
-          ← {screen === "pick" ? "Home" : "Back"}
+          {screen === "pick" ? "Home" : "Back"}
         </button>
       </div>
       <h1>
@@ -540,7 +540,7 @@ export default function PlayFriend({
           />
           <div className="button-row">
             <button className="btn btn-primary" disabled={busy} onClick={() => join()}>
-              {busy ? "Looking…" : "Join ▸"}
+              {busy ? "Looking…" : "Join"}
             </button>
           </div>
         </div>
@@ -567,7 +567,7 @@ export default function PlayFriend({
                   disabled={busy || !named}
                   onClick={() => join(room.code)}
                 >
-                  {busy ? "Joining…" : "Join the duel ▸"}
+                  {busy ? "Joining…" : "Join the duel"}
                 </button>
               </div>
               <p className="muted h2h-code-hint">
@@ -633,7 +633,7 @@ export default function PlayFriend({
                     })
                   }
                 >
-                  {busy ? "Starting…" : "Start the game ▸"}
+                  {busy ? "Starting…" : "Start the game"}
                 </button>
               </div>
               <p className="muted h2h-code-hint">

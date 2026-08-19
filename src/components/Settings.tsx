@@ -96,15 +96,34 @@ export default function Settings({
             { value: true, title: "Show borders", hint: "Country outlines drawn on" },
           ]}
         />
+        {/* One game's, and labelled as one game's. It is here rather than as a
+            button on the tube map itself for the same reason the other two
+            are: it is a preference, not a decision about this round — somebody
+            who wants the dark map wants it every time. And the tube's own
+            setup screen has this screen one press away in the bar above it, so
+            "change it right before playing" is still a short errand. */}
+        <Choice<boolean>
+          label="Tube map"
+          value={settings.tubeDark}
+          onChange={(tubeDark) => onChange({ ...settings, tubeDark })}
+          options={[
+            { value: false, title: "White", hint: "The paper map's own colours" },
+            { value: true, title: "Dark", hint: "Easier on a dark screen" },
+          ]}
+        />
       </div>
 
       {/* Said here because it is the one place these settings don't simply
           apply: a duel is one room looking at one world, so it is the host's
           map everybody plays on. Somebody who joins a friend's duel and finds
           the flat map they turned off would otherwise think the setting had
-          failed. */}
+          failed.
+          The tube's colours are the exception to the exception, and stay each
+          player's own — the world map decides what the question looks like,
+          where white or dark only decides how comfortable it is to look at. */}
       <p className="muted settings-note">
-        In a duel, everyone plays on the host's map.
+        In a duel, everyone plays on the host's world map. The tube map's colours
+        stay your own.
       </p>
     </div>
   );

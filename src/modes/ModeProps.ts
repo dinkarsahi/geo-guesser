@@ -21,6 +21,16 @@ export interface GameSettings {
   flat: boolean;
   /** Draw country borders (both map styles). */
   borders: boolean;
+  /**
+   * Tube Station Spotter only: the network on a dark ground instead of the
+   * white one the paper map is known by.
+   *
+   * The tube's alone because the tube's map is the only one the app *draws*.
+   * Every other map is a photograph of the Earth, and there is no dark version
+   * of a photograph — which is exactly why the old app-wide day/night toggle
+   * came out. This is what was worth keeping from it.
+   */
+  tubeDark: boolean;
 }
 
 /** Props every game mode receives from App. */

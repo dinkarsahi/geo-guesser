@@ -240,7 +240,7 @@ export default function PopulationGuesser(props: ModeProps) {
         <header className="game-header">
           <div className="header-left">
             <button className="btn btn-ghost" onClick={props.onExit}>
-              ← Menu
+              Menu
             </button>
           </div>
           <h2>Population Spotter</h2>

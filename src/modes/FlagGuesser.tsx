@@ -93,7 +93,7 @@ export default function FlagGuesser(props: ModeProps) {
         <header className="game-header">
           <div className="header-left">
             <button className="btn btn-ghost" onClick={props.onExit}>
-              ← Menu
+              Menu
             </button>
           </div>
           <h2>Flag Spotter</h2>

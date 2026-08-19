@@ -17,10 +17,12 @@ import * as THREE from "three";
  * choreography, which is both less code and more convincing, since near ones
  * genuinely pass faster than far ones.
  *
- * Everything here draws instantly: spheres and points, no textures, nothing
- * fetched. That is the whole trick. The one thing on screen that *does* have
- * to travel is the Earth, and by the time the camera is near enough for its
- * surface to matter, the tiles have had three seconds they didn't have before.
+ * **Everything here is drawn rather than downloaded** — the planets' surfaces
+ * are painted onto canvases at load, a few dozen fills apiece. That is the
+ * whole trick: this exists to cover a download, so anything in it that had to
+ * download first would be covering itself. The one thing on screen that does
+ * have to travel is the Earth, and by the time the camera is near enough for
+ * its surface to matter, the tiles have had three seconds they didn't have.
  */
 
 /**
@@ -30,6 +32,17 @@ import * as THREE from "three";
  * enough that somebody who has played six rounds isn't waiting on it. Past
  * about four seconds an animation stops being an arrival and becomes a thing
  * between you and the game.
+ *
+ * **Read this before putting the fall in a duel.** A room's rounds run off a
+ * shared timetable worked out from `match.startAt` — every device decides
+ * which round should be on screen from the room's clock, which is the whole
+ * reason a duel needs no connection once it has begun. So a local animation
+ * *cannot* hold the timer: three and a half seconds of falling is three and a
+ * half seconds of a thirty-second round gone, and gone only for the player
+ * whose tiles were slow. Whatever ships has to either play the fall in the ten
+ * seconds between rounds, where it costs nobody anything, or not play it in a
+ * room at all. Today's round has no clock, so it is free there, and a solo
+ * game off the shelf is only timed for a tiebreak nobody sees.
  */
 export const FLIGHT_MS = 3400;
 
@@ -80,6 +93,17 @@ export function flyIn(
   pointOfView({ lat: target.lat, lng: target.lng - SPIN_DEGREES, altitude: START_ALTITUDE });
   const opening = requestAnimationFrame(() => pointOfView(target, FLIGHT_MS));
 
+    // What a material was showing before the fade began, so a disc that starts
+  // three-quarters transparent doesn't jump to fully solid on the first frame
+  // of being taken away.
+  const opacities = new WeakMap<THREE.Material, number>();
+  const baseOpacity = (material: THREE.Material) => {
+    const known = opacities.get(material);
+    if (known !== undefined) return known;
+    opacities.set(material, material.opacity);
+    return material.opacity;
+  };
+
   let fade = 0;
   const landed = window.setTimeout(() => {
     controls.maxDistance = homeDistance;
@@ -89,8 +113,15 @@ export function flyIn(
     const startedAt = performance.now();
     const dim = (now: number) => {
       const gone = Math.min(1, (now - startedAt) / FADE_MS);
+      // Walked rather than reached into: a planet is a group now, and the
+      // ringed one keeps its disc in a second mesh that has to dim with it.
       for (const planet of planets) {
-        (planet.material as THREE.MeshPhongMaterial).opacity = 1 - gone;
+        planet.traverse((part) => {
+          const material = (part as THREE.Mesh).material as
+            | THREE.MeshPhongMaterial
+            | undefined;
+          if (material) material.opacity = (1 - gone) * baseOpacity(material);
+        });
       }
       if (gone < 1) fade = requestAnimationFrame(dim);
       else drop();
@@ -104,8 +135,11 @@ export function flyIn(
     dropped = true;
     for (const planet of planets) {
       scene.remove(planet);
-      planet.geometry.dispose();
-      (planet.material as THREE.Material).dispose();
+      planet.traverse((part) => {
+        const mesh = part as THREE.Mesh;
+        mesh.geometry?.dispose();
+        (mesh.material as THREE.Material | undefined)?.dispose();
+      });
     }
   };
 
@@ -121,54 +155,181 @@ export function flyIn(
 /**
  * The things that go past on the way in.
  *
- * Not the solar system, and deliberately not labelled as one — they are
- * scenery, and a player who counted them and found eight would be owed an
- * ordering nobody is going to give them. What they have to be is *various*:
- * different sizes at different distances, so the fall has depth in it rather
- * than being a zoom.
+ * Not the solar system in order, and deliberately not labelled as one — a
+ * player who counted them and found eight would be owed an ordering nobody is
+ * going to give them. What they have to be is recognisable *as planets*: a
+ * banded gas giant, a ringed one, a rusty rock, an ice giant, a cratered moon.
+ * Plain coloured balls read as marbles, which is what these were until they
+ * were given surfaces.
+ *
+ * **Every surface is painted here, at load, onto a canvas** — 512 by 256, a
+ * few dozen fills. Nothing is fetched, which is the whole point: this animation
+ * exists to cover a download, so anything in it that had to download first
+ * would be covering itself.
  *
  * Placed rather than animated. The camera falls from fourteen globe radii to
  * two along an arc, so anything standing between those two distances sweeps
  * past on its own, and the near ones sweep faster — which is the thing that
  * sells the motion, and is free.
  */
-function makePlanets(): THREE.Mesh[] {
-  // Distance from the middle, how big, and what colour. Ordered outermost
-  // first, so reading this is reading the order they arrive in.
-  const spec: { distance: number; radius: number; colour: number }[] = [
-    { distance: 1150, radius: 70, colour: 0xd9a066 },
-    { distance: 900, radius: 34, colour: 0x8fb8de },
-    { distance: 720, radius: 96, colour: 0xc4643c },
-    { distance: 560, radius: 26, colour: 0xe8d8b0 },
-    { distance: 430, radius: 52, colour: 0x7a6fa8 },
-    { distance: 330, radius: 18, colour: 0xb8b0a4 },
-  ];
+type Surface = "bands" | "rings" | "rust" | "ice" | "rock";
 
-  return spec.map(({ distance, radius, colour }, i) => {
-    const planet = new THREE.Mesh(
-      new THREE.SphereGeometry(radius, 24, 24),
+interface PlanetSpec {
+  /** How far from the middle it stands, in the same units as the globe's 100. */
+  distance: number;
+  radius: number;
+  surface: Surface;
+  /** How far the poles are tipped, which is what stops them looking stamped. */
+  tilt: number;
+}
+
+const PLANETS: PlanetSpec[] = [
+  { distance: 1150, radius: 74, surface: "bands", tilt: 0.05 },
+  { distance: 900, radius: 30, surface: "ice", tilt: -0.4 },
+  { distance: 720, radius: 96, surface: "rings", tilt: 0.47 },
+  { distance: 560, radius: 26, surface: "rock", tilt: 0.1 },
+  { distance: 430, radius: 48, surface: "rust", tilt: 0.44 },
+  { distance: 330, radius: 18, surface: "rock", tilt: -0.2 },
+];
+
+function makePlanets(): THREE.Object3D[] {
+  return PLANETS.map((spec, i) => {
+    const material = new THREE.MeshPhongMaterial({
+      map: paintSurface(spec.surface),
+      shininess: spec.surface === "ice" ? 22 : 3,
       // Transparent from the start, so the fade at the end has something to
       // work on — a material switched to transparent partway through is a
       // shader recompile at the exact moment the round is trying to begin.
-      new THREE.MeshPhongMaterial({
-        color: colour,
-        shininess: 4,
-        transparent: true,
-        opacity: 1,
-      }),
+      transparent: true,
+      opacity: 1,
+    });
+    const body = new THREE.Mesh(
+      new THREE.SphereGeometry(spec.radius, 32, 24),
+      material,
     );
-    // Spread around the corridor rather than strung along one line: the angles
+
+    // The body and its rings turn together, so the whole object is tipped
+    // rather than the sphere alone. Upright, a ringed planet looks like a
+    // diagram of one.
+    const planet = new THREE.Group();
+    planet.add(body);
+    planet.rotation.z = spec.tilt;
+    planet.rotation.x = spec.tilt * 0.6;
+
+    if (spec.surface === "rings") planet.add(makeRings(spec.radius));
+
+    // Spread around the corridor rather than strung along one line. The angles
     // are fixed rather than random so that the fall is the same fall every
-    // time. A different arrangement every round would be one more thing
+    // time: a different arrangement every round would be one more thing
     // changing under a player who is trying to learn the map.
     const around = (i * 2.399) % (Math.PI * 2);
     const above = Math.sin(i * 1.7) * 0.55;
     const ring = Math.cos(above);
     planet.position.set(
-      Math.cos(around) * ring * distance,
-      Math.sin(above) * distance,
-      Math.sin(around) * ring * distance,
+      Math.cos(around) * ring * spec.distance,
+      Math.sin(above) * spec.distance,
+      Math.sin(around) * ring * spec.distance,
     );
     return planet;
   });
+}
+
+/**
+ * The flat disc round the ringed one.
+ *
+ * Drawn as a ring of its own rather than as part of the sphere, with a gap
+ * between the two — the gap is most of what makes it read as Saturn rather
+ * than as a ball with a stripe. `DoubleSide` because the camera passes it and
+ * sees the underneath, and a ring that vanishes when you get past it is worse
+ * than no ring.
+ */
+function makeRings(radius: number): THREE.Mesh {
+  const rings = new THREE.Mesh(
+    new THREE.RingGeometry(radius * 1.45, radius * 2.25, 64),
+    new THREE.MeshPhongMaterial({
+      color: 0xd8c9a8,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.75,
+    }),
+  );
+  rings.rotation.x = Math.PI / 2;
+  return rings;
+}
+
+/**
+ * A planet's surface, painted onto a canvas and wrapped round a sphere.
+ *
+ * Latitude bands are horizontal stripes here, because the texture is
+ * equirectangular: a stripe across the image is a belt around the world, which
+ * is exactly what a gas giant's clouds are. The rocks get the same treatment
+ * plus craters, which are simply darker discs with a lighter rim.
+ */
+function paintSurface(surface: Surface): THREE.CanvasTexture {
+  const width = 512;
+  const height = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const paint = canvas.getContext("2d")!;
+
+  // Every number below is fixed rather than random, for the same reason the
+  // positions are: the arrival should be the same arrival every round.
+  const palettes: Record<Surface, { base: string; bands: string[] }> = {
+    bands: { base: "#c9a227", bands: ["#e3c98f", "#b07d46", "#d9b26a", "#8f5f33"] },
+    rings: { base: "#d9c9a3", bands: ["#efe3c4", "#c8b189", "#e5d6ae", "#b39a72"] },
+    rust: { base: "#a8462a", bands: ["#c05a34", "#8e3a22", "#b8583a", "#7d3520"] },
+    ice: { base: "#3f7fb5", bands: ["#5b9fd0", "#356f9f", "#4d8ec2", "#2c5f8a"] },
+    rock: { base: "#8d8880", bands: ["#9d978e", "#7e7970", "#948e85", "#736e66"] },
+  };
+  const { base, bands } = palettes[surface];
+
+  paint.fillStyle = base;
+  paint.fillRect(0, 0, width, height);
+
+  // Belts of uneven width, so the banding doesn't read as a barcode.
+  let y = 0;
+  let step = 0;
+  while (y < height) {
+    const thickness = 8 + ((step * 13) % 23);
+    paint.fillStyle = bands[step % bands.length];
+    paint.globalAlpha = 0.55;
+    paint.fillRect(0, y, width, thickness);
+    y += thickness;
+    step++;
+  }
+  paint.globalAlpha = 1;
+
+  if (surface === "bands") {
+    // The one storm that makes a banded planet recognisable rather than
+    // generic. Kept to a third of the way down, where Jupiter's sits.
+    paint.fillStyle = "#c4553a";
+    paint.beginPath();
+    paint.ellipse(width * 0.62, height * 0.62, 34, 17, 0, 0, Math.PI * 2);
+    paint.fill();
+  }
+
+  if (surface === "rock" || surface === "rust") {
+    for (let i = 0; i < 46; i++) {
+      const cx = ((i * 137) % width) + 6;
+      const cy = ((i * 89) % height) + 4;
+      const r = 3 + ((i * 7) % 11);
+      paint.globalAlpha = 0.35;
+      paint.fillStyle = "#000";
+      paint.beginPath();
+      paint.arc(cx, cy, r, 0, Math.PI * 2);
+      paint.fill();
+      paint.globalAlpha = 0.25;
+      paint.strokeStyle = "#fff";
+      paint.lineWidth = 1.5;
+      paint.beginPath();
+      paint.arc(cx, cy, r, Math.PI * 0.9, Math.PI * 1.9);
+      paint.stroke();
+    }
+    paint.globalAlpha = 1;
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
 }

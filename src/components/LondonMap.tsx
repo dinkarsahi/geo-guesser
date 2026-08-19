@@ -9,7 +9,13 @@ import {
 import { geoMercator } from "d3-geo";
 import type { Coord } from "../lib/geo";
 import type { GuessMapProps } from "./mapTypes";
-import { stationCoords, tubeConnections, tubeLines, tubeStations } from "../data/tube";
+import {
+  darkGroundColor,
+  stationCoords,
+  tubeConnections,
+  tubeLines,
+  tubeStations,
+} from "../data/tube";
 import type { TubeConnectionRaw } from "../data/tube";
 import MapZoomControls from "./MapZoomControls";
 
@@ -139,6 +145,8 @@ const KM_PER_DEG_LAT = 110.574;
 interface LondonMapProps extends GuessMapProps {
   /** Ground circles to draw under the network. */
   rings?: MapRing[];
+  /** The network on a dark ground rather than the white paper one. */
+  dark?: boolean;
 }
 
 interface Position {
@@ -267,13 +275,32 @@ export default function LondonMap({
   answer,
   disabled = false,
   rings,
+  dark = false,
 }: LondonMapProps) {
-  // The white, TfL-style palette the paper map is known by.
-  const theme = {
-    bg: "#ffffff", zoneOdd: "#ffffff", zoneEven: "#e6e6e6", borough: "#d3d3d3",
-    dot: "#ffffff", dotStroke: "#222", labelBg: "#ffffff", labelStroke: "#8a8a8a",
-    labelText: "#333", thames: "#9dc3e6", hoverRing: "#7c3aed",
-  };
+  // Two grounds for one network, and **only the ground changes**. The line
+  // colours are TfL's and are how a Londoner reads this map at a glance — a
+  // Piccadilly that isn't dark blue is a different map, whatever the
+  // background is doing. So what follows is paper, zones, river, dots and
+  // labels, and nothing that carries meaning.
+  //
+  // The white one is the paper map everybody has seen on a wall. The dark one
+  // is for a black page and a dark room, where a white rectangle is a lamp
+  // pointed at the player.
+  const theme = dark
+    ? {
+        bg: "#0d0f14", zoneOdd: "#141821", zoneEven: "#1c212c", borough: "#2b313d",
+        dot: "#0d0f14", dotStroke: "#cbd2dc", labelBg: "#1c212c", labelStroke: "#5a6473",
+        labelText: "#cbd2dc", thames: "#1d3a55", hoverRing: "#c084fc",
+      }
+    : {
+        bg: "#ffffff", zoneOdd: "#ffffff", zoneEven: "#e6e6e6", borough: "#d3d3d3",
+        dot: "#ffffff", dotStroke: "#222", labelBg: "#ffffff", labelStroke: "#8a8a8a",
+        labelText: "#333", thames: "#9dc3e6", hoverRing: "#7c3aed",
+      };
+  // Every line colour passes through here on its way to the screen, so the map
+  // and its key can never disagree about what the Northern line looks like.
+  const ink = (color: string) => (dark ? darkGroundColor(color) : color);
+
   // Fit a Mercator projection to the width, then size the height to the data so
   // there's no empty band above/below the network.
   const { projection, mapHeight } = useMemo(() => {
@@ -784,7 +811,7 @@ export default function LondonMap({
               const oy = (dx / len) * off;
               return (
                 <line key={i} x1={qa[0] + ox} y1={qa[1] + oy} x2={qb[0] + ox} y2={qb[1] + oy}
-                  stroke={c.color} strokeWidth={szStroke(LINE_WIDTH)}
+                  stroke={ink(c.color)} strokeWidth={szStroke(LINE_WIDTH)}
                   strokeLinecap="round" />
               );
             })}
@@ -862,7 +889,7 @@ export default function LondonMap({
           <ul className="tube-key" id="tube-key">
             {tubeLines.map((l) => (
               <li key={l.id}>
-                <span className="tube-key-swatch" style={{ background: l.color }} />
+                <span className="tube-key-swatch" style={{ background: ink(l.color) }} />
                 {l.name}
               </li>
             ))}

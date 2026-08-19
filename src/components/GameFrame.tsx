@@ -200,7 +200,7 @@ export default function GameFrame<T>({
         <header className="game-header">
           <div className="header-left">
             <button className="btn btn-ghost" onClick={onExit}>
-              ← Menu
+              Menu
             </button>
           </div>
           <h2>{title} — Results</h2>
@@ -326,7 +326,7 @@ export default function GameFrame<T>({
       <header className="game-topbar">
         <div className="header-left">
           <button className="btn btn-ghost" onClick={onExit}>
-            ← Menu
+            Menu
           </button>
           <h2>{title}</h2>
         </div>
@@ -414,7 +414,7 @@ export default function GameFrame<T>({
           )}
           {panelFolded && !timetabled && (
             <button className="btn btn-primary" onClick={next}>
-              {lastRound ? "See results" : "Next round →"}
+              {lastRound ? "See results" : "Next round"}
             </button>
           )}
           {!panelFolded && (
@@ -505,7 +505,7 @@ export default function GameFrame<T>({
               ) : (
                 <div className="button-row">
                   <button className="btn btn-primary" onClick={next}>
-                    {lastRound ? "See results" : "Next round →"}
+                    {lastRound ? "See results" : "Next round"}
                   </button>
                 </div>
               )}

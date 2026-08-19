@@ -109,7 +109,7 @@ export default function CompanyGuesser(props: ModeProps) {
         <header className="game-header">
           <div className="header-left">
             <button className="btn btn-ghost" onClick={props.onExit}>
-              ← Menu
+              Menu
             </button>
           </div>
           <h2>Corporate HQ Spotter</h2>

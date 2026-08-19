@@ -128,7 +128,7 @@ export default function HeadToHead({
     <div className="menu setup">
       <div className="menu-bar">
         <button className="btn btn-ghost" onClick={back}>
-          ← {screen === "pick" ? "Home" : "Back"}
+          {screen === "pick" ? "Home" : "Back"}
         </button>
       </div>
       <h1>
@@ -219,7 +219,7 @@ export default function HeadToHead({
 
           <div className="button-row setup-start">
             <button className="btn btn-primary" disabled={checking} onClick={play}>
-              {checking ? "Checking…" : "Start ▸"}
+              {checking ? "Checking…" : "Start"}
             </button>
           </div>
           <p className="muted h2h-code-hint">
@@ -244,10 +244,10 @@ export default function HeadToHead({
               </p>
               <div className="button-row">
                 <button className="btn btn-ghost" onClick={onAllGames}>
-                  All Games ▸
+                  All Games
                 </button>
                 <button className="btn btn-ghost" onClick={onDuel}>
-                  Duel a Friend ▸
+                  Duel a Friend
                 </button>
               </div>
             </div>

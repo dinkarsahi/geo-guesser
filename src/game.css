@@ -1,3 +1,46 @@
+/* ---- The bar across the top ------------------------------------------ */
+/* A surface of its own, lifted a little off the black page beneath it, so the
+   app reads as a page with a header rather than as buttons floating in space.
+   Full width; only what's inside it is held to the page's column. */
+.top-bar {
+  background: var(--bar-bg);
+  border-bottom: 1px solid var(--bar-border);
+}
+.top-bar-inner {
+  display: flex;
+  align-items: center;
+  max-width: 1126px;
+  margin: 0 auto;
+  padding: 10px 20px;
+}
+.top-bar-gap {
+  flex: 1;
+}
+.top-bar-mark,
+.top-bar-link {
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-h);
+}
+.top-bar-link {
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.top-bar-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+/* The name on the home page, where it is a label and not a way anywhere. */
+.top-bar-mark {
+  cursor: default;
+}
+
 /* ---- Shared bits ---------------------------------------------------- */
 .muted {
   color: var(--text);
@@ -10,8 +53,8 @@
   border-radius: 8px;
   border: 2px solid transparent;
   cursor: pointer;
-  /* A button is its label — narrow windows shrink the bar, not break "← Menu"
-     across two lines. */
+  /* A button is its label — narrow windows shrink the bar, not break "Duel a
+     Friend" across two lines. */
   white-space: nowrap;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
@@ -1042,11 +1085,8 @@
 }
 
 /* ---- Game shell ----------------------------------------------------- */
-/* While a game is on, the app shell drops its column width so the map can use
-   the whole window rather than being boxed into the middle. */
-body.playing #root {
-  width: 100%;
-}
+/* The shell is full width now and the reading column is `.page-body`, which a
+   round never renders — so there is nothing left here for a round to undo. */
 /* Nothing scrolls during a round — the map is pinned to the window and the
    controls float on top of it. */
 body:has(.game-play) {

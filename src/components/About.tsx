@@ -69,7 +69,7 @@ export default function About({ onBack, onPlay, onCredits, onPrivacy }: AboutPro
     <div className="menu doc">
       <div className="menu-bar">
         <button className="btn btn-ghost" onClick={onBack}>
-          ← Home
+          Home
         </button>
       </div>
 
@@ -174,7 +174,7 @@ export default function About({ onBack, onPlay, onCredits, onPrivacy }: AboutPro
           </p>
           <p>
             <button className="btn btn-ghost" onClick={onCredits}>
-              Where everything came from ▸
+              Where everything came from
             </button>
           </p>
         </section>
@@ -201,7 +201,7 @@ export default function About({ onBack, onPlay, onCredits, onPrivacy }: AboutPro
 
       <div className="button-row setup-start">
         <button className="btn btn-primary" onClick={onPlay}>
-          Play a game ▸
+          Play a game
         </button>
       </div>
     </div>

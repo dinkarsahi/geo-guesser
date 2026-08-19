@@ -50,6 +50,22 @@ export const lineColors: Record<string, string> = {
   "Waterloo & City": "#1FC3B4", // turquoise / aqua
 };
 
+/**
+ * The one line that has to be repainted on a dark ground.
+ *
+ * The Northern line is black, which is fine on white paper and invisible on a
+ * dark map — a whole line simply missing. White is what dark transit maps
+ * everywhere put in its place, and it is the one substitution that can't be
+ * confused with another line here: the Jubilee is already the grey.
+ *
+ * **Only what disappears gets changed.** A line's colour is how a Londoner
+ * reads this map at a glance, and a Piccadilly that isn't dark blue is a
+ * different map however dark the background is. Every other line keeps TfL's
+ * colour on both grounds.
+ */
+export const darkGroundColor = (color: string): string =>
+  color.toLowerCase() === "#000000" ? "#FFFFFF" : color;
+
 /** All 11 lines, in the palette actually drawn on the map (used by the key). */
 export const tubeLines: TubeLineDef[] = tubeLineDefs.map((l) => ({
   ...l,

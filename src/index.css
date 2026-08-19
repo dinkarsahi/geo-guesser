@@ -1,15 +1,24 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
+  /* One palette, and it is the dark one. The app used to carry two and let the
+     browser choose, which meant a player whose laptop was set to light mode got
+     a white page around a black globe — the map is a photograph of the Earth
+     from space, and the page it sits on is the sky around it. There is no
+     second look to fall back to, so nothing here is behind a media query. */
+  --text: #9ca3af;
+  --text-h: #f3f4f6;
+  --bg: #000;
+  --border: #2e303a;
+  --code-bg: #1f2028;
+  --accent: #c084fc;
+  --accent-bg: rgba(192, 132, 252, 0.15);
+  --accent-border: rgba(192, 132, 252, 0.5);
+  --social-bg: rgba(47, 48, 58, 0.5);
   --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+    rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  /* The bar across the top, which is the one surface deliberately lifted off
+     the black rather than sunk into it. */
+  --bar-bg: #111319;
+  --bar-border: #23262f;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -17,7 +26,10 @@
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
-  color-scheme: light dark;
+  /* Dark, not "light dark": this tells the browser to draw scrollbars, form
+     fields and focus rings for a dark page, which it otherwise decides from
+     the operating system and gets wrong on half of them. */
+  color-scheme: dark;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -30,37 +42,35 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+/* The page is black to the edges however tall the content is — `:root` alone
+   leaves the area past the last element painted by the browser's own default,
+   which is white on a light-mode machine. */
+html,
+body {
+  background: var(--bg);
 }
 
 /* No rules down the sides. The column is centred and its width is what says
    where the page is; a line drawn either side of it reads as the edge of a
    frame the game is sitting inside rather than as the page itself. */
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
+  /* Full width, so anything that wants to run edge to edge can — the bar
+     across the top is the reason. The reading column moved down a level to
+     `.page-body`, which is what every screen is actually wrapped in. */
+  width: 100%;
   text-align: center;
   min-height: 100svh;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* The column the app is read in. Everything except the top bar sits inside it,
+   and a round doesn't use it at all — there the map takes the whole window. */
+.page-body {
+  width: 1126px;
+  max-width: 100%;
+  margin: 0 auto;
   box-sizing: border-box;
 }
 

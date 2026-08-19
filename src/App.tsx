@@ -4,6 +4,7 @@ import Credits from "./components/Credits";
 import Privacy from "./components/Privacy";
 import Settings from "./components/Settings";
 import SiteFooter from "./components/SiteFooter";
+import TopBar from "./components/TopBar";
 import { TUBE_TAGLINE } from "./data/tube";
 import { type Match } from "./lib/match";
 import { loadSettings, saveSettings } from "./lib/preferences";
@@ -120,29 +121,11 @@ const SCRAPBOOK: GameCard = {
   emoji: "🧪",
 };
 
-/**
- * The way to the settings, top-right, on the two screens that offer it.
- *
- * The home page, where it is one of the things you can do; and a game's setup
- * screen, which is the last moment before a round when changing the map still
- * means anything. Not during a round — the map is already drawn, and swapping
- * the globe for the flat map halfway through five questions would be changing
- * the game somebody is being marked on.
- */
-function SettingsButton({ onOpen }: { onOpen: () => void }) {
-  return (
-    <button className="btn btn-ghost btn-settings" onClick={onOpen}>
-      ⚙ Settings
-    </button>
-  );
-}
-
 /** Choose how to play before a mode starts. */
 function ModeSetup({
   mode,
   onStart,
   onBack,
-  onSettings,
 }: {
   // A card rather than a mode id, so that something can have this screen
   // without being a game — a bench, next time there is one, which is a copy of
@@ -150,7 +133,6 @@ function ModeSetup({
   mode: GameCard;
   onStart: () => void;
   onBack: () => void;
-  onSettings: () => void;
 }) {
   return (
     <div className="menu setup">
@@ -159,14 +141,8 @@ function ModeSetup({
             that is where it returns to — somebody who picked the wrong one of
             seven wants the other six, not the front door. */}
         <button className="btn btn-ghost" onClick={onBack}>
-          ← Back
+          Back
         </button>
-        <span className="menu-bar-gap" />
-        {/* Here rather than only on the home page, because this is the last
-            screen before a round and the map is the thing somebody realises
-            they want to change once they can see which game they are about to
-            play. Sending them home to change it would lose their place. */}
-        <SettingsButton onOpen={onSettings} />
       </div>
       <h1>
         <span className="mode-emoji">{mode.emoji}</span> {mode.title}
@@ -186,7 +162,7 @@ function ModeSetup({
 
       <div className="button-row setup-start">
         <button className="btn btn-primary" onClick={onStart}>
-          Start ▸
+          Start
         </button>
       </div>
     </div>
@@ -248,12 +224,12 @@ function AllGames({
     <div className="menu">
       <div className="menu-bar">
         <button className="btn btn-ghost" onClick={onBack}>
-          ← Home
+          Home
         </button>
       </div>
       <h1>All Games</h1>
       <p className="muted menu-sub">
-        Pick a game, then choose what to play it on.
+        Seven ways to be wrong about where things are.
       </p>
       <div className="mode-grid">
         {MODES.map((m) => (
@@ -402,8 +378,13 @@ export default function App() {
   // missing from one is exactly the sort of thing nobody notices.
   const page = (screen: ReactNode) => (
     <>
-      {screen}
-      <SiteFooter go={go} here={route.at} />
+      {/* Outside the reading column, so it runs the full width of the window
+          the way a site header does. Everything else is inside it. */}
+      <TopBar go={go} here={route.at} onSettings={() => openSettings(route)} />
+      <div className="page-body">
+        {screen}
+        <SiteFooter go={go} here={route.at} />
+      </div>
     </>
   );
 
@@ -454,7 +435,7 @@ export default function App() {
         settings={settings}
         // Back to whichever screen sent you, which for a game's setup screen
         // is the difference between changing the map and losing your place.
-        backLabel={settingsFrom.at === "home" ? "← Home" : "← Back"}
+        backLabel={settingsFrom.at === "home" ? "Home" : "Back"}
         // Written through on every press rather than on a Save: the press is
         // the change, and a preference that needed confirming would be a
         // longer errand than the screen it replaced.
@@ -501,7 +482,6 @@ export default function App() {
         // Back to the shelf the game was picked off, not out to the home page:
         // somebody who opened the wrong one of seven wanted a different one.
         onBack={() => go({ at: "games" })}
-        onSettings={() => openSettings(route)}
       />,
     );
   }
@@ -517,7 +497,6 @@ export default function App() {
         mode={SCRAPBOOK}
         onStart={() => setSession({ path, started: true, match: null })}
         onBack={() => go({ at: "games" })}
-        onSettings={() => openSettings(route)}
       />,
     );
   }
@@ -539,12 +518,6 @@ export default function App() {
   // read as two more of them.
   return page(
     <div className="menu">
-      {/* Nothing on the left: there is nowhere above home to go back to, so
-          the bar exists only to hang the settings off the right. */}
-      <div className="menu-bar">
-        <span className="menu-bar-gap" />
-        <SettingsButton onOpen={() => openSettings({ at: "home" })} />
-      </div>
       <h1>SpotOn</h1>
       <p className="muted menu-sub">Play the world, play a friend, or just play.</p>
       <div className="mode-grid mode-grid-trio">

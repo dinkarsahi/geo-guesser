@@ -35,6 +35,11 @@ export const DEFAULT_SETTINGS: GameSettings = {
   rounds: 5,
   flat: false,
   borders: false,
+  // White, which is the map everyone has seen on a wall. The rest of the app
+  // is black now and a white rectangle in the middle of it is a jolt — but
+  // that map *is* white, and quietly making it dark by default would be
+  // changing what the game shows rather than offering a way to change it.
+  tubeDark: false,
 };
 
 /**
@@ -55,6 +60,8 @@ export function loadSettings(): GameSettings {
       flat: typeof saved.flat === "boolean" ? saved.flat : DEFAULT_SETTINGS.flat,
       borders:
         typeof saved.borders === "boolean" ? saved.borders : DEFAULT_SETTINGS.borders,
+      tubeDark:
+        typeof saved.tubeDark === "boolean" ? saved.tubeDark : DEFAULT_SETTINGS.tubeDark,
     };
   } catch {
     // A browser with storage turned off, or a private window that refuses it.
@@ -69,7 +76,11 @@ export function saveSettings(settings: GameSettings): void {
   try {
     localStorage.setItem(
       KEY,
-      JSON.stringify({ flat: settings.flat, borders: settings.borders }),
+      JSON.stringify({
+        flat: settings.flat,
+        borders: settings.borders,
+        tubeDark: settings.tubeDark,
+      }),
     );
   } catch {
     // Ignored deliberately: see `loadSettings`.

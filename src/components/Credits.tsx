@@ -32,7 +32,7 @@ export default function Credits({ onBack, onAbout }: CreditsProps) {
     <div className="menu doc">
       <div className="menu-bar">
         <button className="btn btn-ghost" onClick={onBack}>
-          ← Home
+          Home
         </button>
       </div>
 
@@ -158,7 +158,7 @@ export default function Credits({ onBack, onAbout }: CreditsProps) {
           </p>
           <p>
             <button className="btn btn-ghost" onClick={onAbout}>
-              How the game works ▸
+              How the game works
             </button>
           </p>
         </section>
