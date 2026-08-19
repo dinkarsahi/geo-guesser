@@ -598,23 +598,43 @@ zoom buttons are ordinary DOM, and so is the tap cheat, which is how a reveal
 can be reached without clicking the world at all. Anything else is judged by
 hand.
 
-#### What is on the bench now: the globe's two skins
+#### What is on the bench now: three globes
 
-`ScrapbookGlobe.tsx` is `GlobeMap` with a switch in the corner between the
-globe SpotOn ships and a photographed one — Blue Marble as a single texture,
-a bump map, a **specular map** so the oceans take a highlight, a **drifting
-cloud shell** above the surface, and a starfield behind. MapTap's globe is
-that, which is what prompted it: theirs is one self-hosted JPEG with stars, not
-live tiles, and it is why theirs can look the way it does.
+`ScrapbookGlobe.tsx` is `GlobeMap` with a switch in the corner between three,
+cheapest first:
 
-**The two are mutually exclusive, and the reason is in the libraries.**
-three-slippy-map-globe builds every tile as a `MeshLambertMaterial`, which has
-no specular term at all, and three-globe hides the photographed sphere — the
-`MeshPhongMaterial` one, which does — the moment a tile URL is set. So a shine
-on the water costs the tiles, and the tiles cost the shine. No amount of
-material work gets both.
+| Skin | What it is | The catch |
+|---|---|---|
+| **Tiles** | what SpotOn draws today | nothing — this is the thing to beat |
+| **Tiles + sky** | the same, plus drifting clouds and a starfield | none found yet |
+| **Flat ocean** | MapTap's kind of globe: one 8192-wide photograph with an even sea, plus the sky and a shine on the water | blurry past a point, and 17 seconds to load |
 
-Three things that cost time getting there, all in the file:
+**What separates them is one question: is the surface made of tiles.** A shine
+needs a material that knows what shininess is, and three-slippy-map-globe gives
+every tile a `MeshLambertMaterial`, which has no specular term; three-globe
+hides the photographed sphere — the `MeshPhongMaterial` one, which does — the
+moment a tile URL is set. So the **shine and the bump map belong to the
+photograph and can never be had on tiles.** Everything else crosses over
+freely, and the middle skin is what that fact buys: clouds and stars are
+objects standing beside the globe rather than paint on its surface, so they
+don't care what it is made of.
+
+**The sharpness numbers, measured rather than estimated.** Tiles reach about
+600 m per pixel. The 8192-wide photograph is about 5 km. MapTap's own is
+8193x4096 — the same — which is why *their* globe doesn't offer deep zoom
+either. The look and the sharpness were never available together, from anyone.
+
+**The flat sea is NASA's, not something we painted.** It is
+`BlueMarble_ShadedRelief` where the game draws
+`BlueMarble_ShadedRelief_Bathymetry`; dropping the bathymetry is what empties
+the ocean of ridges and trenches. Its blue is nearly black, so the colour is
+lifted with an **emissive map** — the same water mask the shine uses, black
+over every inch of land, so the sea glows and the continents are untouched.
+The obvious alternative, repainting the image on a canvas, is a memory trap:
+three 8192x4096 canvases is over 400 MB to change one colour the GPU changes
+for free.
+
+Traps paid for, all recorded in the file:
 
 - **`globeMaterial` is a prop on react-globe.gl, not a bound ref method.** The
   ref binds `pointOfView`, `scene`, `camera`, `controls`, `getGlobeRadius` and
@@ -624,10 +644,13 @@ Three things that cost time getting there, all in the file:
   took the rest of that function with it, leaving the skin at three-globe's
   default distance — which reads as the skin being wrong rather than as one
   line above it having thrown.
-- **The first flip sits black for a second or two.** The remount refetches
-  about eight megabytes of texture, five of it the cloud PNG. Not a fault, and
-  `THREE.Cache.enabled` is not the fix — it is global, and the tiled skin would
-  then hold every tile it ever fetched.
+- **The whole-world photograph takes 17 seconds to the first byte, every
+  time.** It is a WMS `GetMap` that NASA draws per request and caches nothing.
+  MapTap keep their copy on their own domain, which is why theirs is instant —
+  if that skin graduates, the image gets pulled once and served by us.
+- **A flip goes black for a second or two** while the remount refetches its
+  textures. `THREE.Cache.enabled` is not the fix: it is global, and the tiled
+  skins would then hold every tile they ever fetched.
 
 The cloud texture is **not shippable as it stands**: 5 MB, and three-globe's
 example credits it only to turban/webgl-earth with no licence travelling with

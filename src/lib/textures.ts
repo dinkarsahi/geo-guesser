@@ -34,6 +34,32 @@ export const TOPOLOGY_TEXTURE = `${CDN}/earth-topology.png`;
  */
 export const WATER_TEXTURE = `${CDN}/earth-water.png`;
 
+/**
+ * The whole world at 8192x4096, with a **flat ocean**, in one request.
+ *
+ * The same NASA service the game's tiles come from, asked through its WMS door
+ * instead of its tile door: one `GetMap` for the entire globe rather than a
+ * grid of squares. Two things make it the photograph to imitate MapTap with.
+ *
+ * It is `BlueMarble_ShadedRelief` rather than the
+ * `BlueMarble_ShadedRelief_Bathymetry` the game draws, and dropping the
+ * bathymetry is exactly what flattens the sea: no ridges, no trenches, no
+ * shelf — one even colour from coast to coast, which is the thing MapTap's
+ * globe is doing. And 8192 across is twice the Blue Marble photograph
+ * three-globe ships, which puts it level with MapTap's own (8193x4096,
+ * measured) at about five kilometres to the pixel.
+ *
+ * **It is slow, and knowingly so: 17 seconds to the first byte, measured, and
+ * the same again next time** — the server draws it per request and caches
+ * nothing. Fine for a bench and unshippable as it stands. MapTap solve exactly
+ * this by keeping their copy on their own domain, and so would we: pull the
+ * image once, serve it ourselves, and the WMS call goes away.
+ */
+export const FLAT_OCEAN_TEXTURE =
+  "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi" +
+  "?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&LAYERS=BlueMarble_ShadedRelief" +
+  "&CRS=EPSG:4326&BBOX=-90,-180,90,180&WIDTH=8192&HEIGHT=4096&FORMAT=image/jpeg";
+
 /** Stars, for behind the globe. MapTap has them and they cost nothing. */
 export const NIGHT_SKY_TEXTURE = `${CDN}/night-sky.png`;
 

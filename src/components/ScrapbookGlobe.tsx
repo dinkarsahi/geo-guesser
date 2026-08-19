@@ -6,7 +6,7 @@ import { countryAt, useWorldShapes, type CountryFeature } from "../lib/worldShap
 import { WORLD_TILES } from "../lib/mapTiles";
 import {
   CLOUDS_TEXTURE,
-  DAY_TEXTURE,
+  FLAT_OCEAN_TEXTURE,
   NIGHT_SKY_TEXTURE,
   TOPOLOGY_TEXTURE,
   WATER_TEXTURE,
@@ -14,7 +14,7 @@ import {
 import MapZoomControls from "./MapZoomControls";
 
 /**
- * The bench's globe: `GlobeMap` with two skins and a switch between them.
+ * The bench's globe: `GlobeMap` with three skins and a switch between them.
  *
  * A **copy** of the shipped globe rather than a flag inside it, which is the
  * bench rule — what is tried here can be got wrong without a real game being
@@ -23,57 +23,94 @@ import MapZoomControls from "./MapZoomControls";
  * instead of the thing it stands in for. Delete the file when the argument is
  * settled, and `textures.ts`'s bench block with it.
  *
- * **The two skins are mutually exclusive, and that is the argument.** A tiled
- * globe resolves as you zoom, which is what SpotOn plays on now. It also
- * cannot have a shine on its water: three-slippy-map-globe gives every tile a
- * `MeshLambertMaterial`, which has no specular term, and three-globe hides the
- * photographed sphere — the `MeshPhongMaterial` one, which does — the moment a
- * tile URL is set. So a specular ocean, a bump map and the classic look cost
- * the tiles, and the tiles cost the shine. MapTap took the photograph: their
- * globe is one self-hosted JPEG with a starfield behind it, which is why it
- * can look the way it does.
+ * The three, and what each is for:
  *
- * What "texture" turns on, all four of them:
+ * - **Tiles** — what SpotOn draws today, and the thing the other two have to
+ *   beat. Sharp: NASA's grid goes to about 600 metres a pixel, so detail keeps
+ *   arriving as you go in.
+ * - **Tiles + sky** — the same globe with the **clouds and the starfield**
+ *   added. Both are objects of their own, standing beside the globe rather
+ *   than painted on it, so neither cares that the surface is made of tiles.
+ *   This is the one that costs nothing: all the sharpness, most of the look.
+ * - **Flat ocean** — MapTap's kind of globe. One photograph 8192 across, with
+ *   the sea flattened to an even colour, plus the sky and a **shine on the
+ *   water**.
  *
- * - the whole world as one 4096x2048 Blue Marble photograph — about ten
- *   kilometres to the pixel, against a tile's fifty metres at the depths the
- *   tiles reach;
- * - a **bump map**, faking the relief a flat photograph has none of;
- * - a **specular map** — the land-and-water mask — so the oceans catch the
- *   light and the land stays matte;
- * - a **cloud sphere** just above the surface, drifting the other way at a
- *   fifth of a degree a second. Two shells moving apart is the parallax, and
- *   it is the one thing here that reads as depth rather than as detail.
+ * **What the third one can have that the first two can't, and why.** A shine
+ * needs a material that knows what shininess is. three-slippy-map-globe builds
+ * every tile as a `MeshLambertMaterial`, which has no specular term at all,
+ * and three-globe hides the photographed sphere — the `MeshPhongMaterial` one,
+ * which does — the moment a tile URL is set. So the shine and the bump map
+ * belong to the photograph and can never be had on tiles, however they are
+ * asked for. Everything else crosses over freely, which is the whole point of
+ * the middle skin.
  *
- * The camera is held further out on this skin than on the tiled one, because
- * there is nothing to go closer for: the photograph runs out long before the
- * tiles do, and the reveal flight is what shows it up first.
+ * **What it costs.** One photograph of the whole world is one photograph
+ * however near you stand: 8192 across is about five kilometres to the pixel,
+ * against 600 metres for the tiles, so zoom stops meaning anything long before
+ * the tiles run out. The camera floor is set per skin for exactly that reason.
+ * MapTap's own is the same 8193x4096, which is why their globe doesn't offer
+ * deep zoom either — the look and the sharpness were never available together.
  *
- * **The first flip to the texture skin sits black for a second or two, and
- * that is the flip rather than a fault.** Remounting throws the globe's
- * textures away with the globe, so all four are fetched and decoded again —
- * about eight megabytes of them, five of which is the cloud PNG — and until
- * the photograph and the starfield arrive there is a black ball in an empty
- * sky with only the atmosphere showing. Flipping back is quick, because by
- * then the browser has them. The obvious fix, `THREE.Cache.enabled`, is a trap
- * here: it is global, and the tiled skin loads its tiles through the same
- * loader, so switching it on would hold every tile ever fetched in memory for
- * as long as the tab is open.
- */
-const MAX_ALTITUDE = 3.5; // farthest button zoom
+ * **The flat sea is NASA's own, not something painted on.** The photograph is
+ * `BlueMarble_ShadedRelief` where the game draws
+ * `BlueMarble_ShadedRelief_Bathymetry`, and dropping the bathymetry is what
+ * empties the ocean of ridges and trenches. Its blue is very dark, so the
+ * colour is lifted with an **emissive map** — the same land-and-water mask the
+ * shine uses, which adds light on water and none on land. A canvas repaint was
+ * the obvious way and the wrong one: three 8192x4096 canvases is over 400 MB
+ * of memory to change a colour the GPU can change for nothing.
+ *
+ * **Flat ocean takes about twenty seconds to appear, every time, and it is
+ * NASA's end rather than ours.** That photograph is a WMS `GetMap`, which the
+ * server *draws* on request: 17 seconds to the first byte, measured twice, and
+ * then 2.4 MB to fetch. Nothing is cached at their end, so it is 17 seconds
+ * again on the next flip. This is precisely why MapTap host their own
+ * `hi-rez-v3.jpg` and why theirs is instant — **if this skin ever graduates,
+ * the photograph gets pulled once and served from our own domain**, and the
+ * live WMS call goes.
+ *
+ * The other skins go black for a second or two on a flip, which is the ordinary
+ * cost: remounting throws the globe's textures away with the globe, so they
+ * are fetched and decoded again. The obvious fix, `THREE.Cache.enabled`, is a
+ * trap here: it is global, and the tiled skins load their tiles through the
+ * same loader, so switching it on would hold every tile ever fetched in memory
+ * for as long as the tab is open.
+ */const MAX_ALTITUDE = 3.5; // farthest button zoom
 
 /** Which globe is being looked at. `tiles` is what the games ship today. */
-type Skin = "tiles" | "texture";
+type Skin = "tiles" | "sky" | "maptap";
 
 /**
- * How far the camera may get from a photographed globe.
- *
- * One picture of the whole world is roughly ten kilometres to the pixel, so
- * past about a third of a globe-radius there is nothing left to resolve and
- * going closer only shows the pixels. The tiled globe's floor is the imagery's
- * own (`WORLD_TILES.minAltitude`), which is far deeper.
+ * The switch's own labels, and the order they stand in — cheapest first, so
+ * reading left to right is reading what each addition costs.
  */
-const TEXTURE_MIN_ALTITUDE = 0.35;
+const SKINS: { id: Skin; name: string; note: string }[] = [
+  { id: "tiles", name: "Tiles", note: "what ships today" },
+  { id: "sky", name: "Tiles + sky", note: "sharp · clouds · stars" },
+  { id: "maptap", name: "Flat ocean", note: "8k photo · shine · sky" },
+];
+
+/**
+ * How near the camera may get to the photographed globe.
+ *
+ * 8192 pixels across the world is about five kilometres to each one, so past
+ * this there is nothing left to resolve and going closer only magnifies them.
+ * Half what a 4096 photograph could stand, because twice the pixels is twice
+ * as near before they show. The tiled skins keep the imagery's own floor
+ * (`WORLD_TILES.minAltitude`), which is far deeper — that is the trade.
+ */
+const PHOTO_MIN_ALTITUDE = 0.18;
+
+/**
+ * The colour the flat sea is lifted to.
+ *
+ * `BlueMarble_ShadedRelief` has an even ocean already, but a nearly black one;
+ * MapTap's is a mid navy you can actually see a coastline against. Added as
+ * emissive light through the water mask rather than painted into the
+ * photograph, so it can be tuned by changing this line.
+ */
+const OCEAN_BLUE = 0x16336e;
 
 /** How far above the surface the clouds hang, in globe radii. */
 const CLOUD_ALTITUDE = 0.004;
@@ -144,7 +181,7 @@ export default function ScrapbookGlobe({
   // Which globe. The texture one is what's being looked at, so it opens; the
   // tiled one is here to be flipped back to, since the question is only ever
   // "better than what we ship?" and that is not answerable from memory.
-  const [skin, setSkin] = useState<Skin>("texture");
+  const [skin, setSkin] = useState<Skin>("sky");
   // Counted rather than flagged, so that flipping the skin — which remounts
   // the globe, and with it a second ready — re-runs the cloud effect below
   // instead of leaving it looking at a scene that has been thrown away.
@@ -152,7 +189,12 @@ export default function ScrapbookGlobe({
   // How close the camera may get: the imagery's own limit, since a source runs
   // out of pictures at its own depth and there is nothing to see past it. A
   // photograph runs out very much sooner than the tiles do.
-  const minAltitude = skin === "tiles" ? WORLD_TILES.minAltitude : TEXTURE_MIN_ALTITUDE;
+  // Two questions the skins answer between them, and every difference below
+  // comes off one or the other: is the surface made of tiles, and is there a
+  // sky around it. The middle skin exists because those are independent.
+  const tiled = skin !== "maptap";
+  const sky = skin !== "tiles";
+  const minAltitude = tiled ? WORLD_TILES.minAltitude : PHOTO_MIN_ALTITUDE;
   // Painting the answer on rather than pinning it: see `highlights`.
   const painted = !!highlights?.length;
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
@@ -196,16 +238,25 @@ export default function ScrapbookGlobe({
    * barely there at all.
    */
   const oceanMaterial = useMemo(() => {
-    if (skin !== "texture") return undefined;
+    if (tiled) return undefined;
     const material = new THREE.MeshPhongMaterial();
     material.specular = new THREE.Color(0x2b3a4a);
     material.shininess = 12;
+    // Lifts the flat sea to a blue you can see, and nothing else: emissive
+    // light is emissive colour times emissive map, and the map is black over
+    // every inch of land. So the continents are untouched and the ocean glows
+    // evenly — which is also why it doesn't go dark round the far limb, the
+    // way MapTap's doesn't either.
+    material.emissive = new THREE.Color(OCEAN_BLUE);
     new THREE.TextureLoader().load(WATER_TEXTURE, (mask) => {
+      // One download doing two jobs: white at sea and black on land is both
+      // "where does the light catch" and "where is the sea".
       material.specularMap = mask;
+      material.emissiveMap = mask;
       material.needsUpdate = true;
     });
     return material;
-  }, [skin]);
+  }, [tiled]);
 
   // Tune the orbit controls and set an opening view once the globe is ready.
   const handleReady = () => {
@@ -256,7 +307,7 @@ export default function ScrapbookGlobe({
   // holding on to it is a leak that would be paid for on every flip.
   useEffect(() => {
     const g = globeRef.current;
-    if (skin !== "texture" || !g || !readyCount) return;
+    if (!sky || !g || !readyCount) return;
     const scene = g.scene();
     const radius = g.getGlobeRadius();
     let clouds: THREE.Mesh | null = null;
@@ -308,7 +359,7 @@ export default function ScrapbookGlobe({
       material.map?.dispose();
       material.dispose();
     };
-  }, [skin, readyCount]);
+  }, [sky, readyCount]);
 
   // Fly to the true location when the answer is revealed — and, where the
   // answer is painted across half the world rather than pinned to one spot,
@@ -444,20 +495,20 @@ export default function ScrapbookGlobe({
         // Stars, on the skin that has them. Free next to the rest of this, and
         // the single thing that most tells MapTap's globe from ours at a
         // glance: theirs stands in space and ours stands on the page.
-        backgroundImageUrl={skin === "texture" ? NIGHT_SKY_TEXTURE : undefined}
+        backgroundImageUrl={sky ? NIGHT_SKY_TEXTURE : undefined}
         // The surface, and the whole of the trade. Tiles resolve as you go in
         // and can never shine; the photograph shines, takes a bump map, and is
         // ten kilometres to the pixel wherever you stand. Only one of the two
         // is ever set — given a tile URL three-globe hides the photographed
         // sphere, so passing both would download a texture nobody sees.
-        globeTileEngineUrl={skin === "tiles" ? WORLD_TILES.url : undefined}
-        globeImageUrl={skin === "texture" ? DAY_TEXTURE : undefined}
+        globeTileEngineUrl={tiled ? WORLD_TILES.url : undefined}
+        globeImageUrl={tiled ? undefined : FLAT_OCEAN_TEXTURE}
         // Undefined on the tiled skin, which three-globe reads as "leave the
         // material alone" — its setter tests for exactly that.
         globeMaterial={oceanMaterial}
         // Relief the photograph hasn't got: it is a picture taken straight
         // down, so without this the Andes are a colour rather than a ridge.
-        bumpImageUrl={skin === "texture" ? TOPOLOGY_TEXTURE : undefined}
+        bumpImageUrl={tiled ? undefined : TOPOLOGY_TEXTURE}
         // How deep to ask. The service answers 400 past its last level and the
         // engine draws nothing where no tile arrived, so leaving this at the
         // default of 17 doesn't buy detail off a shallower service — it strips
@@ -469,7 +520,7 @@ export default function ScrapbookGlobe({
         // Wider on the photographed skin, where there are stars behind it to
         // sit against. Over the page's flat dark blue the same halo just looks
         // like a smudge round the edge.
-        atmosphereAltitude={skin === "texture" ? 0.25 : 0.18}
+        atmosphereAltitude={sky ? 0.25 : 0.18}
         onGlobeReady={handleReady}
         onGlobeClick={({ lat, lng }) => {
           // The bare globe is the sea. It's only a valid guess when the country
@@ -529,20 +580,15 @@ export default function ScrapbookGlobe({
           judged from memory. */}
       <div className="bench-skins">
         <span className="bench-skins-label">Globe</span>
-        {(
-          [
-            ["texture", "Texture", "photo · shine · clouds"],
-            ["tiles", "Tiles", "what ships today"],
-          ] as const
-        ).map(([id, name, note]) => (
+        {SKINS.map((s) => (
           <button
-            key={id}
-            className={`bench-skin${skin === id ? " is-active" : ""}`}
-            onClick={() => setSkin(id)}
-            aria-pressed={skin === id}
+            key={s.id}
+            className={`bench-skin${skin === s.id ? " is-active" : ""}`}
+            onClick={() => setSkin(s.id)}
+            aria-pressed={skin === s.id}
           >
-            <span className="bench-skin-name">{name}</span>
-            <span className="muted bench-skin-note">{note}</span>
+            <span className="bench-skin-name">{s.name}</span>
+            <span className="muted bench-skin-note">{s.note}</span>
           </button>
         ))}
       </div>
