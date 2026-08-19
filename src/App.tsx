@@ -359,6 +359,10 @@ export default function App() {
   const toMenu = useCallback(() => {
     setSession(NO_SESSION);
     if (route.at === "game" || route.at === "bench") go({ at: "games" });
+    // Out of today's round is *home*, not back to `/` — the front door deals
+    // the round the moment it is looked at, so landing there again would put
+    // the player straight back into the game they just left.
+    if (route.at === "daily") go({ at: "home" });
   }, [route.at, go]);
 
   // Stable, because a room hands over on a timer that lists this among its

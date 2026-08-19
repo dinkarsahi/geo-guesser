@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Match } from "../lib/match";
 import { cleanName, modeTitle } from "../lib/match";
 import { publishResult, type Board } from "../lib/leaderboard";
-import { saveName } from "../lib/playerName";
+import { loadName, saveName } from "../lib/playerName";
 import { hasRemote } from "../lib/supabase";
 import Standings from "./Standings";
 
@@ -25,7 +25,10 @@ export default function MatchResult({ match, score, ms }: MatchResultProps) {
   // Distinct from `board === null`: that is the first send, this is a reload
   // over a table already on screen, which shouldn't blank it out. True from
   // the start, because the first send is under way before the first paint.
-  const [checking, setChecking] = useState(true);
+  // True from the start, because the first send is under way before the first
+  // paint — unless there is no name to send under, in which case nothing is on
+  // its way and the screen is waiting on the player rather than the network.
+  const [checking, setChecking] = useState(() => !!match.player.trim());
   // The name the score is actually up under, which is only the name the match
   // was played under until somebody else claims it first.
   const [filedAs, setFiledAs] = useState(match.player);
@@ -33,6 +36,18 @@ export default function MatchResult({ match, score, ms }: MatchResultProps) {
   // now, so this is a race anyone can lose between starting and finishing.
   const [taken, setTaken] = useState<string | null>(null);
   const [rename, setRename] = useState(match.player);
+  /**
+   * The name a score with none yet is waiting on.
+   *
+   * Today's round asks for nothing on the way in — it deals the round the
+   * moment somebody arrives — so the name is asked for here, where there is a
+   * score to put it to. That ordering is better than it sounds: a player who
+   * starts and wanders off is never asked to name themselves for a game they
+   * didn't finish, and nobody types anything before they know whether it was
+   * worth typing. Seeded with whatever this device last played under, so the
+   * regular is one press from done.
+   */
+  const [claim, setClaim] = useState(() => match.player.trim() || loadName());
 
   const send = useCallback(
     (player: string) => {
@@ -64,6 +79,10 @@ export default function MatchResult({ match, score, ms }: MatchResultProps) {
   // the second row anyway; what it can't do is tell us which of the two we are.
   const sent = useRef<string | null>(null);
   useEffect(() => {
+    // A match that arrived without a name waits for one — see `claim`. Nothing
+    // is filed until the player has said who they are, which also means the
+    // table's "already played" check can't fire against a blank.
+    if (!match.player.trim()) return;
     const once = `${match.code}|${match.player}`;
     if (sent.current === once) return;
     sent.current = once;
@@ -75,6 +94,10 @@ export default function MatchResult({ match, score, ms }: MatchResultProps) {
     setChecking(true);
     send(player);
   };
+
+  /** Still waiting to be told whose score this is. */
+  const unnamed = !filedAs.trim();
+  const claimed = cleanName(claim).trim();
 
   const standings = board?.standings ?? [];
   const mine = standings.find((r) => r.player.toLowerCase() === filedAs.toLowerCase());
@@ -94,6 +117,35 @@ export default function MatchResult({ match, score, ms }: MatchResultProps) {
           on this one table however they chose to draw the map, and the code
           behind it is no longer something a player ever sees. */}
       <p className="match-line-label">Today's {modeTitle(match.mode)}</p>
+
+      {/* Whose score is this? Asked once, here, and only of somebody who has
+          actually finished. The score is already made and cannot be lost by
+          getting this wrong — worst case the name is taken and the box below
+          asks for another. */}
+      {unnamed && taken === null && (
+        <div className="match-rename">
+          <p className="match-hint">
+            Put your name to it and it goes on today's board.
+          </p>
+          <input
+            className="h2h-name-input"
+            value={claim}
+            onChange={(e) => setClaim(cleanName(e.target.value))}
+            placeholder="Your name"
+            maxLength={16}
+            aria-label="Your name"
+            autoFocus
+            onKeyDown={(e) => e.key === "Enter" && claimed && !checking && again(claimed)}
+          />
+          <button
+            className="btn btn-primary"
+            disabled={!claimed || checking}
+            onClick={() => again(claimed)}
+          >
+            {checking ? "Sending…" : "Put my score up"}
+          </button>
+        </div>
+      )}
 
       {/* The score is made and can't be lost — it just needs a free name to go
           up under, and asking here beats telling the player they've already
@@ -144,7 +196,7 @@ export default function MatchResult({ match, score, ms }: MatchResultProps) {
         </p>
       )}
 
-      {board === null && taken === null && (
+      {board === null && taken === null && !unnamed && (
         <p className="muted match-hint">Sending your score up…</p>
       )}
 

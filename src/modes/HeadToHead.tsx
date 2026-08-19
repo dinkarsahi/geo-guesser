@@ -1,16 +1,13 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  cleanName,
   dailyCode,
   gameOfDay,
   parseMatchCode,
-  MATCH_MODES,
   MATCH_ROUNDS,
   modeTitle,
   type Match,
 } from "../lib/match";
-import { checkEntry } from "../lib/leaderboard";
-import { loadName, saveName } from "../lib/playerName";
+import { spentOnThisDevice } from "../lib/leaderboard";
 import { loadSettings } from "../lib/preferences";
 import Leaderboard from "../components/Leaderboard";
 
@@ -51,6 +48,17 @@ interface HeadToHeadProps {
  * you know what you're walking into, partly because a game you can't play today
  * is still a game you can play this week.
  *
+ * **Nothing stands between arriving and playing.** This screen used to ask for
+ * a name, then offer a card to press, then show which game the day had landed
+ * on, then start — four screens' worth of getting ready in front of five
+ * questions. It is the site's front door now, so it deals the round on arrival
+ * and the game itself says which game it is, in the corner where the title
+ * goes. The name is asked for at the end instead, where there is a score to
+ * put it to and where somebody who never finishes is never asked at all.
+ *
+ * What is left of this component is the other half: the table, for a device
+ * that has already had its go.
+ *
  * There's no code to be seen here any more. There never was much point in
  * showing one — it's worked out from the game and the date rather than issued,
  * so everyone picking City Spotter today is already on it and already on the
@@ -69,66 +77,39 @@ export default function HeadToHead({
   onAllGames,
   onDuel,
 }: HeadToHeadProps) {
-  const [screen, setScreen] = useState<"pick" | "games" | "board">("pick");
-  const [name, setName] = useState(loadName);
   // How this player likes the world drawn: their saved preference, not a
   // question asked here. Theirs alone either way — everyone playing today's
-  // City Spotter is on one table whichever map they read it on, which is why
-  // this can be a setting rather than part of entering the contest.
+  // City Spotter is on one table whichever map they read it on.
   const [setup] = useState(loadSettings);
-  // Whether the player was sent to the standings because they've had their go,
-  // rather than having asked to see them.
-  const [spent, setSpent] = useState(false);
   // The game the day landed on, which is nobody's choice and everybody's.
   const today = gameOfDay();
-  // Set when the name is somebody else's today. Sends the player back to the
-  // name field, which is the only thing standing between them and a game.
-  const [taken, setTaken] = useState<string | null>(null);
-  const [checking, setChecking] = useState(false);
+  const code = useMemo(() => parseMatchCode(dailyCode(today)), [today]);
 
-  /**
-   * Off to play today's round of a game, under the name that will appear in
-   * everyone's standings — unless this device has already had its go, or the
-   * name is spoken for by one of the strangers sharing the table.
-   *
-   * The first of those is the device's and not the name's, so a second go can't
-   * be had by typing something else. See `playedOnThisDevice`.
-   */
-  const play = async () => {
-    const code = parseMatchCode(dailyCode(today));
-    if (!code) return;
-    const player = name.trim();
-    saveName(player);
-    setTaken(null);
-    setChecking(true);
-    const entry = await checkEntry(code.code, player);
-    setChecking(false);
-    if (entry === "played") {
-      setSpent(true);
-      setScreen("board");
-      return;
-    }
-    if (entry === "name-taken") {
-      setTaken(player);
-      setScreen("pick");
-      return;
-    }
-    onStart({ ...code, player, flat: setup.flat, borders: setup.borders });
-  };
+  // Whether this device has already had its go. Answered from localStorage, so
+  // nothing stands between arriving and playing — not even a round trip. The
+  // *name* half of the check can't be asked yet and doesn't need to be: it is
+  // settled at the end, when there is a score to put a name to, and the table's
+  // own unique index is what actually enforces it.
+  const spent = code ? spentOnThisDevice(code.code) : false;
 
-  const named = name.trim().length > 0;
-
-  const back = () => {
-    if (screen === "pick") return onBack();
-    setScreen("pick");
-    setSpent(false);
-  };
+  // Straight into the round. The ref is what stops a second deal if this
+  // renders again before `onStart` has taken effect; it is not a ran-once flag
+  // of the kind that breaks under strict mode, because nothing here cancels
+  // what the first run did.
+  const dealt = useRef(false);
+  useEffect(() => {
+    if (!code || spent || dealt.current) return;
+    dealt.current = true;
+    // No name: this player has one at the end if they finish, and none of
+    // their business until then.
+    onStart({ ...code, player: "", flat: setup.flat, borders: setup.borders });
+  }, [code, spent, onStart, setup]);
 
   return (
     <div className="menu setup">
       <div className="menu-bar">
-        <button className="btn btn-ghost" onClick={back}>
-          {screen === "pick" ? "Home" : "Back"}
+        <button className="btn btn-ghost" onClick={onBack}>
+          Home
         </button>
       </div>
       <h1>
@@ -142,117 +123,30 @@ export default function HeadToHead({
         You against everyone else in the world playing it. {RULES}
       </p>
 
-      {screen === "pick" && (
+      {spent ? (
         <>
-          {/* Asked for before anything else, because the standings at the end
-              are a list of names and one of them has to be yours. */}
-          <div className="h2h-name">
-            <label className="setup-label" htmlFor="h2h-player">
-              Playing as
-            </label>
-            <input
-              id="h2h-player"
-              className="h2h-name-input"
-              value={name}
-              onChange={(e) => {
-                setName(cleanName(e.target.value));
-                setTaken(null);
-              }}
-              placeholder="Your name"
-              maxLength={16}
-              autoFocus={!name || taken !== null}
-            />
-          </div>
-          {/* One table a day for the whole world means one of everything on it,
-              names included, until there are accounts to tell two Sams apart. */}
-          {taken !== null && (
-            <p className="h2h-taken">
-              <strong>{taken}</strong> is taken on today's table — pick another name.
+          <Leaderboard locked />
+          {/* Only under a table somebody was *sent* to, which is now the only
+              way to arrive at one: a player who can still play is playing. */}
+          <div className="h2h-elsewhere">
+            <p className="muted h2h-code-hint">
+              Today's {modeTitle(today)} is one go a device, so the table means
+              something. Nothing else here is rationed.
             </p>
-          )}
-          <div className="h2h-choices">
-            <button
-              className="h2h-choice"
-              disabled={!named}
-              onClick={() => setScreen("games")}
-            >
-              <span className="h2h-choice-title">Play today's round</span>
-              <span className="muted h2h-choice-hint">
-                {modeTitle(today)} — the same five rounds as everyone else today.
-              </span>
-            </button>
-            {/* Open to anyone, name or not: reading a table is not playing, and
-                a spectator shouldn't have to invent a name. */}
-            <button className="h2h-choice" onClick={() => setScreen("board")}>
-              <span className="h2h-choice-title">Leaderboard</span>
-              <span className="muted h2h-choice-hint">
-                Everyone who has finished today's round.
-              </span>
-            </button>
-          </div>
-          {!named && (
-            <p className="muted h2h-code-hint">Put a name in to play today's round.</p>
-          )}
-        </>
-      )}
-
-      {screen === "games" && (
-        <div className="setup-panel">
-          {/* What today is, and what it isn't. The ones that aren't on are
-              greyed rather than hidden, because "today is the tube" means more
-              next to the six games it isn't — and because they're what the
-              rest of the week looks like. */}
-          <div className="setup-row">
-            <span className="setup-label">Today's game</span>
-            <div className="h2h-modes">
-              {MATCH_MODES.map((m) => (
-                <div
-                  key={m.id}
-                  className={`h2h-mode${m.id === today ? " is-active" : " is-off"}`}
-                >
-                  <span className="mode-emoji">{m.emoji}</span>
-                  <span>{m.title}</span>
-                </div>
-              ))}
+            <div className="button-row">
+              <button className="btn btn-ghost" onClick={onAllGames}>
+                All Games
+              </button>
+              <button className="btn btn-ghost" onClick={onDuel}>
+                Duel a Friend
+              </button>
             </div>
           </div>
-
-          <div className="button-row setup-start">
-            <button className="btn btn-primary" disabled={checking} onClick={play}>
-              {checking ? "Checking…" : "Start"}
-            </button>
-          </div>
-          <p className="muted h2h-code-hint">
-            Everyone playing {modeTitle(today)} today gets the same five rounds in the
-            same order, and they all land on one table. Tomorrow it's one of the others,
-            and this one starts again at your midnight.
-          </p>
-        </div>
-      )}
-
-      {screen === "board" && (
-        <>
-          <Leaderboard player={named ? name.trim() : undefined} locked={spent} />
-          {/* Only under a table somebody was *sent* to. Printed under one they
-              asked to see, it would be a game offering the player a different
-              game for no reason. */}
-          {spent && (
-            <div className="h2h-elsewhere">
-              <p className="muted h2h-code-hint">
-                Today's round is one go a device, so the table means something.
-                Nothing else here is rationed.
-              </p>
-              <div className="button-row">
-                <button className="btn btn-ghost" onClick={onAllGames}>
-                  All Games
-                </button>
-                <button className="btn btn-ghost" onClick={onDuel}>
-                  Duel a Friend
-                </button>
-              </div>
-            </div>
-          )}
         </>
+      ) : (
+        // The blink between arriving and the round being dealt. Almost never
+        // seen, and worth having for the moment the shapes are still coming.
+        <p className="muted h2h-code-hint">Dealing today's {modeTitle(today)}…</p>
       )}
     </div>
   );

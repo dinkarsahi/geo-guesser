@@ -84,7 +84,17 @@ const MODE_PATHS: Record<ModeId, string> = {
  * old names and these are the names players were given. Follow the mapping in
  * this file rather than the component names, which agree with neither.
  */
+/**
+ * Today's round is the front door: `/` is it, and `/dailyround` still answers
+ * so that anything already sent or bookmarked keeps working. `spell` gives back
+ * the short one, so that is what an address bar ends up showing.
+ *
+ * The three doors moved to `/home` to make room. They are still one press away
+ * — the wordmark in the top bar — and the point of the move is that a visitor
+ * who came to play today's round is playing it rather than choosing to.
+ */
 const DAILY = "dailyround";
+const HOME = "home";
 const DUEL = "headtohead";
 const GAMES = "allgames";
 
@@ -119,7 +129,9 @@ function parse(path: string): Route {
     .replace(/^\/+|\/+$/g, "")
     .toLowerCase()
     .split("/");
-  if (at === DAILY) return { at: "daily" };
+  if (at === HOME) return { at: "home" };
+  // The root, and the one path that means a game rather than a menu.
+  if (at === "" || at === DAILY) return { at: "daily" };
   // A code after the duel's path is an invitation to a room, and it is read
   // here rather than taken on trust: `parseMatchCode` is what says whether
   // seven characters are a room's code or somebody's typo, and a typo that
@@ -137,14 +149,17 @@ function parse(path: string): Route {
   if (at === SETTINGS) return { at: "settings" };
   if (at === BENCH) return { at: "bench" };
   const mode = (Object.keys(MODE_PATHS) as ModeId[]).find((m) => MODE_PATHS[m] === at);
-  return mode ? { at: "game", mode } : { at: "home" };
+  // Anything unrecognised is the front door, which is now today's round.
+  return mode ? { at: "game", mode } : { at: "daily" };
 }
 
 /** Where a screen lives. */
 export function spell(route: Route): string {
   switch (route.at) {
     case "daily":
-      return `/${DAILY}`;
+      return "/";
+    case "home":
+      return `/${HOME}`;
     case "duel":
       return route.code ? `/${DUEL}/${route.code}` : `/${DUEL}`;
     case "games":

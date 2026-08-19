@@ -153,6 +153,16 @@ export type Entry = "ok" | "played" | "name-taken";
  * somebody else entirely and wants saying so, since the answer is "pick another
  * name", not "you've already played".
  */
+/**
+ * Has this device already had its go at a code?
+ *
+ * The local half of `checkEntry`, on its own — asked at the moment somebody
+ * arrives, when there is no name to check and nothing worth waiting on a
+ * network for. The name half can't be asked yet and doesn't need to be: it is
+ * settled at the end, when there is a score to put a name to.
+ */
+export const spentOnThisDevice = (code: string): boolean => playedOnThisDevice(key(code));
+
 export async function checkEntry(code: string, player: string): Promise<Entry> {
   if (playedOnThisDevice(key(code))) return "played";
   if (!hasRemote) return "ok";

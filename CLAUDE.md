@@ -236,15 +236,37 @@ for, so it can never cost anyone a round.
 
 ## The way in
 
-The home page asks one question — **who are you playing** — and answers it with
-three cards: `Today's Round`, `Duel a Friend`, and `All Games`. The games
+**The front door is today's round, and it deals it.** Land on `/` and the round
+is on screen: no name to type, no card to press, no screen naming the game
+first. Which game the day landed on is said in the corner of the round itself —
+`GameFrame` prints "Today's Round: Currency Spotter" where the title goes, and
+that is the only place it is said. A device that has already had its go gets the
+table instead, with All Games and Duel a Friend under it.
+
+**The name is asked for at the end**, in `MatchResult`, where there is a score
+to put it to. Two things follow that are better than they sound: a player who
+starts and wanders off is never asked to name themselves for a game they didn't
+finish, and nobody types anything before knowing whether it was worth typing.
+The box is seeded with whatever this device last played under, so the regular is
+one press from done, and the name-taken path that already existed handles a
+collision — the score is made by then and cannot be lost by getting the name
+wrong.
+
+**Leaving today's round goes to `/home`, not back to `/`.** The front door deals
+the round on sight, so returning there would put the player straight back into
+the game they just left. `toMenu` in `App` is where that is done.
+
+The three doors moved to `/home` and are one press away from anywhere — the
+wordmark in the top bar. That page asks one question — **who are you playing** —
+and answers it with three cards: `Today's Round`, `Duel a Friend`, and `All Games`. The games
 themselves are behind the third of those, on a shelf that ends with whatever is
 being built next. That card sits after the games rather than among them: it
 isn't a game yet, and putting it in the row would offer it as one. Each card is three lines — the name, a `hook`
 asking whether you fancy it, and a `blurb` saying what a round involves; eight
-descriptions read as a list, where eight questions read as a dare. They used to be the home page, with the two
-contests tacked on as an eighth card; seven games in front of the question
-answered it before it was asked, and the contests read as two more games.
+descriptions read as a list, where eight questions read as a dare. The shelf
+used to *be* the home page, with the two contests tacked on as an eighth card;
+seven games in front of the question answered it before it was asked, and the
+contests read as two more games.
 
 **TEMPORARY — the tap cheat.** Tapping the question itself six times in one
 round answers that round correctly, in every game: the flag, the population
@@ -413,8 +435,9 @@ browser's own back button works without a line of wiring.
 
 | Path | Screen |
 |---|---|
-| `/` | the three doors |
-| `/dailyround` | Today's Round — the `HeadToHead` component |
+| `/` | **Today's Round** — dealt on arrival, or its table if this device has played |
+| `/dailyround` | the same screen, kept so older links still work |
+| `/home` | the three doors |
 | `/headtohead` | Duel a Friend — the `PlayFriend` component |
 | `/headtohead/CVKQ7M` | an invitation to one room — see "The invite link" |
 | `/allgames` | the shelf |

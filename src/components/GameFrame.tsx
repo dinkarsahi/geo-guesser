@@ -330,7 +330,12 @@ export default function GameFrame<T>({
           <button className="btn btn-ghost" onClick={onExit}>
             Menu
           </button>
-          <h2>{title}</h2>
+          {/* Named as what it is when it is today's round: the front door
+              deals it without a screen in between, so this line is the only
+              place the player is told which of the seven games the day landed
+              on. A duel says nothing extra — its own screen said which game
+              before anyone joined it. */}
+          <h2>{match?.kind === "daily" ? `Today's Round: ${title}` : title}</h2>
         </div>
         {/* TEMPORARY — the tap cheat lives on the question itself. */}
         <div className="prompt" onClick={promptTap}>
@@ -357,12 +362,11 @@ export default function GameFrame<T>({
             </span>
           )}
           {/* A room's code is worth keeping on screen — it's what somebody
-              still trying to get in will ask you for. A daily game's isn't
-              shown anywhere and isn't the player's business. */}
-          {match && (
-            <span className="match-code-tag">
-              {match.kind === "room" ? match.code : "Today's round"}
-            </span>
+              still trying to get in will ask you for. A daily game has no code
+              anybody sees, and now says what it is in the title on the left,
+              so a second label here was the same words twice. */}
+          {match?.kind === "room" && (
+            <span className="match-code-tag">{match.code}</span>
           )}
         </div>
         {/* The clock itself, drawn along the foot of the bar: something to read
