@@ -3,6 +3,32 @@ import { haversineKm, scoreFromDistance, MAX_ROUND_SCORE, type Coord } from "./g
 
 export type Phase = "guessing" | "result" | "done";
 
+/**
+ * How long a game waits before its first round opens.
+ *
+ * Once a game, not once a round. Press Start and the map is on screen before
+ * its imagery is, so a round used to open on an empty rectangle or a world
+ * that appeared a moment after the question — this is the pause that covers
+ * the difference, and on the globe there is a fall through space to watch
+ * while it passes (`globeFlight.ts`, whose animation runs exactly this long).
+ * Between rounds there is nothing to wait for: the map is already drawn.
+ *
+ * **In a room it is part of the timetable rather than a pause in front of
+ * it**, and that distinction is the whole design. Everyone's device works out
+ * which round is on screen by arithmetic from the room's start time, so a
+ * local pause cannot hold the clock — it would simply cost that player three
+ * seconds of a thirty-second round, and only the player whose tiles were slow.
+ * So `matchOptions` moves the room's start time back by this amount instead:
+ * every device shifts by the same constant, the room stays in step, and
+ * nobody's round is any shorter. Change this number and every player in every
+ * room changes with it, which is the point.
+ *
+ * Three seconds exactly, because it is counted out loud on screen. 3.4 reads
+ * "Starting in 4" for the first tenth of a second, which is a countdown that
+ * opens by lying about how long it is.
+ */
+export const INTRO_MS = 3000;
+
 export interface RoundResult {
   /** Where the guess counts as having been made — see `guessAt`. Null if the clock beat the player to it. */
   guess: Coord | null;
@@ -166,6 +192,25 @@ export interface Game<T> {
   roundIndex: number;
   /** Rounds in this game. */
   totalRounds: number;
+  /**
+   * Milliseconds until the first round opens, or null once it has.
+   *
+   * Set for the first few seconds of a game and never again: the map needs a
+   * moment to arrive, and this is what the player is shown instead of a blank
+   * one. Nothing can be guessed while it is set.
+   */
+  startingInMs: number | null;
+  /**
+   * The moment the first round opens, as a timestamp.
+   *
+   * The map is given this rather than a duration so it can land its arrival
+   * *on* it. A globe takes a second or two to build before it can animate
+   * anything, and a fall that started when it was ready and ran for a fixed
+   * three seconds would still be falling after the round had begun — the
+   * player watching the world rush past while the clock ran. Given the moment,
+   * the fall simply takes however long is left.
+   */
+  firstRoundAt: number;
   phase: Phase;
   /** The player's guess for the current round (shown as a marker). */
   currentGuess: Coord | null;
@@ -424,6 +469,16 @@ export function useGame<T>(
   // constantly and nothing on screen depends on the moment it changed. Set in
   // an effect below rather than here, since what the time is isn't a question
   // rendering is allowed to ask.
+  // When the first round actually opens. In a room that is the timetable's own
+  // start, which has already been pushed back by `INTRO_MS` — so the wait is
+  // the same wait for everybody and is over at a moment they all agree on. In
+  // a solo game there is no timetable, so it is counted from the deal.
+  // Worked out once, in a lazy initialiser rather than in the render body:
+  // reading the clock while rendering is the impurity React's own lint rule
+  // objects to, and this genuinely only wants answering the first time.
+  const [introEndsAt] = useState(() => startAt ?? Date.now() + INTRO_MS);
+  const [startingInMs, setStartingInMs] = useState<number | null>(null);
+
   const startedAt = useRef(0);
   const [timeLeftMs, setTimeLeftMs] = useState<number | null>(roundLimitMs ?? null);
 
@@ -438,6 +493,12 @@ export function useGame<T>(
   const submitGuess = useCallback(
     (click: Coord) => {
       if (phase !== "guessing") return;
+      // Nothing counts until the first round has opened. Read off the ref
+      // rather than off the countdown's state so this can't be one render
+      // behind the moment it is guarding — a click during the fall would
+      // otherwise be marked, and in a room marked against a round that hadn't
+      // begun.
+      if (nowRef.current() < introEndsAt) return;
       const elapsedMs = nowRef.current() - startedAt.current;
       const guess = guessAt?.(click) ?? click;
       const answer = answerFor?.(guess, target) ?? getCoord(target);
@@ -467,6 +528,7 @@ export function useGame<T>(
     },
     [
       phase,
+      introEndsAt,
       target,
       getCoord,
       scaleKm,
@@ -511,8 +573,35 @@ export function useGame<T>(
   // the same thirty seconds as the rest of them rather than a fresh thirty.
   useEffect(() => {
     if (phase !== "guessing") return;
-    startedAt.current = startAt === undefined ? nowRef.current() : dueRound().openedAt;
-  }, [phase, roundIndex, startAt, dueRound]);
+    startedAt.current =
+      startAt === undefined
+        ? // Never before the first round has actually opened: timed from the
+          // deal instead, a solo game would count the intro against the
+          // player. It only bites on round one — by round two the intro is
+          // long past and this is simply now.
+          Math.max(nowRef.current(), introEndsAt)
+        : dueRound().openedAt;
+  }, [phase, roundIndex, startAt, dueRound, introEndsAt]);
+
+  // The count into the first round, which is also what tells the player the
+  // wait is a wait rather than a game that hasn't loaded. Read off the clock
+  // rather than counted down, for the same reason the round timer is: a tab
+  // that was throttled or asleep comes back to the right answer.
+  useEffect(() => {
+    const remaining = () => introEndsAt - nowRef.current();
+    if (remaining() <= 0) return;
+    setStartingInMs(remaining());
+    const id = setInterval(() => {
+      const left = remaining();
+      if (left > 0) {
+        setStartingInMs(left);
+        return;
+      }
+      clearInterval(id);
+      setStartingInMs(null);
+    }, 100);
+    return () => clearInterval(id);
+  }, [introEndsAt]);
 
   // The countdown, which only exists in a timed game. A tenth of a second is
   // finer than the bar can show but keeps the seconds honest as they turn over.
@@ -633,6 +722,8 @@ export function useGame<T>(
     next,
     restart,
     timeLeftMs: phase === "guessing" ? timeLeftMs : null,
+    startingInMs,
+    firstRoundAt: introEndsAt,
     // Worked out on the spot rather than kept: it changes when the room's word
     // on the round changes, which is exactly when this renders again.
     roundClosesAt:

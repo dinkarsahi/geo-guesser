@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Globe, { type GlobeMethods } from "react-globe.gl";
+import { flyIn } from "../lib/globeFlight";
 import { addSky } from "../lib/globeSky";
 import type { GuessMapProps, MapHighlight } from "./mapTypes";
 import { countryAt, useWorldShapes, type CountryFeature } from "../lib/worldShapes";
@@ -63,6 +64,7 @@ export default function GlobeMap({
   highlightCodes = null,
   missCode = null,
   highlights = null,
+  arriveAt,
 }: GlobeMapProps) {
   // How close the camera may get: the imagery's own limit, since a source runs
   // out of pictures at its own depth and there is nothing to see past it.
@@ -104,8 +106,9 @@ export default function GlobeMap({
     controls.maxDistance = 520; // how far you can zoom out
     controls.rotateSpeed = 0.6;
     controls.zoomSpeed = 1; // a touch faster so deep zoom isn't tedious
-    // Close enough that the globe fills most of the window it now owns.
-    g.pointOfView({ lat: 20, lng: 0, altitude: 2 });
+    // Where the arrival ends, rather than where the camera starts: `flyIn`
+    // puts it far out first and falls to here. See the effect below, which owns
+    // the flight so that leaving mid-fall can cancel it.
     // Counted last, and everything above it is the camera. Anything that
     // throws in here takes the rest of the function with it, and the rest of
     // the function is what decides where the player is standing — a fault
@@ -134,6 +137,34 @@ export default function GlobeMap({
     if (!g || !readyCount) return;
     return addSky(g.scene(), g.getGlobeRadius());
   }, [readyCount]);
+
+  // The arrival: a fall through space, once, while the tiles travel — see
+  // `globeFlight`, and note that in a room the wait is part of the timetable
+  // rather than a pause in front of it.
+  //
+  // It takes however much of the intro is left rather than a fixed three
+  // seconds, so it lands *on* the moment the round opens. Building the globe
+  // costs a second or two before it can animate anything, and a fixed fall
+  // started from there was still falling after the countdown had finished:
+  // the world rushing past while the clock ran.
+  useEffect(() => {
+    const g = globeRef.current;
+    if (!g || !readyCount) return;
+    // Already begun — every round after the first, and any machine slow enough
+    // to have spent the whole intro getting here. Nothing to arrive from.
+    const left = (arriveAt ?? 0) - Date.now();
+    if (left < 400) return;
+    // Wrapped rather than handed over bare: a method pulled off the instance
+    // and called from a timer is one library refactor away from losing what it
+    // was attached to.
+    return flyIn(
+      g.scene(),
+      g.controls(),
+      (pov, ms) => g.pointOfView(pov, ms),
+      { lat: 20, lng: 0, altitude: 2 },
+      left,
+    );
+  }, [readyCount, arriveAt]);
 
   // Fly to the true location when the answer is revealed — and, where the
   // answer is painted across half the world rather than pinned to one spot,

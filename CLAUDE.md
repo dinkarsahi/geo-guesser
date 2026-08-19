@@ -90,6 +90,50 @@ without a word about what was picked — which in that game is the whole lesson,
 since the mistake is a clock and not a place. Return null to leave a round to
 the ordinary reading, which is what an unanswered one wants.
 
+### The arrival: `INTRO_MS`, and why a duel can afford it
+
+**Every game waits three seconds before its first round opens** — once a game,
+never between rounds. Press Start and the map is on screen before its imagery
+is, so a round used to open on an empty rectangle or a world that appeared a
+moment after the question. The pause covers that, the corner counts "Starting
+in 3, 2, 1" where the round clock normally sits, and on the globe there is a
+fall through space to watch while it passes (`globeFlight.ts`).
+
+`INTRO_MS` lives in `useGame.ts`, which owns when a round begins. It is
+**3000 exactly because it is counted out loud**: 3400 reads "Starting in 4" for
+the first tenth of a second, which is a countdown that opens by lying about how
+long it is.
+
+**The duel is the interesting half.** A room's rounds are worked out by
+arithmetic from `match.startAt` — every device decides which round is on screen
+from the room's clock, which is why a duel needs no connection once it has
+begun. So a *local* pause could never hold that clock: it would simply cost
+that player three seconds of a thirty-second round, and only the player whose
+tiles were slow. `matchOptions` therefore moves the room's start **back** by
+`INTRO_MS`, so the pause is inside the timetable. Every device shifts by the
+same constant, the room stays in step, and nobody's round is any shorter. That
+one line is the whole mechanism, and it only works because the shift is a
+constant rather than "however long my map took".
+
+Two things follow, both load-bearing:
+
+- **The fall takes however much of the intro is left, not a fixed three
+  seconds.** A globe costs a second or two to build before it can animate
+  anything, and a fixed fall started from there was still falling after the
+  countdown had finished — the world rushing past while the clock ran. So
+  `GuessMapProps.arriveAt` carries the *moment* the round opens and the map
+  lands on it. Under 400 ms left, there is no fall at all, which is also how
+  "every round after the first" is expressed: `arriveAt` is long past.
+- **`submitGuess` refuses anything before that moment**, read off the stored
+  timestamp rather than off the countdown's state so it can't be a render
+  behind. Otherwise a click during the fall would be marked — and in a room,
+  marked against a round that hadn't begun.
+
+Games with nothing to load count down too. The tube map is drawn instantly and
+still waits its three seconds; that is deliberate for a duel, where a shared
+"get ready" is worth having, and it keeps `matchOptions` from needing to know
+which map a room is on.
+
 ### The maps
 
 Three of them, all satisfying `GuessMapProps` in `src/components/mapTypes.ts`:
@@ -673,7 +717,8 @@ Two things left open, both seen rather than guessed at:
 ### The bench
 
 `Game Maker's Scrapbook` — a copy of City Spotter, on the end of the shelf next
-to the coming-soon card, at `/gamemakersscrapbook`. Two things are on it.
+to the coming-soon card, at `/gamemakersscrapbook`. One argument is live on it;
+the other has been settled and shipped.
 
 **A sky switch**, bottom-left of the map: the sky as it ships against the same
 sky with the clouds off. That is the live argument — the cloud layer is the
@@ -683,12 +728,9 @@ works because `addSky` takes `{ clouds: false }`, which exists for this and
 nothing else. Flipping it deliberately does **not** re-fly the camera: the
 whole point is comparing the same view.
 
-**The arrival** — `src/lib/globeFlight.ts`, bench-only. Press Start and the map
-is on screen before its imagery is, so a round opened on an empty rectangle or
-a globe that popped in a moment late. `flyIn` starts the camera fourteen globe
-radii out and falls inward over 3.4 seconds while the world turns 260° under
-it, and the tiles get three seconds they didn't have. Two things about it worth
-keeping if it graduates:
+**The arrival has graduated** — every globe flies now, and `globeFlight.ts` is
+shipped code. See "The arrival" above for the intro window and the duel shift
+that pays for it. Two things about the fall itself worth remembering:
 
 - **The planets are not animated.** They are placed in the corridor the camera
   is about to fall down, and the camera's own motion sweeps them past — near
@@ -700,15 +742,8 @@ keeping if it graduates:
   so anything in it that had to download first would be covering itself. Plain
   coloured balls read as marbles, which is what they were before they had
   surfaces.
-- **A duel cannot afford it as it stands, and this is the trap.** A room's
-  rounds run off a shared timetable worked out from `match.startAt` — every
-  device decides which round is on screen from the room's clock, which is why a
-  duel needs no connection once it has begun. So a local animation *cannot*
-  hold the timer: 3.4 seconds of falling is 3.4 seconds of a thirty-second
-  round gone, and gone only for the player whose tiles were slow. Whatever
-  ships has to play the fall in the ten seconds between rounds, where it costs
-  nobody anything, or not play it in a room at all. Today's round has no clock,
-  so it is free there.
+
+What is left on the bench is the sky switch alone.
 
 Guesses are ignored while the camera is falling, since a click on a world
 sliding under the cursor is nobody's answer.

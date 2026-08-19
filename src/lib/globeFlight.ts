@@ -1,14 +1,19 @@
 import * as THREE from "three";
+import { INTRO_MS } from "./useGame";
 
 /**
  * The arrival: a fall through space that ends at the Earth.
  *
- * **On the bench only.** It exists because of a gap nobody designed — press
- * Start and the map is there before its imagery is, so the first thing a round
- * shows is an empty dark rectangle, or a globe that pops into being a moment
- * after the question. The tiles have to travel and there is nothing to be done
- * about that; what can be done is make the wait part of the game rather than a
- * pause in front of it.
+ * It exists because of a gap nobody designed — press Start and the map is
+ * there before its imagery is, so the first thing a round showed was an empty
+ * dark rectangle, or a globe that popped into being a moment after the
+ * question. The tiles have to travel and there is nothing to be done about
+ * that; what can be done is make the wait part of the game rather than a pause
+ * in front of it.
+ *
+ * **Once a game, before the first round, and never between rounds** — by then
+ * the map is drawn and there is nothing left to cover. `useGame` owns that
+ * window; this only fills it.
  *
  * So the camera starts a long way out and falls inward while the world turns
  * under it, and a handful of planets slide past on the way. **The planets are
@@ -26,25 +31,17 @@ import * as THREE from "three";
  */
 
 /**
- * How long the fall takes.
+ * How long the fall takes — the intro window itself, so the two can never
+ * disagree about when the game begins.
  *
- * Long enough to cover a cold tile fetch on a middling connection, short
- * enough that somebody who has played six rounds isn't waiting on it. Past
- * about four seconds an animation stops being an arrival and becomes a thing
- * between you and the game.
- *
- * **Read this before putting the fall in a duel.** A room's rounds run off a
- * shared timetable worked out from `match.startAt` — every device decides
- * which round should be on screen from the room's clock, which is the whole
- * reason a duel needs no connection once it has begun. So a local animation
- * *cannot* hold the timer: three and a half seconds of falling is three and a
- * half seconds of a thirty-second round gone, and gone only for the player
- * whose tiles were slow. Whatever ships has to either play the fall in the ten
- * seconds between rounds, where it costs nobody anything, or not play it in a
- * room at all. Today's round has no clock, so it is free there, and a solo
- * game off the shelf is only timed for a tiebreak nobody sees.
+ * **Why a duel can afford it.** A room's rounds are worked out by arithmetic
+ * from `match.startAt`, so a *local* pause could never hold the clock: it
+ * would simply cost that player the seconds they spent watching, and only the
+ * player whose tiles were slow. `matchOptions` moves the room's start back by
+ * this instead, so the pause is inside the timetable — every device shifts by
+ * the same constant and nobody's thirty seconds is any shorter.
  */
-export const FLIGHT_MS = 3400;
+export const FLIGHT_MS = INTRO_MS;
 
 /** How far out it starts, in globe radii — the Earth as a bright dot. */
 const START_ALTITUDE = 14;
@@ -75,6 +72,14 @@ export function flyIn(
   controls: Controls,
   pointOfView: PointOfView,
   target: { lat: number; lng: number; altitude: number },
+  /**
+   * How long the fall has, which is however much of the intro is left rather
+   * than a fixed length. A globe takes a second or two to build before it can
+   * animate anything, so a fixed fall started at that point would still be
+   * falling after the round had opened — the world rushing past while the
+   * clock ran. Given what's left, it lands on the moment the round begins.
+   */
+  ms: number = FLIGHT_MS,
 ): () => void {
   const planets = makePlanets();
   for (const planet of planets) scene.add(planet);
@@ -91,7 +96,7 @@ export function flyIn(
   // a tween from wherever the camera happened to be, which is the middle of
   // the world on a globe that has only just been built.
   pointOfView({ lat: target.lat, lng: target.lng - SPIN_DEGREES, altitude: START_ALTITUDE });
-  const opening = requestAnimationFrame(() => pointOfView(target, FLIGHT_MS));
+  const opening = requestAnimationFrame(() => pointOfView(target, ms));
 
     // What a material was showing before the fade began, so a disc that starts
   // three-quarters transparent doesn't jump to fully solid on the first frame
@@ -127,7 +132,7 @@ export function flyIn(
       else drop();
     };
     fade = requestAnimationFrame(dim);
-  }, FLIGHT_MS);
+  }, ms);
 
   let dropped = false;
   const drop = () => {

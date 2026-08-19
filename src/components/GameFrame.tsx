@@ -157,6 +157,8 @@ export default function GameFrame<T>({
     next,
     restart,
     timeLeftMs,
+    startingInMs,
+    firstRoundAt,
     roundClosesAt,
     totalMs,
     solveRound,
@@ -337,9 +339,19 @@ export default function GameFrame<T>({
         <div className="game-stats">
           <span>Round {roundIndex + 1}/{totalRounds}</span>
           <span className="round-score">{totalScore.toLocaleString()} pts</span>
+          {/* Before the first round, the same corner counts *into* the game
+              rather than through it. One place for "how long have you got",
+              whichever kind of waiting it is, and it replaces the round clock
+              rather than sitting beside it — two numbers counting down at once
+              is two numbers nobody reads. */}
+          {startingInMs !== null && (
+            <span className="round-clock-count is-starting">
+              Starting in {Math.max(1, Math.ceil(startingInMs / 1000))}
+            </span>
+          )}
           {/* The seconds sit with the score rather than over the clock itself,
               where on a narrow window they'd be printed across the code. */}
-          {timeLeftMs !== null && (
+          {startingInMs === null && timeLeftMs !== null && (
             <span className={`round-clock-count${timeLeftMs <= 10_000 ? " is-urgent" : ""}`}>
               {Math.ceil(timeLeftMs / 1000)}s
             </span>
@@ -355,7 +367,7 @@ export default function GameFrame<T>({
         </div>
         {/* The clock itself, drawn along the foot of the bar: something to read
             without looking at it, straight under whatever you were looking at. */}
-        {timeLeftMs !== null && (
+        {startingInMs === null && timeLeftMs !== null && (
           <div className={`round-clock${timeLeftMs <= 10_000 ? " is-urgent" : ""}`}>
             <div
               className="round-clock-bar"
@@ -375,11 +387,17 @@ export default function GameFrame<T>({
           guess: isResult && lastResult?.hit ? null : currentGuess,
           answer: isResult && lastResult ? lastResult.answer : null,
           disabled: isResult,
+          arriveAt: firstRoundAt,
         })}
       </div>
 
       {!isResult && !currentGuess && (
-        <p className="hint muted hud">{hint}</p>
+        <p className="hint muted hud">
+          {/* Nothing can be clicked yet, so it doesn't ask to be. The prompt
+              above is already up, which is deliberate — reading the question
+              while the world arrives is the point of the pause. */}
+          {startingInMs === null ? hint : "Getting your bearings…"}
+        </p>
       )}
 
       {isResult && lastResult && (

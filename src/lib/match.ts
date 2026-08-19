@@ -1,7 +1,7 @@
 import type { ModeId } from "../modes/ModeProps";
 import { roundClosedAt } from "./roomClock";
 import { serverNow } from "./supabase";
-import type { RoundSchedule } from "./useGame";
+import { INTRO_MS, type RoundSchedule } from "./useGame";
 
 /**
  * A game played against other people, which is nothing but a code.
@@ -403,7 +403,14 @@ export function matchOptions(match?: Match): MatchGameOptions | undefined {
       match.startAt === undefined
         ? undefined
         : {
-            startAt: match.startAt,
+            // The room's own start, moved back by the intro. This is the whole
+            // of how a duel affords the fall through space: the pause is *in*
+            // the timetable rather than in front of it, so every device shifts
+            // by the same constant, they stay in step, and no player's thirty
+            // seconds is any shorter. A local pause could not do this — the
+            // rounds are worked out by arithmetic from this number, so a
+            // device that waited would simply lose the time it waited.
+            startAt: match.startAt + INTRO_MS,
             roundMs: MATCH_ROUND_MS,
             revealMs: MATCH_REVEAL_MS,
             // The room's clock, not this device's: see `serverNow`.

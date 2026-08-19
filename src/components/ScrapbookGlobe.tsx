@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Globe, { type GlobeMethods } from "react-globe.gl";
-import { FLIGHT_MS, flyIn } from "../lib/globeFlight";
+import { flyIn } from "../lib/globeFlight";
 import { addSky } from "../lib/globeSky";
 
 /**
@@ -85,6 +85,7 @@ export default function ScrapbookGlobe({
   highlightCodes = null,
   missCode = null,
   highlights = null,
+  arriveAt,
 }: ScrapbookGlobeProps) {
   // How close the camera may get: the imagery's own limit, since a source runs
   // out of pictures at its own depth and there is nothing to see past it.
@@ -97,9 +98,6 @@ export default function ScrapbookGlobe({
   // What the sky is made of. Clouds on is what ships today, so it opens there
   // and the question is only ever "is the other one better?".
   const [clouds, setClouds] = useState(true);
-  // True while the camera is still falling. A guess placed mid-fall would be a
-  // click on a world sliding under the cursor, which is nobody's answer.
-  const [flying, setFlying] = useState(true);
   // Set once the globe has a scene to hang things on. Counted rather than
   // flagged so that a globe rebuilt under us re-hangs the sky instead of
   // leaving it in a scene that has been thrown away.
@@ -170,25 +168,29 @@ export default function ScrapbookGlobe({
   useEffect(() => {
     const g = globeRef.current;
     if (!g || !readyCount) return;
-    setFlying(true);
-    const landed = window.setTimeout(() => setFlying(false), FLIGHT_MS);
+    // However much of the intro is left, so the fall lands *on* the moment the
+    // round opens rather than running for a fixed three seconds from whenever
+    // the globe finished building. Already begun on every round after the
+    // first, and on any machine slow enough to have spent the whole intro
+    // getting here.
+    const left = (arriveAt ?? 0) - Date.now();
+    if (left < 400) return;
     // Wrapped rather than handed over bare: a method pulled off the instance
     // and called elsewhere is one library refactor away from losing what it
     // was attached to, and this one is called from a timer.
-    const stop = flyIn(g.scene(), g.controls(), (pov, ms) => g.pointOfView(pov, ms), {
-      lat: 20,
-      lng: 0,
-      altitude: 2,
-    });
-    return () => {
-      clearTimeout(landed);
-      stop();
-    };
+    const stop = flyIn(
+      g.scene(),
+      g.controls(),
+      (pov, ms) => g.pointOfView(pov, ms),
+      { lat: 20, lng: 0, altitude: 2 },
+      left,
+    );
+    return stop;
     // Keyed on the globe being ready and nothing else. The skin is deliberately
     // not in here — flipping the clouds mid-round should change the sky and
     // nothing else, and re-flying the camera on every press would throw away
     // the view being compared.
-  }, [readyCount]);
+  }, [readyCount, arriveAt]);
 
   // Fly to the true location when the answer is revealed — and, where the
   // answer is painted across half the world rather than pinned to one spot,
@@ -328,7 +330,7 @@ export default function ScrapbookGlobe({
         onGlobeClick={({ lat, lng }) => {
           // The bare globe is the sea. It's only a valid guess when the country
           // shapes never arrived — without them there'd be nothing to click.
-          if (!disabled && !flying && !shapes) onGuess({ lat, lng });
+          if (!disabled && !shapes) onGuess({ lat, lng });
         }}
         // Which polygon the ray struck is no use on its own: a click on open
         // ocean carries on through the globe and comes out of the far side,
@@ -337,7 +339,7 @@ export default function ScrapbookGlobe({
         // is ignored and the spot itself is asked what country it's in — the
         // same question the flat map asks, and the one the scoring will ask.
         onPolygonClick={(_polygon, _event, { lat, lng }) => {
-          if (disabled || flying) return;
+          if (disabled) return;
           const c = { lat, lng };
           if (countryAt(shapes, c)) onGuess(c);
         }}

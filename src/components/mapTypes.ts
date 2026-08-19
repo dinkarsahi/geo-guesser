@@ -19,6 +19,13 @@ export interface MapHighlight {
 
 /** Common interface implemented by every clickable guessing map. */
 export interface GuessMapProps {
+  /**
+   * When the first round opens, as a timestamp — see `useGame`'s
+   * `firstRoundAt`. A map with an arrival to play has until then and not a
+   * moment longer; one without ignores it. Already past on every round after
+   * the first, which is how "only at the start" is expressed.
+   */
+  arriveAt?: number;
   /** Called with the lat/lng of a map click while guessing is allowed. */
   onGuess: (c: Coord) => void;
   /** The player's current guess, drawn as a marker. */

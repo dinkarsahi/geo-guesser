@@ -2109,3 +2109,11 @@ body:has(.game-play) {
 .bench-skin-note {
   font-size: 10px;
 }
+
+/* The count into the first round, in the corner the round clock uses. Calm
+   rather than urgent: it is a promise that the game is about to begin, not a
+   warning that it is about to end. */
+.round-clock-count.is-starting {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
