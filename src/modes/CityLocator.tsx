@@ -26,6 +26,10 @@ export default function CityLocator({
   // the sprawl of the largest of them, and on the globe it's under a pixel.
   const game = useGame<City>(cities, (c) => c, 2000, {
     rounds: settings.rounds,
+    // Counted in only on the globe, which is the one map with an arrival to
+    // watch — see `intro`. The flat map is drawn by the time the round opens,
+    // so a countdown in front of it is two seconds of nothing.
+    intro: !settings.flat,
     spotOnKm: CITY_SPOT_ON_KM,
     ...matchOptions(match),
   });

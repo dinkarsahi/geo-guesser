@@ -92,28 +92,43 @@ the ordinary reading, which is what an unanswered one wants.
 
 ### The arrival: `INTRO_MS`, and why a duel can afford it
 
-**Every game waits three seconds before its first round opens** — once a game,
-never between rounds. Press Start and the map is on screen before its imagery
-is, so a round used to open on an empty rectangle or a world that appeared a
-moment after the question. The pause covers that, the corner counts "Starting
-in 3, 2, 1" where the round clock normally sits, and on the globe there is a
-fall through space to watch while it passes (`globeFlight.ts`).
+**A game on the 3D globe waits two seconds before its first round opens** —
+once a game, never between rounds. Press Start and the map is on screen before
+its imagery is, so a round used to open on an empty rectangle or a world that
+appeared a moment after the question. The pause covers that, the corner counts
+"Starting in 2, 1" where the round clock normally sits, and there is a fall
+through space to watch while it passes (`globeFlight.ts`).
 
-`INTRO_MS` lives in `useGame.ts`, which owns when a round begins. It is
-**3000 exactly because it is counted out loud**: 3400 reads "Starting in 4" for
-the first tenth of a second, which is a countdown that opens by lying about how
-long it is.
+**Only the globe.** The flat map and the tube map are drawn by the time the
+round opens, so a countdown in front of them is two seconds of nothing: they
+begin the moment you press Start, exactly as they always did. `intro` on
+`useGame` says which, and **defaults to true** so that a game added without a
+thought about it gets the right answer — the globe is the default map, and the
+two that don't want it say so.
+
+`INTRO_MS` lives in `useGame.ts`, which owns when a round begins. A whole
+number of seconds because it is counted out loud: 3.4 reads "Starting in 4" for
+the first tenth of a second, a countdown that opens by lying about how long it
+is. Two rather than three because it is a cover for a download and not a
+feature.
 
 **The duel is the interesting half.** A room's rounds are worked out by
 arithmetic from `match.startAt` — every device decides which round is on screen
 from the room's clock, which is why a duel needs no connection once it has
 begun. So a *local* pause could never hold that clock: it would simply cost
-that player three seconds of a thirty-second round, and only the player whose
+that player two seconds of a thirty-second round, and only the player whose
 tiles were slow. `matchOptions` therefore moves the room's start **back** by
 `INTRO_MS`, so the pause is inside the timetable. Every device shifts by the
 same constant, the room stays in step, and nobody's round is any shorter. That
 one line is the whole mechanism, and it only works because the shift is a
 constant rather than "however long my map took".
+
+**The invariant to keep:** `onGlobe` in `match.ts` decides whether the room's
+timetable is shifted, and each mode's `intro` decides whether its player is
+counted in. They are the same question and must give the same answer — if they
+ever disagree, one device counts down while the others are already playing. A
+room is safe by construction today because `App` hands every player the host's
+`flat` and the room's mode, so both sides read the same two facts.
 
 Two things follow, both load-bearing:
 
@@ -129,10 +144,7 @@ Two things follow, both load-bearing:
   behind. Otherwise a click during the fall would be marked — and in a room,
   marked against a round that hadn't begun.
 
-Games with nothing to load count down too. The tube map is drawn instantly and
-still waits its three seconds; that is deliberate for a duel, where a shared
-"get ready" is worth having, and it keeps `matchOptions` from needing to know
-which map a room is on.
+
 
 ### The maps
 
@@ -161,39 +173,32 @@ the photographed globe that grey world *was*. It went rather than being carried.
 
 ### The sky: `src/lib/globeSky.ts`
 
-Stars behind the globe and cloud drifting over it, hung on the scene by
-`GlobeMap` and taken down again when the round's map goes. `addSky` returns its
-own teardown; call it, or a cloud shell keeps turning in a scene nobody draws.
+A few thousand stars behind the globe, hung on the scene by `GlobeMap` and
+taken down again when the round's map goes. `addSky` returns its own teardown.
 
-**Why it can exist at all is the point.** Both are objects standing *beside*
-the globe rather than paint on its surface, so neither cares that the surface
-is made of tiles — and a tiled surface can take nothing from a material:
+**Why it can exist at all is the point.** The stars stand *beside* the globe
+rather than being paint on its surface, so they don't care that the surface is
+made of tiles — and a tiled surface can take nothing from a material:
 three-slippy-map-globe builds every tile as a `MeshLambertMaterial`, which has
 no specular term, and three-globe hides the photographed sphere (the Phong one,
 which does) the moment a tile URL is set. **A shine on the ocean or relief on
 the mountains is therefore impossible on this globe, permanently**, and no
-amount of material work will get it. That was judged on a bench against a
-photographed globe which could have all of it and was five kilometres to the
-pixel where the tiles are six hundred metres. The sky won on the arithmetic.
+amount of material work will get it.
 
-Two decisions in there worth keeping:
+**The stars are drawn, not downloaded.** `makeStars` scatters 2,200 points on a
+sphere of radius 3,000. A starfield photograph is most of a megabyte, the one
+every three.js example reaches for travels with no licence at all, and
+stretched across the whole sky it is soft where fixed-size points stay crisp.
 
-- **The clouds are NASA's Blue Marble composite, in `public/`** — Visible Earth
-  sends no `Access-Control-Allow-Origin`, and a texture without one cannot be
-  handed to WebGL at all, so it is served from our own domain. 830 KB. Used as
-  an **alpha** map with the white supplied by the material, so the image says
-  only where cloud is and how thick.
-- **The stars are drawn, not downloaded.** `makeStars` scatters 2,200 points on
-  a sphere of radius 3,000. A starfield photograph is most of a megabyte, the
-  one every three.js example reaches for travels with no licence at all, and
-  stretched across the whole sky it is soft where fixed-size points stay crisp.
-
-**Cloud opacity is 0.26 and that number was measured, not chosen.** NASA's is a
-real day's weather over the whole planet, far cloudier than the tidy wisps a
-globe usually wears: at 0.45 it whited out the north Atlantic and most of west
-Africa's coast. In a game whose answer is a coastline, cloud that hides one has
-stopped being decoration and become the difficulty. If it is ever turned up,
-look at the Atlantic before believing it.
+**There was a cloud layer and it has gone.** NASA's Blue Marble composite is a
+real day's weather over the whole planet, far heavier than the tidy wisps a
+globe usually wears: even thinned right down it laid haze over the coastlines
+the game is asking about, and in a game whose answer *is* a coastline that had
+stopped being decoration. It also cost 830 KB on every visit. It was judged on
+the bench with and without, and without won — so `public/earth-clouds.jpg`, the
+`CLOUD_TEXTURE` constant and the credit line for it are all gone. If clouds are
+ever wanted again, they come back on a lighter image and with that trade
+re-argued.
 
 Reveal colouring comes in two flavours, and they are not interchangeable:
 
@@ -717,20 +722,16 @@ Two things left open, both seen rather than guessed at:
 ### The bench
 
 `Game Maker's Scrapbook` — a copy of City Spotter, on the end of the shelf next
-to the coming-soon card, at `/gamemakersscrapbook`. One argument is live on it;
-the other has been settled and shipped.
+to the coming-soon card, at `/gamemakersscrapbook`.
 
-**A sky switch**, bottom-left of the map: the sky as it ships against the same
-sky with the clouds off. That is the live argument — the cloud layer is the
-half costing 830 KB and laying weather over the coastlines the game is asking
-about, and the stars are the half that costs nothing and hides nothing. It
-works because `addSky` takes `{ clouds: false }`, which exists for this and
-nothing else. Flipping it deliberately does **not** re-fly the camera: the
-whole point is comparing the same view.
+**Nothing is on trial there at the moment.** Both arguments it was built for
+have been settled and shipped: the fall through space, and the sky, which is
+stars alone now that the cloud layer was compared against no cloud layer and
+lost. What is left is a copy of City Spotter that files nothing anywhere,
+standing ready for the next thing worth trying on a globe. By the rule below it
+could equally come down; it is kept because it was asked for.
 
-**The arrival has graduated** — every globe flies now, and `globeFlight.ts` is
-shipped code. See "The arrival" above for the intro window and the duel shift
-that pays for it. Two things about the fall itself worth remembering:
+Two things about the fall worth remembering, now that it is shipped code:
 
 - **The planets are not animated.** They are placed in the corridor the camera
   is about to fall down, and the camera's own motion sweeps them past — near
@@ -743,7 +744,6 @@ that pays for it. Two things about the fall itself worth remembering:
   coloured balls read as marbles, which is what they were before they had
   surfaces.
 
-What is left on the bench is the sky switch alone.
 
 Guesses are ignored while the camera is falling, since a click on a world
 sliding under the cursor is nobody's answer.

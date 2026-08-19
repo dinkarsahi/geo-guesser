@@ -134,6 +134,10 @@ function PopulationGame({
   // the round — the score, and the wording of a miss — comes off the numbers.
   const game = useGame<PopulationTarget>(pool, (c) => c, 2000, {
     rounds: settings.rounds,
+    // Counted in only on the globe, which is the one map with an arrival to
+    // watch — see `intro`. The flat map is drawn by the time the round opens,
+    // so a countdown in front of it is two seconds of nothing.
+    intro: !settings.flat,
     hitTest: (guess, target) => isInCountry(shapes, target.code, guess),
     scoreGuess: (guess, target) =>
       isInCountry(shapes, target.code, guess)

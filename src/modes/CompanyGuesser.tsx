@@ -34,6 +34,10 @@ function CompanyGame({
   // player to aim finer than the question deserves.
   const game = useGame<CompanyTarget>(pool, (c) => c, 2000, {
     rounds: settings.rounds,
+    // Counted in only on the globe, which is the one map with an arrival to
+    // watch — see `intro`. The flat map is drawn by the time the round opens,
+    // so a countdown in front of it is two seconds of nothing.
+    intro: !settings.flat,
     hitTest: (guess, company) => isInCountry(shapes, company.code, guess),
     guessAt: (guess) => anchorAt(shapes, guess),
     ...matchOptions(match),

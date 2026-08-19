@@ -12,16 +12,12 @@ import { addSky } from "../lib/globeSky";
  * verbatim and is meant to stay that way: a copy that drifts is a copy that
  * gets judged instead of the thing it stands in for.
  *
- * **The switch** flips the clouds off and leaves the stars. That is the whole
- * comparison: the cloud layer is the half of the sky that costs 830 KB and
- * lays weather over the coastlines the game is asking about, and the stars are
- * the half that costs nothing and hides nothing. Worth being able to see both
- * in the same second rather than remembering one.
- *
- * **The flight** is the arrival — see `globeFlight.ts`. Press Start and the
- * map is on screen before its imagery is, so a round used to open on an empty
- * rectangle or a globe that popped in a moment late. The tiles have to travel;
- * what the fall does is make that travelling time part of the game.
+ * **Nothing is on trial here at the moment.** The two arguments it was built
+ * for are settled and shipped: the fall through space (`globeFlight.ts`) and
+ * the sky, which is stars alone now that the cloud layer has been judged and
+ * dropped. What is left is a copy of City Spotter that files nothing anywhere,
+ * ready for the next thing worth trying on a globe without a real game being
+ * got wrong with it.
  */
 import type { GuessMapProps, MapHighlight } from "./mapTypes";
 import { countryAt, useWorldShapes, type CountryFeature } from "../lib/worldShapes";
@@ -95,9 +91,6 @@ export default function ScrapbookGlobe({
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const shapes = useWorldShapes();
   const wrapRef = useRef<HTMLDivElement>(null);
-  // What the sky is made of. Clouds on is what ships today, so it opens there
-  // and the question is only ever "is the other one better?".
-  const [clouds, setClouds] = useState(true);
   // Set once the globe has a scene to hang things on. Counted rather than
   // flagged so that a globe rebuilt under us re-hangs the sky instead of
   // leaving it in a scene that has been thrown away.
@@ -159,8 +152,8 @@ export default function ScrapbookGlobe({
   useEffect(() => {
     const g = globeRef.current;
     if (!g || !readyCount) return;
-    return addSky(g.scene(), g.getGlobeRadius(), { clouds });
-  }, [readyCount, clouds]);
+    return addSky(g.scene(), g.getGlobeRadius());
+  }, [readyCount]);
 
   // The arrival. Its own effect rather than a few lines in `handleReady`,
   // because a round can be walked out of halfway down and the fall has timers
@@ -186,10 +179,6 @@ export default function ScrapbookGlobe({
       left,
     );
     return stop;
-    // Keyed on the globe being ready and nothing else. The skin is deliberately
-    // not in here — flipping the clouds mid-round should change the sky and
-    // nothing else, and re-flying the camera on every press would throw away
-    // the view being compared.
   }, [readyCount, arriveAt]);
 
   // Fly to the true location when the answer is revealed — and, where the
@@ -379,26 +368,6 @@ export default function ScrapbookGlobe({
         onZoomIn={() => zoomBy(0.6)}
         onZoomOut={() => zoomBy(1 / 0.6)}
       />
-      {/* On the map rather than on the setup screen: two skies have to be
-          compared in the same second and on the same view, and a choice made
-          before the round starts is a choice judged from memory. */}
-      <div className="bench-skins">
-        <span className="bench-skins-label">Sky</span>
-        {[
-          { on: true, name: "With clouds", note: "what ships today" },
-          { on: false, name: "Stars only", note: "no weather, no 830 KB" },
-        ].map((option) => (
-          <button
-            key={String(option.on)}
-            className={`bench-skin${clouds === option.on ? " is-active" : ""}`}
-            onClick={() => setClouds(option.on)}
-            aria-pressed={clouds === option.on}
-          >
-            <span className="bench-skin-name">{option.name}</span>
-            <span className="muted bench-skin-note">{option.note}</span>
-          </button>
-        ))}
-      </div>
       {!shapes && <p className="map-loading muted">Loading the world…</p>}
     </div>
   );

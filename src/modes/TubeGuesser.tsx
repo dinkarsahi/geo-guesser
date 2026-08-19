@@ -30,6 +30,10 @@ export default function TubeGuesser({
   // station is full marks either way.
   const game = useGame<TubeStation>(tubeStations, (s) => s, 1.2, {
     rounds: settings.rounds,
+    // No arrival to wait for: the tube map is drawn from coordinates the
+    // moment the round opens, so a countdown in front of it would be two
+    // seconds of looking at a map you could already have been reading.
+    intro: false,
     hitTest: (guess, station) => nearestStation(guess).name === station.name,
     scoreGuess: (guess, station) => {
       const mark = markNearby(nearestStation(guess), station);

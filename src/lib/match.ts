@@ -391,6 +391,21 @@ export interface MatchGameOptions {
  *
  * A room also adds the timetable it runs to.
  */
+/**
+ * Is this match being played on the 3D globe?
+ *
+ * The one map with an arrival to watch, and therefore the only one whose games
+ * are counted in — see `intro` in `useGame`. The tube brings its own map and
+ * ignores the world-map choice entirely, which is why the mode is asked about
+ * as well as the setting.
+ *
+ * **A room has to agree with itself here.** This decides whether the room's
+ * timetable is shifted; the mode decides whether its player is counted in. The
+ * two are the same question and must give the same answer, or one device would
+ * be counting down while the others were already playing.
+ */
+const onGlobe = (match: Match): boolean => !match.flat && match.mode !== "tube";
+
 export function matchOptions(match?: Match): MatchGameOptions | undefined {
   if (!match) return undefined;
   const timed = match.kind === "room";
@@ -403,14 +418,19 @@ export function matchOptions(match?: Match): MatchGameOptions | undefined {
       match.startAt === undefined
         ? undefined
         : {
-            // The room's own start, moved back by the intro. This is the whole
-            // of how a duel affords the fall through space: the pause is *in*
-            // the timetable rather than in front of it, so every device shifts
-            // by the same constant, they stay in step, and no player's thirty
-            // seconds is any shorter. A local pause could not do this — the
-            // rounds are worked out by arithmetic from this number, so a
-            // device that waited would simply lose the time it waited.
-            startAt: match.startAt + INTRO_MS,
+            // The room's own start, moved back by the intro where there is
+            // one. This is the whole of how a duel affords the fall through
+            // space: the pause is *in* the timetable rather than in front of
+            // it, so every device shifts by the same constant, they stay in
+            // step, and no player's thirty seconds is any shorter. A local
+            // pause could not do this — the rounds are worked out by
+            // arithmetic from this number, so a device that waited would
+            // simply lose the time it waited.
+            //
+            // Unshifted on the flat map and the tube, which have nothing to
+            // wait for: those rooms start the moment the host says so, exactly
+            // as they always did.
+            startAt: match.startAt + (onGlobe(match) ? INTRO_MS : 0),
             roundMs: MATCH_ROUND_MS,
             revealMs: MATCH_REVEAL_MS,
             // The room's clock, not this device's: see `serverNow`.

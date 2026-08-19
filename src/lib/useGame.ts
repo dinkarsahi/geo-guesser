@@ -23,11 +23,14 @@ export type Phase = "guessing" | "result" | "done";
  * nobody's round is any shorter. Change this number and every player in every
  * room changes with it, which is the point.
  *
- * Three seconds exactly, because it is counted out loud on screen. 3.4 reads
- * "Starting in 4" for the first tenth of a second, which is a countdown that
- * opens by lying about how long it is.
+ * A whole number of seconds, because it is counted out loud on screen: 3.4
+ * reads "Starting in 4" for the first tenth of a second, which is a countdown
+ * that opens by lying about how long it is. Two rather than three because it
+ * is a cover for a download and not a feature — long enough that the world has
+ * usually arrived, short enough that somebody on their sixth game isn't
+ * waiting on it.
  */
-export const INTRO_MS = 3000;
+export const INTRO_MS = 2000;
 
 export interface RoundResult {
   /** Where the guess counts as having been made — see `guessAt`. Null if the clock beat the player to it. */
@@ -179,6 +182,25 @@ export interface GameOptions<T> {
    * round" button. Set only in a room, where everyone has to move together.
    */
   schedule?: RoundSchedule;
+  /**
+   * Hold the first round back by `INTRO_MS` and count the player in.
+   *
+   * **Only where there is something to watch while it passes**, which today
+   * means the 3D globe and its fall through space. The flat map and the tube
+   * map are drawn by the time the round opens, so a countdown in front of them
+   * is two seconds of nothing — they keep what they always had, which is a
+   * game that begins when you press Start.
+   *
+   * Defaults to true because the globe is the default map, so a game added
+   * without a thought about this gets the right answer. The two that don't
+   * want it say so.
+   *
+   * **A room has to agree with itself here.** `matchOptions` moves the room's
+   * start back by the same `INTRO_MS`, and only when the room is on the globe
+   * — if that test and this flag ever disagree, one device would be counting
+   * in while the others were already playing.
+   */
+  intro?: boolean;
 }
 
 export interface Game<T> {
@@ -440,6 +462,7 @@ export function useGame<T>(
     roundLimitMs,
     adjustScore,
     schedule,
+    intro = true,
   } = options;
 
   // The clock the game is timed against: the room's, where there is one, and
@@ -476,7 +499,9 @@ export function useGame<T>(
   // Worked out once, in a lazy initialiser rather than in the render body:
   // reading the clock while rendering is the impurity React's own lint rule
   // objects to, and this genuinely only wants answering the first time.
-  const [introEndsAt] = useState(() => startAt ?? Date.now() + INTRO_MS);
+  const [introEndsAt] = useState(() =>
+    intro ? (startAt ?? Date.now() + INTRO_MS) : 0,
+  );
   const [startingInMs, setStartingInMs] = useState<number | null>(null);
 
   const startedAt = useRef(0);

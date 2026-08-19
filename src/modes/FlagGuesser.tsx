@@ -26,6 +26,10 @@ function FlagGame({ onExit, settings, match, pool, shapes }: GameProps) {
   // marks, and miss by however far the country picked is from the right one.
   const game = useGame<Country>(pool, (c) => c, 2000, {
     rounds: settings.rounds,
+    // Counted in only on the globe, which is the one map with an arrival to
+    // watch — see `intro`. The flat map is drawn by the time the round opens,
+    // so a countdown in front of it is two seconds of nothing.
+    intro: !settings.flat,
     hitTest: (guess, country) => isInCountry(shapes, country.code, guess),
     guessAt: (guess) => anchorAt(shapes, guess),
     ...matchOptions(match),

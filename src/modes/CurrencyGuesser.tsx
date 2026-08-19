@@ -53,6 +53,10 @@ function CurrencyGame({
   // US dollar the middle of the Pacific.
   const game = useGame<CurrencyTarget>(pool, (m) => m, 2000, {
     rounds: settings.rounds,
+    // Counted in only on the globe, which is the one map with an arrival to
+    // watch — see `intro`. The flat map is drawn by the time the round opens,
+    // so a countdown in front of it is two seconds of nothing.
+    intro: !settings.flat,
     hitTest: (guess, money) =>
       money.countries.some((c) => isInCountry(shapes, c.code, guess)),
     answerFor: nearestSpender,

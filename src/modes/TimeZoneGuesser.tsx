@@ -163,6 +163,10 @@ function TimeZoneGame({
   // right about where a city is, and the marks have to say so.
   const game = useGame<TimeTarget>(pool, (t) => t, 2000, {
     rounds: settings.rounds,
+    // Counted in only on the globe, which is the one map with an arrival to
+    // watch — see `intro`. The flat map is drawn by the time the round opens,
+    // so a countdown in front of it is two seconds of nothing.
+    intro: !settings.flat,
     hitTest: (click, when) => gapFromClick(shapes, pieces, click, when, now) === 0,
     scoreGuess: (click, when) => {
       const gap = gapFromClick(shapes, pieces, click, when, now);

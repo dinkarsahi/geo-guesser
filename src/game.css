@@ -2062,54 +2062,6 @@ body:has(.game-play) {
   line-height: 1.5;
 }
 
-/* --- The bench's sky switch. Delete with `ScrapbookGlobe`. --------------- */
-.bench-skins {
-  position: absolute;
-  left: 12px;
-  bottom: 12px;
-  display: flex;
-  align-items: stretch;
-  gap: 6px;
-  padding: 6px;
-  border-radius: 10px;
-  background: rgba(12, 14, 20, 0.62);
-}
-.bench-skins-label {
-  align-self: center;
-  padding: 0 6px;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
-}
-.bench-skin {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 5px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 7px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.8);
-  cursor: pointer;
-  text-align: left;
-}
-.bench-skin:hover {
-  border-color: rgba(255, 255, 255, 0.3);
-}
-.bench-skin.is-active {
-  border-color: #c084fc;
-  background: rgba(192, 132, 252, 0.16);
-  color: #fff;
-}
-.bench-skin-name {
-  font-size: 12px;
-  font-weight: 600;
-}
-.bench-skin-note {
-  font-size: 10px;
-}
-
 /* The count into the first round, in the corner the round clock uses. Calm
    rather than urgent: it is a promise that the game is about to begin, not a
    warning that it is about to end. */
