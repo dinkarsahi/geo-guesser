@@ -1192,6 +1192,20 @@ body:has(.game-play) {
 .game-topbar .prompt {
   margin: 0;
   min-width: 0;
+  /* The height of the tallest question there is — a flag — held whether or not
+     there is a question in it. The bar must be exactly as deep before the
+     round opens as after it: the prompt is empty during the arrival, and a bar
+     that grew a flag's worth at the moment the fall landed shoved the map up
+     under a camera that was still moving. That was the jolt at the end of the
+     arrival, and it was never the camera.
+
+     It also settles a smaller thing worth keeping: a city game's bar and a
+     flag game's bar are now the same depth, where before the map's top edge
+     moved depending on which game you had opened. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 58px;
 }
 .game-topbar .prompt-card {
   flex-direction: row;
@@ -2026,6 +2040,10 @@ body:has(.game-play) {
   .game-topbar .flag {
     height: 44px;
   }
+  /* The flag is shorter here, so the box held for it is too. */
+  .game-topbar .prompt {
+    min-height: 44px;
+  }
   /* A long "City, Country" wraps instead of pushing the bar wider than the
      phone; the label above it keeps the two halves apart. */
   .prompt-place {
@@ -2081,13 +2099,6 @@ body:has(.game-play) {
   line-height: 1.5;
 }
 
-/* The count into the first round, in the corner the round clock uses. Calm
-   rather than urgent: it is a promise that the game is about to begin, not a
-   warning that it is about to end. */
-.round-clock-count.is-starting {
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
-}
 
 /* ---- FAQ: cards and the curves inside them --------------------------- */
 /* One question to a card, so a reader looking for their question can skim the
@@ -2305,6 +2316,31 @@ body:has(.game-play) {
 .draw-note {
   margin-top: 8px;
   font-size: 15px;
+  /* Held whether or not there is anything in it, like the line above. Nothing
+     is said under the shelf while the light is going round, and a page that
+     grows two lines when the answer lands is a page that moves at the one
+     moment the player is trying to read something. */
+  min-height: 1.4em;
+}
+/* The handover: "Let's begin", read at full strength, and only then taken
+   away. The delay inside the animation is what buys that — a fade filling the
+   whole beat would have the words going the moment they arrived, and this
+   screen's last job is to be legible.
+
+   It fades out while the globe behind it fades in (`.globe-wrap.is-arriving`),
+   so the two read as one handover rather than as a cut. */
+.daily-draw.is-leaving {
+  animation: draw-out 600ms ease-in 900ms both;
+}
+@keyframes draw-out {
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .daily-draw.is-leaving {
+    animation: none;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .draw-slot {

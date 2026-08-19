@@ -337,23 +337,31 @@ export default function GameFrame<T>({
               before anyone joined it. */}
           <h2>{match?.kind === "daily" ? `Today's Round: ${title}` : title}</h2>
         </div>
-        {/* TEMPORARY — the tap cheat lives on the question itself. */}
+        {/* Nothing until the round actually opens, and the empty box keeps the
+            depth the full one will have — see `.game-topbar .prompt`.
+
+            Two things wrong with showing it early, and the second is the one
+            that was felt. A question on screen during a fall that refuses
+            clicks is a question being asked and then not taken: the flag is
+            read, the answer is decided, and the player sits on it for five
+            seconds. And the bar was changing depth at the moment the round
+            opened, which is a shove upward on the map at the exact instant the
+            camera lands — the "jerk at the end" that no amount of easing
+            fixed, because it was never the camera.
+
+            TEMPORARY — the tap cheat lives on the question itself. */}
         <div className="prompt" onClick={promptTap}>
-          {renderPrompt(target, phase)}
+          {startingInMs === null && renderPrompt(target, phase)}
         </div>
         <div className="game-stats">
           <span>Round {roundIndex + 1}/{totalRounds}</span>
           <span className="round-score">{totalScore.toLocaleString()} pts</span>
-          {/* Before the first round, the same corner counts *into* the game
-              rather than through it. One place for "how long have you got",
-              whichever kind of waiting it is, and it replaces the round clock
-              rather than sitting beside it — two numbers counting down at once
-              is two numbers nobody reads. */}
-          {startingInMs !== null && (
-            <span className="round-clock-count is-starting">
-              Starting in {Math.max(1, Math.ceil(startingInMs / 1000))}
-            </span>
-          )}
+          {/* No count into the first round any more. It was a third line in a
+              two-line corner, so the bar stood a line taller for the length of
+              the arrival and then snapped back as the round opened, shoving
+              the map up under a camera that was in the middle of landing. What
+              it was telling the player is said better below the map, where
+              "Getting your bearings…" costs the bar no depth at all. */}
           {/* The seconds sit with the score rather than over the clock itself,
               where on a narrow window they'd be printed across the code. */}
           {startingInMs === null && timeLeftMs !== null && (

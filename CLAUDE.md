@@ -95,9 +95,10 @@ the ordinary reading, which is what an unanswered one wants.
 **A game on the 3D globe waits five seconds before its first round opens** —
 once a game, never between rounds. Press Start and the map is on screen before
 its imagery is, so a round used to open on an empty rectangle or a world that
-appeared a moment after the question. The pause covers that, the corner counts
-"Starting in 5, 4, 3, 2, 1" where the round clock normally sits, and there is a
-fall through space to watch while it passes (`globeFlight.ts`).
+appeared a moment after the question. The pause covers that, there is a fall
+through space to watch while it passes (`globeFlight.ts`), and the bar at the
+top says nothing at all — see "The empty bar" below, which is where the last of
+the jolt turned out to be hiding.
 
 **Only the globe.** The flat map and the tube map are drawn by the time the
 round opens, so a countdown in front of them is five seconds of nothing: they
@@ -106,10 +107,10 @@ begin the moment you press Start, exactly as they always did. `intro` on
 thought about it gets the right answer — the globe is the default map, and the
 two that don't want it say so.
 
-`INTRO_MS` lives in `useGame.ts`, which owns when a round begins. A whole
-number of seconds because it is counted out loud: 3.4 reads "Starting in 4" for
-the first tenth of a second, a countdown that opens by lying about how long it
-is. **Five rather than three**, because the distance covered and the time to
+`INTRO_MS` lives in `useGame.ts`, which owns when a round begins. It used to
+have to be a whole number of seconds because it was counted out loud, and that
+constraint went with the countdown — it stays a round number because nothing
+now wants it otherwise. **Five rather than three**, because the distance covered and the time to
 cover it are one knob: the same fall in less time is the same fall hurried, and
 the honest measure of the two together is the rate the world swells at, which
 is `ln(start / end) / ms` and nothing else. Ten radii over three seconds was
@@ -139,8 +140,39 @@ fall lands moves the freeze to the moment the round opens, which in a duel is
 answering time. Coarsening them further costs accuracy in the one place the
 globe is already known to drift from the ground.
 
-**Three smaller things the arrival is now made of**, all in the same commit and
-all worth keeping:
+### The empty bar, and the jolt that was never the camera
+
+**Nothing is shown in the prompt until the round actually opens**, and the box
+it would fill keeps its full depth while it is empty
+(`.game-topbar .prompt`, `min-height: 58px`, which is a flag — the tallest
+question there is). `GameFrame` gates the prompt on `startingInMs === null`.
+
+This is the fix for the last of the "weird jerk at the end", and the cause was
+nothing to do with the fall. The bar used to print **"Starting in 3, 2, 1"** in
+the corner the round clock uses — a *third* line in a two-line corner, so the
+bar stood a line taller for the whole arrival and snapped back as the round
+opened. The map is everything below the bar, so the bar losing a line shoved
+the whole world up by twenty-odd pixels at the exact instant the camera was
+landing. Three passes at the easing could never have touched it. **When
+something in a round looks like an animation fault, measure the bar before
+blaming the camera.**
+
+The countdown is gone rather than moved. What it was telling the player is said
+by "Getting your bearings…" under the map, which costs the bar no depth at all.
+
+Two more things follow, and both are better than the reason they were done for:
+
+- **The question can't be read before it can be answered.** A flag on screen
+  during a fall that refuses clicks is a question asked and then not taken —
+  the player decides their answer and sits on it for five seconds.
+- **`startingInMs` is correct on the very first render**, not a tick later:
+  `useGame` gives it a lazy initialiser rather than starting it at null. Null
+  for one frame is one frame with the flag on screen.
+- **Every game's bar is now the same depth.** It used to follow whichever
+  question that game asks, so the map's top edge sat somewhere different in
+  City Spotter than in Flag Spotter.
+
+**Three smaller things the arrival is also made of**, and all worth keeping:
 
 - **The camera is stood at the top of the fall synchronously, in
   `handleReady`** — `flightStart()` in `globeFlight.ts` — and not in the effect
@@ -175,9 +207,9 @@ counting down while the rest are already answering. `matchOptions` passes
 `intro: false` for a room and leaves `startAt` alone.
 
 Today's round keeps the arrival: it has no timetable to disturb. It also now
-has the draw in front of it, which is four and a half seconds of the world
-being fetched and built behind a screen the player is reading — see "The way
-in". That is the other half of why the arrival is worth five seconds there.
+has the draw in front of it, which is nine seconds of the world being fetched
+and built behind a screen the player is reading — see "The way in". That is the
+other half of why the arrival is worth five seconds there.
 
 **The trap in that one line:** it is spread in only when false, never as
 `intro: undefined`. `matchOptions` is spread *over* the mode's own `intro`, and
@@ -302,10 +334,23 @@ the same card twice running, and the hop before the last is never today's game,
 so the landing is always a move the eye can follow. The holds grow as a cube,
 so the last is ten times the first, and they are **scaled to `DRAW_MS` rather
 than added up** — the draw is the same length on every device and however many
-hops it is next tuned to. `HOLD_MS` after it is the beat the answer is read in;
-cut straight to the globe and the name is on screen for a tenth of a second,
-which is the same as not showing it. Somebody who has asked for reduced motion
-is shown the answer outright and gets the hold alone.
+hops it is next tuned to. **The draw is three beats, and the middle one is the point.** `DRAW_MS` (5 s)
+is the light going round, and **nothing is said under the shelf while it does**
+— a line under a shelf that is still deciding is a line nobody reads, because
+the eye is on the movement, and a standing "Today's game is…" made the answer
+feel already given rather than arriving. `READ_MS` (2.6 s) is the beat nothing
+moves in: the light has stopped, the six it isn't have gone quiet, the name is
+printed, and the player is left alone with it long enough to actually read it.
+`BEGIN_MS` (1.5 s) is the handover — "Let's begin", and then the screen fading
+out under it, with the fade *delayed* inside the beat (`.daily-draw.is-leaving`
+delays its own animation) so the words are read at full strength before they
+are taken away. The globe behind it fades in on its own
+(`.globe-wrap.is-arriving`), so the two read as one handover rather than a cut.
+
+Cut straight from the last hop to the globe and the name is on screen for a
+tenth of a second, which is the same as not showing it — that was the first
+version and it was too fast to land. Somebody who has asked for reduced motion
+skips the light and gets the last two beats.
 
 **It also pays for itself.** `loadWorldShapes()` runs while the light goes
 round — a megabyte of Natural Earth to download, parse, coarsen and index,
@@ -315,8 +360,8 @@ nothing, because it dealt on arrival. Now it has this, which is why the arrival
 after it is worth five seconds. See "The arrival".
 
 A device that has already had its go is sent home before the draw rather than
-after it: four and a half seconds of ceremony in front of "you have already
-played" is four and a half seconds of being told nothing.
+after it: nine seconds of ceremony in front of "you have already played" is
+nine seconds of being told nothing.
 
 **The name is asked for at the end**, in `MatchResult`, where there is a score
 to put it to. Two things follow that are better than they sound: a player who

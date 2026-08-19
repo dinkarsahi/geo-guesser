@@ -23,9 +23,12 @@ export type Phase = "guessing" | "result" | "done";
  * nobody's round is any shorter. Change this number and every player in every
  * room changes with it, which is the point.
  *
- * A whole number of seconds, because it is counted out loud on screen: 3.4
- * reads "Starting in 4" for the first tenth of a second, which is a countdown
- * that opens by lying about how long it is.
+ * It used to have to be a whole number of seconds, because it was counted out
+ * loud on screen and 3.4 reads "Starting in 4" for the first tenth of a
+ * second. That countdown has gone — it stood on a line of its own in the bar
+ * and made the bar change depth as the round opened, which shoved the map up
+ * under a camera that was still landing. The constraint went with it; the
+ * number stays round because nothing wants it otherwise.
  *
  * **Five rather than three**, and the change is the whole of what "premium"
  * means here: the distance covered and the time to cover it are one knob, so
@@ -227,9 +230,20 @@ export interface Game<T> {
   /**
    * Milliseconds until the first round opens, or null once it has.
    *
-   * Set for the first few seconds of a game and never again: the map needs a
-   * moment to arrive, and this is what the player is shown instead of a blank
-   * one. Nothing can be guessed while it is set.
+   * Set for the first few seconds of a game and never again. **It is not shown
+   * any more — it is what hides the question**, which is the more useful of
+   * the two jobs it has had. `GameFrame` draws nothing in the prompt while
+   * this is set, so a player cannot read the flag off the bar during a fall
+   * they are not allowed to click through, and so the bar cannot change depth
+   * at the moment the round opens. It used to be printed as "Starting in 3, 2,
+   * 1" in the corner where the round clock goes, on a line of its own that
+   * pushed the whole bar taller — and the bar snapping back a line as the
+   * round opened was the jolt at the end of the arrival that three attempts at
+   * the camera's easing never touched.
+   *
+   * Correct on the very first render rather than a tick later, which is the
+   * whole point of the initialiser below: null for one frame is one frame with
+   * the question on screen.
    */
   startingInMs: number | null;
   /**
@@ -512,7 +526,14 @@ export function useGame<T>(
   const [introEndsAt] = useState(() =>
     intro ? (startAt ?? Date.now() + INTRO_MS) : 0,
   );
-  const [startingInMs, setStartingInMs] = useState<number | null>(null);
+  // Answered here rather than left to the effect that ticks it. Starting at
+  // null, every game's first frame says the round has opened when it hasn't —
+  // and since this is what hides the question, that frame is the flag on
+  // screen before the fall has begun.
+  const [startingInMs, setStartingInMs] = useState<number | null>(() => {
+    const left = introEndsAt - Date.now();
+    return left > 0 ? left : null;
+  });
 
   const startedAt = useRef(0);
   const [timeLeftMs, setTimeLeftMs] = useState<number | null>(roundLimitMs ?? null);
