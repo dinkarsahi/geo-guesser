@@ -192,12 +192,22 @@ export default function WorldMap({
 
   // The land is the satellite image, so the only colours left to pick are the
   // lines drawn over it. White reads on every biome, which is why the globe
-  // uses it too. The sea is sampled from the texture's own deep ocean (off the
+  // uses it too.
+  //
+  // **The highlights are nearly opaque, and that is the fix for a real
+  // complaint.** They used to be a 35-40% wash, which reads as one colour on a
+  // country the size of Belgium and falls apart on Russia: the same red over
+  // white tundra is bright pink and over dark taiga is muddy brown, so a
+  // highlighted Russia looked blotchy — as though the fill had failed in
+  // patches. It had not; the ground under it simply changes. At around 0.73
+  // the terrain still shows as texture and the colour is what the eye reads,
+  // which is the whole job of a highlight: to say *this* country, at a glance,
+  // wherever it is. The sea is sampled from the texture's own deep ocean (off the
   // file at 150W/0N and 25W/30S), so zoomed out the map has no edge to speak of.
   const theme = {
     sea: "#050c22", border: "rgba(255,255,255,0.85)",
-    highlight: "rgba(74,222,128,0.35)", highlightLine: "#4ade80",
-    wrong: "rgba(225,29,72,0.4)", wrongLine: "#fb7185",
+    highlight: "rgba(74,222,128,0.72)", highlightLine: "#4ade80",
+    wrong: "rgba(225,29,72,0.74)", wrongLine: "#fb7185",
   };
 
   // Plate carrée: longitude and latitude map straight onto x and y, which is

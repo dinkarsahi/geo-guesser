@@ -38,8 +38,18 @@ interface GlobeMapProps extends GuessMapProps {
   highlights?: MapHighlight[] | null;
 }
 
-/** Green for the clock that was asked about, red for the one picked instead. */
-const TONE_CAP = { right: "rgba(34,197,94,0.5)", wrong: "rgba(225,29,72,0.5)" };
+/**
+ * Green for the country that was asked about, red for the one picked instead.
+ *
+ * **Nearly opaque on purpose.** These were a half-transparent wash, which reads
+ * as one colour on a small country and falls apart on a big one: the same red
+ * over Siberian snow is bright pink and over dark taiga is muddy brown, so a
+ * highlighted Russia looked blotchy, as though the fill had failed in patches.
+ * It had not — the ground beneath it simply changes. At this alpha the terrain
+ * still shows as texture and the colour is what the eye reads, which is the
+ * whole job of a highlight: to say *this* country at a glance, wherever it is.
+ */
+const TONE_CAP = { right: "rgba(34,197,94,0.72)", wrong: "rgba(225,29,72,0.74)" };
 const TONE_LINE = { right: "#22c55e", wrong: "#fb7185" };
 
 /** Minimal shape of the three OrbitControls we touch (three ships no types here). */

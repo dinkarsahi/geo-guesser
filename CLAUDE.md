@@ -332,6 +332,17 @@ the bench with and without, and without won — so `public/earth-clouds.jpg`, th
 ever wanted again, they come back on a lighter image and with that trade
 re-argued.
 
+**The highlights are nearly opaque, and that is a fix rather than a taste.**
+They were a 35–50% wash over the satellite imagery, which reads as one colour
+on a country the size of Belgium and falls apart on a big one: the same red
+over Siberian snow is bright pink and over dark taiga is muddy brown, so a
+highlighted Russia looked **blotchy — as though the fill had failed in
+patches**. It had not. One path, 101 subpaths, no holes; the ground underneath
+simply changes. At about 0.73 the terrain still shows as texture and the colour
+is what the eye reads, which is the whole job of a highlight: to say *this*
+country at a glance, wherever it is. The values live in `WorldMap`'s `theme`
+and `GlobeMap`'s `TONE_CAP`, and they should move together.
+
 Reveal colouring comes in two flavours, and they are not interchangeable:
 
 - **`highlightCodes` + `missCode`** — green on the answer's country, red on the
@@ -1297,7 +1308,9 @@ Two things left open, both seen rather than guessed at:
 
 ### The bench
 
-**Nothing is on the bench, and there is no bench screen.** `/gamemakersscrapbook`
+**Nothing is on the bench itself, and there is no bench screen** — though two
+games are being built under its path, at `/gamemakersscrapbook/exportspotter`
+and `/gamemakersscrapbook/subwayspotter`. `/gamemakersscrapbook`
 is still a route and nothing renders for it. The arguments it has settled, most
 recent first: where the company logos are served from, where the tube data
 comes from, and the fall through space and the sky.
