@@ -49,6 +49,15 @@ html,
 body {
   background: var(--bg);
 }
+/* Keep the scrollbar's width reserved whether or not the page scrolls, so
+   everything centred stops shifting sideways as you move between a short page
+   and a long one. It is only about seven pixels, but it moves the top bar's
+   links, every heading and the whole reading column together, which reads as
+   the page settling after it has loaded. Free here because the reserved strip
+   is the same black as the page. */
+html {
+  scrollbar-gutter: stable;
+}
 
 /* No rules down the sides. The column is centred and its width is what says
    where the page is; a line drawn either side of it reads as the edge of a

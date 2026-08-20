@@ -3,27 +3,6 @@ import { spentOnThisDevice } from "../lib/leaderboard";
 import type { Route } from "../lib/useRoute";
 
 /**
- * Which of the four the screen belongs to, or none.
- *
- * A section rather than a route, because several screens are *inside* one:
- * the leaderboard is today's round's other face, and a game's setup screen was
- * opened off the shelf. Offering "All Games" in the bar of a screen reached
- * from All Games — next to that screen's own Back, which goes to the same
- * place — is the same link twice, which is a reader wondering whether the two
- * differ.
- *
- * The reading pages and the settings belong to no section, so they are offered
- * all four.
- */
-function sectionOf(at: Route["at"]): Route["at"] | null {
-  if (at === "home") return "home";
-  if (at === "daily" || at === "leaderboard") return "daily";
-  if (at === "duel") return "duel";
-  if (at === "games" || at === "game" || at === "bench") return "games";
-  return null;
-}
-
-/**
  * The bar across the top of every screen that isn't a round.
  *
  * The wordmark, then the ways to the parts of the site this screen isn't, then
@@ -39,8 +18,33 @@ function sectionOf(at: Route["at"]): Route["at"] | null {
  * three cards were the only place the parts were named together. Named in the
  * bar, they are one press apart from anywhere.
  *
- * **The one you are on is never offered**, which is what makes the bar a
- * statement of where you are as well as a way elsewhere.
+ * **The one you are on is shown but not offered** — marked, and not a button.
+ * Two things come of that, and the second is the one worth having.
+ *
+ * The four are always all four, so the group never moves. Dropping the current
+ * one instead left three links on some screens and four on others, and centred
+ * that put the same "Home" 55px apart between All Games and Privacy — a link
+ * travelling across the bar for no reason the reader can see.
+ *
+ * And absence is the weakest signal there is. A bar that quietly omits where
+ * you are asks the reader to notice a gap and work out what filled it; a bar
+ * that marks it *says* where they are, which is half of what a navigation is
+ * for and the half a row of identical links can't do.
+ *
+ * **What counts as "where you are" is the link's own destination**, which is a
+ * plain `l.route.at === here` and not a map of which screen belongs to which
+ * section. There was such a map, and marking is what proved it wrong: it
+ * folded a game's setup screen into All Games, so City Spotter's setup screen
+ * announced that you were on the shelf — which is untrue, and took away the
+ * one route the bar had back to it. Hiding could carry that fudge because
+ * hiding claims almost nothing; marking makes a claim, and the claim has to be
+ * true.
+ *
+ * It pays off at the table, too. On `/leaderboard` the daily link resolves to
+ * `/leaderboard` for a device that has played — so it is marked, correctly —
+ * and to `/` for one that hasn't, which leaves somebody who wandered onto
+ * today's table without playing a live link to go and play. The old map marked
+ * both alike and stranded the second.
  *
  * **The home page shows none of them.** Its three cards *are* the sections, at
  * full size with a line apiece saying what they are, so naming them again in a
@@ -70,8 +74,6 @@ export default function TopBar({
   /** Opens the settings, and remembers this screen to come back to. */
   onSettings: () => void;
 }) {
-  const section = sectionOf(here);
-
   // Today's round leads to the table once this device has had its go, exactly
   // as the home page's card does. `/` sends a spent device home, so offered
   // bare this link would bounce the player straight back out — a door that
@@ -81,11 +83,11 @@ export default function TopBar({
   const daily: Route =
     today && spentOnThisDevice(today.code) ? { at: "leaderboard" } : { at: "daily" };
 
-  const links: { route: Route; label: string; section: Route["at"] }[] = [
-    { route: { at: "home" }, label: "Home", section: "home" },
-    { route: daily, label: "Today's Round", section: "daily" },
-    { route: { at: "duel" }, label: "Duel", section: "duel" },
-    { route: { at: "games" }, label: "All Games", section: "games" },
+  const links: { route: Route; label: string }[] = [
+    { route: { at: "home" }, label: "Home" },
+    { route: daily, label: "Today's Round" },
+    { route: { at: "duel" }, label: "Duel" },
+    { route: { at: "games" }, label: "All Games" },
   ];
 
   // Three cells, always all three, so the middle one is centred on the *bar*
@@ -110,17 +112,25 @@ export default function TopBar({
         </div>
         <nav className="top-bar-nav" aria-label="Sections">
           {here !== "home" &&
-            links
-              .filter((l) => l.section !== section)
-              .map((l) => (
+            links.map((l) =>
+              // Marked exactly when pressing it would land you where you
+              // already are — see above. A span rather than a disabled button:
+              // there is nothing to press, and a button that refuses the press
+              // is a different message from a label that never was one.
+              l.route.at === here ? (
+                <span key={l.label} className="top-bar-here" aria-current="page">
+                  {l.label}
+                </span>
+              ) : (
                 <button
-                  key={l.section}
+                  key={l.label}
                   className="top-bar-link"
                   onClick={() => go(l.route)}
                 >
                   {l.label}
                 </button>
-              ))}
+              ),
+            )}
         </nav>
         <div className="top-bar-right">
           {here !== "settings" && (

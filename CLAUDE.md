@@ -581,25 +581,48 @@ wordmark, so the sections drifted whenever the right-hand side changed width or
 went missing — which it does, on `/settings`. All three cells are rendered even
 when two of them are empty, so the grid keeps its shape.
 
+**`html { scrollbar-gutter: stable }`** belongs to the same argument, and is in
+`index.css`. Without it everything centred slides about seven pixels between a
+page that scrolls and one that doesn't — the bar's links, every heading and the
+whole reading column together, which reads as the page settling after it has
+loaded. Free here, because the reserved strip is the same black as the page.
+
 **It offers the four sections rather than only a way back**: Home, Today's
 Round, Duel, All Games. With Home alone, every journey between two parts of the
 site went out through the front door — the table to the shelf was Home, then
 All Games — and the home page's three cards were the only place the parts were
 named together.
 
-**The one you are on is never offered**, which is what makes the bar say where
-you are as well as where else there is. **The home page shows none of them**:
-its three cards *are* the sections, at full size with a line apiece saying what
-each is, so a strip naming them again above is the same offer twice on one
-screen — and the smaller, quieter copy at that.
+**The one you are on is shown but not offered** — marked in the accent colour
+and rendered as a `span`, not a disabled button: there is nothing to press, and
+a button that refuses a press says something different from a label that never
+was one. **The home page shows none of them**: its three cards *are* the
+sections, at full size with a line apiece saying what each is, so a strip
+naming them again above is the same offer twice on one screen — and the
+smaller, quieter copy at that.
 
-**The known cost of hiding the current one:** the group is three links on a
-section screen and four on a reading page, so centred it shifts. Measured, the
-same "Home" link sits at x=623 on All Games and x=568 on Privacy — 55px of
-travel on a link that hasn't changed. The alternative is to render the current
-section as a marked non-link, which fixes the width at four and buys a
-"you are here" the bar can't otherwise give; it was left out because hiding it
-is what was asked for, and this is the note to read before changing it back. That is a **section** and not a route,
+Two things come of marking rather than hiding, and the second is the one worth
+having. The group is always four wide, so it never moves — dropped, it was
+three links on some screens and four on others, which centred put the same
+"Home" at x=623 on All Games and x=568 on Privacy, 55px of travel on a link
+that hadn't changed. And **absence is the weakest signal there is**: a bar that
+omits where you are asks the reader to notice a gap and work out what filled
+it, where a marked one simply says.
+
+**What counts as "where you are" is the link's own destination** — a plain
+`l.route.at === here`, not a map of which screen belongs to which section.
+There was such a map, and **marking is what proved it wrong**: it folded a
+game's setup screen into All Games, so City Spotter's setup screen announced
+you were on the shelf — untrue, and it took away the one route the bar had back
+to it. Hiding could carry that fudge because hiding claims almost nothing.
+Marking makes a claim, and a claim has to be true. The rule is also simply
+smaller: one comparison instead of a table to keep in step with the routes.
+
+It pays off at the table too. On `/leaderboard` the daily link resolves to
+`/leaderboard` for a device that has played, so it is marked; and to `/` for
+one that hasn't, which leaves somebody who wandered onto today's table without
+playing a live link to go and play. The map marked both alike and stranded the
+second. That is a **section** and not a route,
 because several screens sit inside one: `sectionOf` in `TopBar` folds the
 leaderboard into today's round, and a game's setup screen and the bench into
 All Games. Without that fold, a setup screen would offer All Games in the bar

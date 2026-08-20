@@ -42,7 +42,8 @@
   justify-self: end;
 }
 .top-bar-mark,
-.top-bar-link {
+.top-bar-link,
+.top-bar-here {
   font: inherit;
   font-size: 15px;
   font-weight: 600;
@@ -52,6 +53,16 @@
   border-radius: 7px;
   background: transparent;
   color: var(--text-h);
+}
+/* Where you are. Sized exactly like the links beside it — a wider or bolder
+   current item would move its neighbours as you walked round the site, which
+   is the shifting this was built to stop. Only the colour and the wash say
+   it's different, and it is deliberately not in the hover rule below: nothing
+   about it answers the mouse, because nothing about it is pressable. */
+.top-bar-here {
+  color: var(--accent);
+  background: var(--accent-bg);
+  cursor: default;
 }
 .top-bar-link {
   cursor: pointer;
@@ -92,7 +103,8 @@
     display: none;
   }
   .top-bar-mark,
-  .top-bar-link {
+  .top-bar-link,
+  .top-bar-here {
     font-size: 14px;
     padding: 5px 8px;
   }
