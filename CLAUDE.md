@@ -1118,6 +1118,37 @@ tolerance for dots straddling the edge then let in Preston Road, 1.74 km from a
 the one thing this rule cannot afford. If the test ever grows a tolerance again,
 the circle on the map has to grow with it.
 
+### The company logos
+
+**Served from `public/logos/`, not from Simple Icons' CDN.** 486 SVGs, 790 KB,
+fetched by `tools/gen-company-logos.mjs`. That was item C3 of the ad-readiness
+register: every round of Corporate HQ Spotter used to fetch its mark from a
+volunteer-run service on the round it was asked for, so the question was
+unreadable if that service was slow, and a game carrying advertising was
+leaning on somebody else's bandwidth for the one image it is made of. The icons
+are CC0, so copying them is expressly permitted.
+
+**The trap, and the bench existed to catch it.** Simple Icons keeps each mark
+as a single black path and **the CDN paints it** — ask GitHub for `nvidia.svg`
+and there is no `fill` at all, ask the CDN and you get `fill="#76B900"`.
+Vendoring from the repository, which is the obvious thing to do, would have
+turned all 486 logos black — a visible change to the game and a bad one, since
+the colour is half of what makes a mark recognisable. The script fetches the
+CDN's own output and **refuses any file that comes back without a fill**, so
+this cannot regress quietly.
+
+**Adding a company means adding a row to `companies.ts` and re-running the
+script.** The `slug` is Simple Icons' own identifier and there is no longer a
+CDN to fall back on, so a slug with no file behind it is a broken image where
+the question should be.
+
+What this does *not* settle is register item **C4**: Simple Icons' disclaimer
+says they cannot answer for a brand's objection and that permissions are the
+user's to seek. Showing a mark to ask which country it comes from is nominative
+use, and the trademark disclaimer on `/credits` and on that game's setup screen
+is what rebuts any suggestion of endorsement — but a brand whose guidelines
+forbid use in games is a brand to drop if it ever asks.
+
 ### The imagery: `src/lib/mapTiles.ts`
 
 Both maps draw **map tiles** in daylight rather than one photograph of the
@@ -1196,33 +1227,28 @@ Two things left open, both seen rather than guessed at:
 
 ### The bench
 
-**On the bench now: where the company logos are served from** — item C3 of the
-ad-readiness register. `ScrapbookLogos` draws all 486 marks twice, from
-`cdn.simpleicons.org` and from `public/logos/`, one pair per company. Pairs
-rather than a switch between two screens, because the thing being checked is
-whether any single mark out of 486 came out different, and that has to be
-findable by scanning.
+**Nothing is on the bench, and there is no bench screen.** `/gamemakersscrapbook`
+is still a route and nothing renders for it. The arguments it has settled, most
+recent first: where the company logos are served from, where the tube data
+comes from, and the fall through space and the sky.
 
-**The trap it exists to catch:** Simple Icons keeps each mark as a single black
-path and the *CDN* paints it — ask GitHub for `nvidia.svg` and there is no
-`fill` at all, ask the CDN and you get `fill="#76B900"`. Vendoring from the
-repository, which is the obvious thing to do, would have turned all 486 logos
-black. `tools/gen-company-logos.mjs` fetches the CDN's own output and refuses
-any file that comes back without a fill.
-
-Arguments it settled before this one: where the tube data comes from, and
-before that the fall through space and the sky.
-
-Putting one back is a component and one line in `App`'s route table. Two things
-from the last one are worth reusing rather than rebuilding: `TubeData` and
-`SHIPPED_TUBE` in `src/data/tubeSources.ts`, and `LondonMap`'s `data` prop,
+Putting one back is a component and one line in `App`'s route table. One thing
+from the last two is worth reusing rather than rebuilding: `TubeData` and
+`SHIPPED_TUBE` in `src/data/tubeSources.ts` with `LondonMap`'s `data` prop,
 which together let a bench hand the map a different network. That seam is kept
 deliberately — it defaults to the shipped bundle, so it costs the game nothing,
-and it is the thing that let the last comparison judge **the real renderer**
-rather than a copy of it. Which is a departure from the "a bench is a copy"
-rule below, and the right one where what is on trial is data: the drawing has
-to be identical on both sides, which one shared component gives by construction
-and a duplicate only promises.
+and it is what let the tube comparison judge **the real renderer** rather than
+a copy of it. Which is a departure from the "a bench is a copy" rule below, and
+the right one where what is on trial is data.
+
+**A lesson from the logo bench, worth having before building the next one.** It
+drew all 486 marks twice, from each source, one pair per company — a *diff*,
+and a good one: a single mark that had come out wrong would have been findable
+by scanning, which two full screens to flip between could not have done. But it
+was not self-explanatory, and had to be explained before it could be read. A
+bench that needs a covering note has failed at half its job. **Say what a
+correct result looks like on the screen itself**, in a sentence, before the
+thing being compared.
 
 The rules a bench lives by, all of them load-bearing:
 

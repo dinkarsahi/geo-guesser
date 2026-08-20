@@ -4,7 +4,6 @@ import Credits from "./components/Credits";
 import Faq from "./components/Faq";
 import DailyBoard from "./components/DailyBoard";
 import Privacy from "./components/Privacy";
-import ScrapbookLogos from "./modes/ScrapbookLogos";
 import Settings from "./components/Settings";
 import SiteFooter from "./components/SiteFooter";
 import TopBar from "./components/TopBar";
@@ -441,14 +440,6 @@ export default function App() {
     );
   }
 
-
-  // The bench. On it now: where the company logos are served from, which is
-  // item C3 — the marks are fetched from a volunteer-run CDN on the round they
-  // are asked for, and the question is unreadable if it is slow. Nothing is
-  // scored and nothing is filed.
-  if (route.at === "bench") {
-    return page(<ScrapbookLogos onExit={() => go({ at: "games" })} />);
-  }
 
   if (route.at === "games") {
     return page(

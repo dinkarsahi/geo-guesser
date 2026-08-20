@@ -103,7 +103,8 @@ export default function Credits({ onAbout }: CreditsProps) {
           </p>
           <p>
             The brand marks come from the Simple Icons project, released into the public
-            domain under CC0. National flags are served by flagcdn.com.
+            domain under CC0 and bundled with this site rather than fetched from theirs.
+            National flags are served by flagcdn.com.
           </p>
         </section>
 

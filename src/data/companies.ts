@@ -21,11 +21,23 @@ export interface CompanyTarget extends Company, Coord {
 }
 
 /**
- * Brand marks from the Simple Icons CDN, which serves a single SVG per company
- * in that company's own colour. Every slug below was checked against it: the
- * project drops logos it can't distribute, so a plausible-looking name is no
- * guarantee, and a company whose mark has gone is better left out than shown
- * as a broken image.
+ * Brand marks from Simple Icons, **served from this site** rather than from
+ * their CDN — see `tools/gen-company-logos.mjs`, which downloads them into
+ * `public/logos/`. The icons are CC0, so copying them is expressly permitted,
+ * and a game that carries advertising should not be leaning on a volunteer-run
+ * service for the one image its question is made of. It is also faster and
+ * cannot break: a round used to wait on a third party before it was readable.
+ *
+ * **The files are the CDN's output, not the repository's**, and that
+ * distinction is the whole of why the logos still have their colours. Simple
+ * Icons stores each mark as a single black path and the CDN paints it; copying
+ * from the repository would have turned all 486 of these black.
+ *
+ * Every slug below was checked against the set: the project drops logos it
+ * can't distribute, so a plausible-looking name is no guarantee. **Adding a
+ * company means adding a row here and re-running the script**, which is what
+ * fetches its mark — a slug with no file behind it is a broken image where the
+ * question should be.
  *
  * That check is also what limits the spread of this list. The pool aims for at
  * least three companies per country and many more for the big index markets,
@@ -33,18 +45,6 @@ export interface CompanyTarget extends Company, Coord {
  * few regions — most of Africa especially — come out thinner than they should.
  */
 export function logoUrl(slug: string): string {
-  return `https://cdn.simpleicons.org/${slug}`;
-}
-
-/**
- * The same mark, served from here instead — see `tools/gen-company-logos.mjs`.
- *
- * On the bench while the swap is looked at. The files are the CDN's own
- * output rather than the repository's, so they carry the brand colour the
- * game already draws; vendoring from the repository would have turned every
- * one of them black.
- */
-export function localLogoUrl(slug: string): string {
   return `/logos/${slug}.svg`;
 }
 
