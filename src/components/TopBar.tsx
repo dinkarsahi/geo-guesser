@@ -42,6 +42,12 @@ function sectionOf(at: Route["at"]): Route["at"] | null {
  * **The one you are on is never offered**, which is what makes the bar a
  * statement of where you are as well as a way elsewhere.
  *
+ * **The home page shows none of them.** Its three cards *are* the sections, at
+ * full size with a line apiece saying what they are, so naming them again in a
+ * strip above is the same offer twice on one screen — and the smaller, quieter
+ * copy of it at that. The bar there is the wordmark and Settings, which is what
+ * it was before the sections were added to it.
+ *
  * **The screen's own back button stays where it means something else.** A
  * game's setup screen returns to the shelf it was picked off and the duel's
  * steps back through its own screens; those are not this bar's job. What has
@@ -82,38 +88,47 @@ export default function TopBar({
     { route: { at: "games" }, label: "All Games", section: "games" },
   ];
 
+  // Three cells, always all three, so the middle one is centred on the *bar*
+  // rather than on whatever is left over beside the wordmark — which is what a
+  // flex spacer gave, and it put the sections off to one side whenever
+  // Settings was missing. Two of the three are often empty; they are rendered
+  // anyway so the grid keeps its shape. See `.top-bar-inner`.
   return (
     <header className="top-bar">
       <div className="top-bar-inner">
-        {here === "home" ? (
-          // The wordmark rather than a link, on the one screen where Home is
-          // where you already are. A button that goes nowhere is worse than no
-          // button, and the bar would look broken empty.
-          <span className="top-bar-mark">SpotOn</span>
-        ) : (
-          <button className="top-bar-link" onClick={() => go({ at: "home" })}>
-            SpotOn
-          </button>
-        )}
+        <div className="top-bar-brand">
+          {here === "home" ? (
+            // The wordmark rather than a link, on the one screen where Home is
+            // where you already are. A button that goes nowhere is worse than
+            // no button, and the bar would look broken empty.
+            <span className="top-bar-mark">SpotOn</span>
+          ) : (
+            <button className="top-bar-link" onClick={() => go({ at: "home" })}>
+              SpotOn
+            </button>
+          )}
+        </div>
         <nav className="top-bar-nav" aria-label="Sections">
-          {links
-            .filter((l) => l.section !== section)
-            .map((l) => (
-              <button
-                key={l.section}
-                className="top-bar-link"
-                onClick={() => go(l.route)}
-              >
-                {l.label}
-              </button>
-            ))}
+          {here !== "home" &&
+            links
+              .filter((l) => l.section !== section)
+              .map((l) => (
+                <button
+                  key={l.section}
+                  className="top-bar-link"
+                  onClick={() => go(l.route)}
+                >
+                  {l.label}
+                </button>
+              ))}
         </nav>
-        <span className="top-bar-gap" />
-        {here !== "settings" && (
-          <button className="top-bar-link" onClick={onSettings}>
-            Settings
-          </button>
-        )}
+        <div className="top-bar-right">
+          {here !== "settings" && (
+            <button className="top-bar-link" onClick={onSettings}>
+              Settings
+            </button>
+          )}
+        </div>
       </div>
     </header>
   );

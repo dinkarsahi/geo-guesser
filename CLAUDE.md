@@ -570,10 +570,16 @@ to offer the tube, and the setup screen now offers nothing to anybody.
 
 **A top bar across every screen that isn't a round** — `SiteFooter`'s opposite
 number, and drawn by the same `page()` wrapper. SpotOn on the left (the way
-home, and just a label on the home page itself), then **the parts of the site
-this screen isn't**, then Settings on the right. All of them were loose buttons
-before, in a different place on each screen; a thing that appears everywhere
-belongs in the same place everywhere.
+home, and just a label on the home page itself), **the parts of the site this
+screen isn't** across the middle, and Settings on the right. All of them were
+loose buttons before, in a different place on each screen; a thing that appears
+everywhere belongs in the same place everywhere.
+
+**Three grid cells, not flex with a spacer.** `1fr auto 1fr` centres the middle
+cell on the **bar**; a spacer only centres it in the room left over beside the
+wordmark, so the sections drifted whenever the right-hand side changed width or
+went missing — which it does, on `/settings`. All three cells are rendered even
+when two of them are empty, so the grid keeps its shape.
 
 **It offers the four sections rather than only a way back**: Home, Today's
 Round, Duel, All Games. With Home alone, every journey between two parts of the
@@ -582,7 +588,18 @@ All Games — and the home page's three cards were the only place the parts were
 named together.
 
 **The one you are on is never offered**, which is what makes the bar say where
-you are as well as where else there is. That is a **section** and not a route,
+you are as well as where else there is. **The home page shows none of them**:
+its three cards *are* the sections, at full size with a line apiece saying what
+each is, so a strip naming them again above is the same offer twice on one
+screen — and the smaller, quieter copy at that.
+
+**The known cost of hiding the current one:** the group is three links on a
+section screen and four on a reading page, so centred it shifts. Measured, the
+same "Home" link sits at x=623 on All Games and x=568 on Privacy — 55px of
+travel on a link that hasn't changed. The alternative is to render the current
+section as a marked non-link, which fixes the width at four and buys a
+"you are here" the bar can't otherwise give; it was left out because hiding it
+is what was asked for, and this is the note to read before changing it back. That is a **section** and not a route,
 because several screens sit inside one: `sectionOf` in `TopBar` folds the
 leaderboard into today's round, and a game's setup screen and the bench into
 All Games. Without that fold, a setup screen would offer All Games in the bar
@@ -596,8 +613,10 @@ bare it would bounce the player straight back out — a door that reads as
 broken.
 
 Four labels plus the wordmark and Settings will not sit on one line on a phone,
-so `.top-bar-nav` **wraps** rather than scrolling or squeezing: a bar that
-grows a second line is honest where one that clips a destination is not.
+so under 700px the sections **drop to a centred row of their own** beneath the
+other two: a bar that grows a second line is honest where one that clips a
+destination is not. `.top-bar-nav:empty` is hidden there, or the home page —
+which has no sections — would carry an empty row's worth of bar.
 
 It is **outside the reading column** so it runs the full width of the window,
 which is why `#root` is now full width and the 1126px column moved down to
