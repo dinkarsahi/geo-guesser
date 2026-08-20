@@ -1026,6 +1026,37 @@ cosmetic. Measured against what the game actually plays (265 stations, after
   that moves moves a radius, and the circle's printed count has to keep
   matching what a player can count off the screen.
 
+**The trap, and it was visible on the map within a minute.** Zones do not come
+from `Route/Sequence` — that endpoint carries a `zone` on each stop but leaves
+it off some of them, Stratford, West Ham and North Greenwich among others. The
+first version of the generator fell back to zone 1, which put three east London
+stations in the middle of the city; the **zone bands are convex hulls of the
+stations in each zone**, so zone 1's hull stretched east across the map and
+merged into the outer bands. A wrong zone here is not a mislabelled station, it
+is a band drawn across half of London. The zones now come from
+`StopPoint/Mode/tube`, which has one for every station — written "3", or "2/3"
+for a boundary station, which is the same half the game already keeps — matched
+on the Naptan id because the two endpoints spell station names differently.
+**There is no fallback any more**: a station with no zone throws and stops the
+build, because something plausible is exactly what hid this.
+
+**TfL's terms, read rather than assumed** (`/corporate/terms-and-conditions/transport-data-service`):
+the data is under **Open Government Licence v2.0 with TfL's amendments**, and
+it **expressly permits commercial use** — "by including it in Your own product
+or application". Three things it asks for in exchange, and the first is not
+what `/credits` currently says:
+
+- **"Powered by TfL Open Data"** — the exact wording. The page says "Data
+  provided by Transport for London", which is TfL's wording for the live bus
+  arrivals feed, not this one. **Shipping C1 means changing that line.**
+- **"Contains OS data © Crown copyright and database rights [year]"** and a
+  Geomni line. This is item B3, and it turns out TfL's own licence is what
+  requires it, not only the borough file.
+- The licence **transfers no intellectual property**, and asks that logos and
+  trade marks be respected per TfL's branding guidelines. So it does not cover
+  the roundel, "Mind the Gap" (D1) or the line names and colours (D4) — those
+  stand or fall on nominative use, exactly as the register says.
+
 **The generator follows the game's naming policy, not TfL's.** TfL lists
 Hammersmith, Paddington and Edgware Road twice each, because they are
 operationally separate stations — right for a journey planner and wrong for a

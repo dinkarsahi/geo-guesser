@@ -1551,7 +1551,7 @@ export const tflStationsRaw: TubeStationRaw[] = [
     "name": "North Greenwich",
     "lat": 51.5005,
     "lng": 0.0043,
-    "zone": 1,
+    "zone": 2.5,
     "lines": [
       "Jubilee"
     ]
@@ -2129,7 +2129,7 @@ export const tflStationsRaw: TubeStationRaw[] = [
     "name": "Stratford",
     "lat": 51.5418,
     "lng": -0.0035,
-    "zone": 1,
+    "zone": 2.5,
     "lines": [
       "Central",
       "Jubilee"
@@ -2440,7 +2440,7 @@ export const tflStationsRaw: TubeStationRaw[] = [
     "name": "West Ham",
     "lat": 51.5281,
     "lng": 0.0051,
-    "zone": 1,
+    "zone": 2.5,
     "lines": [
       "District",
       "Hammersmith & City",

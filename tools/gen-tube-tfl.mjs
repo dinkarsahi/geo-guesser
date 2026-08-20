@@ -63,11 +63,49 @@ const RENAME = {
   "Shepherd's Bush (Central)": "Shepherd's Bush",
 };
 
-/** Stations TfL leaves without a zone. Both are on a boundary. */
-const ZONE_FALLBACK = { "Bromley-by-Bow": 2.5, "Canning Town": 2.5 };
+/**
+ * Fare zones come from a different endpoint to the route sequences.
+ *
+ * `Route/Sequence` carries a `zone` on each stop, but it is **not always
+ * there** — Stratford, West Ham and North Greenwich come back without one —
+ * and an absent zone is far more dangerous than a wrong one here. The zone
+ * bands on the map are convex hulls of the stations in each zone, so one east
+ * London station wrongly called zone 1 stretches the zone 1 hull right across
+ * the map until it merges into the outer bands. That is exactly what a
+ * silent `?? 1` fallback did on the first run of this.
+ *
+ * `StopPoint/Mode/tube` carries a Zone on all of them, written as "3" or as
+ * "2/3" for a boundary station, which is the same notion of a half the game
+ * already uses. Keyed on the Naptan id rather than the name, because the two
+ * endpoints spell stations differently.
+ */
+async function fetchZones() {
+  const zones = new Map();
+  for (let page = 1; page <= 2; page++) {
+    const r = await fetch(`https://api.tfl.gov.uk/StopPoint/Mode/tube?page=${page}`);
+    if (!r.ok) throw new Error(`stop points page ${page}: ${r.status}`);
+    const body = await r.json();
+    for (const sp of body.stopPoints ?? []) {
+      const zone = (sp.additionalProperties ?? []).find((p) => p.key === "Zone")?.value;
+      if (!zone) continue;
+      // "2/3" is a station billed for both, which the game keeps as a half.
+      const parts = zone.split("/").map(Number).filter(Number.isFinite);
+      if (!parts.length) continue;
+      const value = parts.length === 1 ? parts[0] : (parts[0] + parts[parts.length - 1]) / 2;
+      for (const id of [sp.naptanId, sp.id, sp.stationNaptan].filter(Boolean)) {
+        if (!zones.has(id)) zones.set(id, value);
+      }
+    }
+  }
+  return zones;
+}
 
 const clean = (n) => n.replace(/\s+Underground Station$/i, "").replace(/\s+Station$/i, "").trim();
 const nameOf = (raw) => RENAME[clean(raw)] ?? clean(raw);
+
+const zones = await fetchZones();
+process.stderr.write(`zones for ${zones.size} stop points
+`);
 
 const raw = {};
 for (const id of Object.keys(LINES)) {
@@ -92,9 +130,12 @@ for (const [lineId, docs] of Object.entries(raw)) {
       for (const p of pts) {
         const name = nameOf(p.name);
         if (!stations.has(name)) {
-          stations.set(name, { name, lats: [], lngs: [], zones: new Set(), lines: new Set() });
+          stations.set(name, {
+            name, lats: [], lngs: [], zones: new Set(), lines: new Set(), ids: new Set(),
+          });
         }
         const s = stations.get(name);
+        for (const id of [p.stationId, p.id, p.topMostParentId].filter(Boolean)) s.ids.add(id);
         // A merged station is the mean of the buildings that make it up, which
         // for Hammersmith is the street between the two of them.
         s.lats.push(p.lat);
@@ -113,12 +154,21 @@ for (const [lineId, docs] of Object.entries(raw)) {
   }
 }
 
-/** A station billed for two zones keeps the boundary as a half — 2/3 is 2.5. */
-const zoneOf = (s) => {
-  if (ZONE_FALLBACK[s.name] !== undefined && !s.zones.size) return ZONE_FALLBACK[s.name];
+/**
+ * A station billed for two zones keeps the boundary as a half — 2/3 is 2.5.
+ *
+ * The stop-point table is asked first because it is the one that is complete;
+ * the sequence's own zone stands in where a merge has left several. **There is
+ * no fallback**, deliberately: a station with no zone throws and stops the
+ * build rather than being planted somewhere plausible. A wrong zone here is
+ * not a wrong label, it is a zone band drawn across half of London.
+ */
+const zoneOf = (s, zones) => {
+  const byId = [...s.ids].map((id) => zones.get(id)).filter((z) => z !== undefined);
+  if (byId.length) return Math.min(...byId);
   const nums = [...s.zones].map(Number).filter((n) => Number.isFinite(n) && n > 0).sort((a, b) => a - b);
-  if (!nums.length) return ZONE_FALLBACK[s.name] ?? 1;
-  return nums.length === 1 ? nums[0] : (nums[0] + nums[nums.length - 1]) / 2;
+  if (nums.length) return nums.length === 1 ? nums[0] : (nums[0] + nums[nums.length - 1]) / 2;
+  throw new Error(`no fare zone for ${s.name} — check StopPoint/Mode/tube`);
 };
 const mean = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
 const round4 = (n) => Math.round(n * 1e4) / 1e4;
@@ -128,7 +178,7 @@ const outStations = [...stations.values()]
     name: s.name,
     lat: round4(mean(s.lats)),
     lng: round4(mean(s.lngs)),
-    zone: zoneOf(s),
+    zone: zoneOf(s, zones),
     lines: [...s.lines].sort(),
   }))
   .sort((a, b) => a.name.localeCompare(b.name));
