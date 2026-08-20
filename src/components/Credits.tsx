@@ -12,6 +12,14 @@
  * needs an address to look at.
  */
 
+/**
+ * The year the Crown copyright and database right lines carry.
+ *
+ * Read from the clock rather than typed, because these lines name a year and a
+ * page that says 2026 in 2027 is a page nobody has checked.
+ */
+const YEAR = new Date().getFullYear();
+
 /** The libraries the game is built on, with the notices their licences require. */
 const SOFTWARE: { name: string; licence: string; holder: string }[] = [
   { name: "React and React DOM", licence: "MIT", holder: "Meta Platforms, Inc. and affiliates" },
@@ -53,17 +61,33 @@ export default function Credits({ onAbout }: CreditsProps) {
 
         <section className="doc-section">
           <h2>The Underground</h2>
+          {/* The exact wording TfL's licence asks for, and the two lines it
+              asks for alongside it. Not "Data provided by Transport for
+              London", which is what this page used to say — that is TfL's
+              wording for the live bus arrivals feed, and it was crediting them
+              for data that had in fact come from a third party. The station
+              tables are now rebuilt from TfL's own open data by
+              `tools/gen-tube-tfl.mjs`, which is what makes this line true. */}
           <p>
-            <strong>Data provided by Transport for London.</strong> The station names,
-            positions, fare zones and line assignments behind Tube Station Spotter
-            originate in TfL's open data.
+            <strong>Powered by TfL Open Data.</strong> The station names, positions,
+            fare zones and line assignments behind Tube Station Spotter are taken
+            from Transport for London's open data, made available under version 2.0
+            of the Open Government Licence with TfL's amendments.
+          </p>
+          <p>
+            Contains OS data © Crown copyright and database rights {YEAR}. Geomni UK
+            Map data © and database rights {YEAR}.
           </p>
           <p>
             SpotOn is not affiliated with, endorsed by or sponsored by Transport for
             London. The map it draws is built from the stations' own coordinates and is
             not TfL's diagram; line names and colours are used to identify the real
-            lines. The borough outlines behind the network are drawn from openly
-            published boundary data.
+            lines.
+          </p>
+          <p>
+            The borough outlines behind the network are from the Office for National
+            Statistics' boundary set, which contains OS data © Crown copyright and
+            database right {YEAR}, and is used under the Open Government Licence v3.0.
           </p>
         </section>
 

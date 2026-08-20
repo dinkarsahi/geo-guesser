@@ -1003,91 +1003,88 @@ lets the pool be *every* country rather than the ones someone got round to.
 
 ### Where the tube data comes from
 
-`src/data/tubeData.ts` is generated from a third-party GitHub dataset that
-declares **no licence**, which is item C1 of the ad-readiness register and one
-of the two with real teeth. `tools/gen-tube-tfl.mjs` rebuilds the same tables
-from **TfL's own open data** — free, and asking only for the credit already on
-`/credits` — into `src/data/tubeDataTfl.ts`. Run it with
-`node tools/gen-tube-tfl.mjs`; no key is needed at this volume.
+**Transport for London's own open data**, rebuilt by `tools/gen-tube-tfl.mjs`
+into `src/data/tubeData.ts`. Run `node tools/gen-tube-tfl.mjs`; it writes that
+file and is the only thing that should. No key is needed at this volume, though
+TfL ask you to register for one.
 
-**It is on the bench, not shipped**, and the reason is that the swap is not
-cosmetic. Measured against what the game actually plays (265 stations, after
-`canonical()` has merged the raw file's duplicates):
+It used to come from a third-party GitHub dataset that declared **no licence**,
+which granted no permission to redistribute it and put UK database right on top
+of copyright for the compilation. That was item C1 of the ad-readiness
+register, and the swap was judged on a bench before it was made — the bench
+came down with it. `public/london-boroughs.json` is the other half, C2: the ONS
+boundary set under the Open Government Licence, vendored rather than fetched
+live from `raw.githubusercontent.com`, which was both unlicensed and not a CDN.
 
-- **Four stations are simply missing** from the shipped set — Battersea Power
-  Station, Nine Elms, Wood Lane and Heathrow Terminal 5. The dataset predates
-  the 2021 Northern line extension.
-- **Two names are misspelled** and reach the screen: "Harrow & Wealdston" and
-  "Bromley-By-Bow". One is stale: Heathrow Terminal 1 closed in 2015.
-- **Stations move about 30 m** in the middle of the pack, 367 m at worst
-  (Southwark) — platform centroid against entrance.
-- **Sixteen fare zones disagree**, and this is the one that reaches the score:
+**The attribution is the licence's, word for word**, and it is on `/credits`:
+"Powered by TfL Open Data", plus the Crown copyright and Geomni lines TfL's
+terms require, plus the ONS line for the boroughs. The year in them is read
+from the clock, not typed. **The page used to say "Data provided by Transport
+for London"** — TfL's wording for the live bus arrivals feed, and crediting
+them for data that had come from somewhere else entirely. If the source ever
+changes again, this page changes with it.
+
+**TfL's terms, read rather than assumed**
+(`/corporate/terms-and-conditions/transport-data-service`): Open Government
+Licence v2.0 with TfL's amendments, and **commercial use is expressly
+permitted** — "by including it in Your own product or application". The licence
+**transfers no intellectual property** and asks that logos and trade marks be
+respected per TfL's branding guidelines, so it does not cover the roundel,
+"Mind the Gap" (register item D1) or the line names and colours (D4). Those
+stand or fall on nominative use.
+
+What the swap changed, measured rather than assumed:
+
+- **Four stations were simply missing** — Battersea Power Station, Nine Elms,
+  Wood Lane and Heathrow Terminal 5. The old set predated the 2021 Northern
+  line extension.
+- **Two names were misspelled** on screen ("Harrow & Wealdston",
+  "Bromley-By-Bow") and one was stale (Heathrow Terminal 1 closed in 2015).
+- **Stations moved about 30 m** typically, 367 m at worst (Southwark) —
+  platform centroid against entrance.
+- **Sixteen fare zones changed**, and that is the one that reaches the score:
   `tubeNearby.ts` sizes the Mind the Gap circle off the zone, so a zone that
-  moves moves a radius, and the circle's printed count has to keep matching
-  what a player can count off the screen. Several are TfL correcting the old
-  set outright — Amersham and Chesham are zone 9, not 10.
-
-**The zone bands carry no numbers.** They were numbered circles once, placed in
-the emptiest part of each ring, and they went for two reasons at once. Nobody
-looking for a station needs to be told which zone they are looking at — the
-question is never about zones — and the numbers were the only thing making
-`MAX_ZONE_BAND` a lie: zones past 6 share the outermost ring, so the eight
-stations out beyond Rickmansworth, which are zones 7 to 9, all sat inside a
-ring that said **6**. Unlabelled, the rings say the true thing and only the
-true thing, which is that further out is further out. The real zone is still on
-the station itself in the reveal. `findClearSpot` and `rayExitRadius` went with
-them — ninety lines whose only customer was placing those numbers.
+  moves moves a radius. Several are TfL correcting the old set outright —
+  Amersham and Chesham are zone 9, not 10.
 
 **The trap, and it was visible on the map within a minute.** Zones do not come
 from `Route/Sequence` — that endpoint carries a `zone` on each stop but leaves
-it off some of them, Stratford, West Ham and North Greenwich among others. The
-first version of the generator fell back to zone 1, which put three east London
-stations in the middle of the city; the **zone bands are convex hulls of the
-stations in each zone**, so zone 1's hull stretched east across the map and
-merged into the outer bands. A wrong zone here is not a mislabelled station, it
-is a band drawn across half of London. The zones now come from
-`StopPoint/Mode/tube`, which has one for every station — written "3", or "2/3"
-for a boundary station, which is the same half the game already keeps — matched
-on the Naptan id because the two endpoints spell station names differently.
-**There is no fallback any more**: a station with no zone throws and stops the
-build, because something plausible is exactly what hid this.
-
-**TfL's terms, read rather than assumed** (`/corporate/terms-and-conditions/transport-data-service`):
-the data is under **Open Government Licence v2.0 with TfL's amendments**, and
-it **expressly permits commercial use** — "by including it in Your own product
-or application". Three things it asks for in exchange, and the first is not
-what `/credits` currently says:
-
-- **"Powered by TfL Open Data"** — the exact wording. The page says "Data
-  provided by Transport for London", which is TfL's wording for the live bus
-  arrivals feed, not this one. **Shipping C1 means changing that line.**
-- **"Contains OS data © Crown copyright and database rights [year]"** and a
-  Geomni line. This is item B3, and it turns out TfL's own licence is what
-  requires it, not only the borough file.
-- The licence **transfers no intellectual property**, and asks that logos and
-  trade marks be respected per TfL's branding guidelines. So it does not cover
-  the roundel, "Mind the Gap" (D1) or the line names and colours (D4) — those
-  stand or fall on nominative use, exactly as the register says.
+it off some, Stratford, West Ham and North Greenwich among them. The first
+version fell back to zone 1, which put three east London stations in the middle
+of the city; the **zone bands are convex hulls of the stations in each zone**,
+so zone 1's hull stretched east across the map and merged into the outer bands.
+A wrong zone here is not a mislabelled station, it is a band drawn across half
+of London. Zones now come from `StopPoint/Mode/tube`, which has one for every
+station — "3", or "2/3" for a boundary, which is the same half the game already
+keeps — matched on the Naptan id, because the two endpoints spell station names
+differently. **There is no fallback**: a station with no zone throws and stops
+the build, because something plausible is exactly what hid this.
 
 **The generator follows the game's naming policy, not TfL's.** TfL lists
 Hammersmith, Paddington and Edgware Road twice each, because they are
 operationally separate stations — right for a journey planner and wrong for a
 guessing game, where two right answers to "Hammersmith" is a question with no
-answer. `RENAME` in the generator merges them, matching what `canonical()` in
-`tube.ts` already does and for the reason already written there.
+answer. `RENAME` in the generator merges them, which is also where the
+connections get re-pointed. `stationNames` in `tube.ts` is now **empty**: it
+existed to fix the old dataset's misspellings and its "(C)"/"(B)" initials, and
+TfL spells its own stations correctly.
 
-**The colours are a separate argument and were already settled.** `lineColors`
-in `tube.ts` is a hand-tuned palette, deliberately pushed further apart than
-either the old dataset's values or TfL's own, so each line reads as its own hue
-at map scale. The generator emits TfL's official hexes; `lineColors` would
-override them anyway. Don't conflate the two: the licence question is about the
-station table, and recolouring cannot answer it.
+**The colours are a separate argument and were settled long before this.**
+`lineColors` in `tube.ts` is a hand-tuned palette, deliberately pushed further
+apart than TfL's own so each line reads as its own hue at map scale, and it
+overrides whatever the generator emits. Don't conflate the two: the licence
+question was about the station table, and recolouring could never have answered
+it.
 
-`public/london-boroughs.json` is the C2 half — the ONS boundary set under the
-Open Government Licence, vendored rather than fetched live from
-`raw.githubusercontent.com`, which is both unlicensed and not a CDN. Both URLs
-are kept in `tubeSources.ts` so the bench can show them side by side; the game
-still draws the legacy one until the swap is made.
+**The zone bands carry no numbers.** They were numbered circles once, and they
+went for two reasons at once. Nobody looking for a station needs to be told
+which zone they are looking at, and the numbers were the only thing making
+`MAX_ZONE_BAND` a lie: zones past 6 share the outermost ring, so the eight
+stations beyond Rickmansworth, which are zones 7 to 9, all sat inside a ring
+that said **6**. Unlabelled, the rings say the true thing and only the true
+thing — further out is further out. The real zone is still on the station in
+the reveal. `findClearSpot` and `rayExitRadius` went with them: ninety lines
+whose only customer was placing those circles.
 
 ### The circle the tube marks by
 
@@ -1199,52 +1196,21 @@ Two things left open, both seen rather than guessed at:
 
 ### The bench
 
-`Game Maker's Scrapbook`, at `/gamemakersscrapbook`. **Not on the shelf** — the
-URL is the whole of how it is reached.
+**Nothing is on the bench, and there is no bench screen.** `/gamemakersscrapbook`
+is still a route, but nothing renders for it: the last argument it settled was
+where the tube data comes from, and by the rule below the bench came down with
+it. The one before that was the fall through space and the sky.
 
-**On trial now: where the tube data comes from.** `ScrapbookTube` draws the
-network twice, from the dataset the game ships with and from one rebuilt out of
-TfL's own open data, with a switch on the map and a readout of every difference
-underneath. This is items **C1 and C2** of the ad-readiness register: the
-shipped station table was generated from a third-party GitHub repository that
-declares **no licence**, and the borough outlines are fetched live from a
-second one. No licence grants no permission to redistribute, and UK database
-right sits on top of copyright for a compilation like the first. Both
-originate with public bodies who publish the same thing under terms that do
-grant it.
-
-**It is not a game.** No `ModeSetup` in front of it, no `useGame`, nothing
-scored and nothing filed — a setup screen exists to ask a player whether they
-want to start, and there is nothing here to start.
-
-The City Spotter copy that used to stand here came down with the arguments it
-settled: the fall through space, and the sky.
-
-**It hands the real `LondonMap` a second dataset rather than copying it**, which
-is a deliberate departure from the "a bench is a copy" rule below. What is on
-trial is the *data*, so the renderer has to be identical on both sides — which
-one shared component gives by construction and a duplicate only promises. The
-seam is `TubeData` and `SHIPPED_TUBE` in `src/data/tubeSources.ts`, and
-`LondonMap`'s `data` prop, which defaults to the shipped bundle so the game is
-untouched. It lives in its own module because exporting a constant from a
-component file breaks fast refresh.
-
-Two things about the fall worth remembering, now that it is shipped code:
-
-- **The planets are not animated.** They are placed in the corridor the camera
-  is about to fall down, and the camera's own motion sweeps them past — near
-  ones faster than far ones, which is what sells it, and is free. Their angles
-  are fixed rather than random so the fall is the same fall every round.
-- **Everything in it is drawn, not downloaded.** The planets' surfaces —
-  banded, ringed, rusty, icy, cratered — are painted onto canvases at load, a
-  few dozen fills apiece. That is the trick: this exists to cover a download,
-  so anything in it that had to download first would be covering itself. Plain
-  coloured balls read as marbles, which is what they were before they had
-  surfaces.
-
-
-Guesses are ignored while the camera is falling, since a click on a world
-sliding under the cursor is nobody's answer.
+Putting one back is a component and one line in `App`'s route table. Two things
+from the last one are worth reusing rather than rebuilding: `TubeData` and
+`SHIPPED_TUBE` in `src/data/tubeSources.ts`, and `LondonMap`'s `data` prop,
+which together let a bench hand the map a different network. That seam is kept
+deliberately — it defaults to the shipped bundle, so it costs the game nothing,
+and it is the thing that let the last comparison judge **the real renderer**
+rather than a copy of it. Which is a departure from the "a bench is a copy"
+rule below, and the right one where what is on trial is data: the drawing has
+to be identical on both sides, which one shared component gives by construction
+and a duplicate only promises.
 
 The rules a bench lives by, all of them load-bearing:
 

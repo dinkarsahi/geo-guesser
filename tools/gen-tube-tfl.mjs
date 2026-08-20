@@ -12,7 +12,8 @@
  * extension, is missing Wood Lane outright, and carries two spelling mistakes
  * that reached the screen.
  *
- * Run: node tools/gen-tube-tfl.mjs > src/data/tubeDataTfl.ts
+ * Run: node tools/gen-tube-tfl.mjs — it writes src/data/tubeData.ts, which is
+ * the file the game reads and the only thing that should ever write it.
  * No key is needed for this volume; TfL ask for one only at scale.
  */
 import { writeFileSync } from "node:fs";
@@ -199,15 +200,22 @@ const outLines = Object.keys(LINES).map((id, i) => ({
 
 const body = `// AUTO-GENERATED from Transport for London's open data — see
 // tools/gen-tube-tfl.mjs, which is the only thing that should write this file.
-// Data provided by Transport for London. Do not edit by hand.
-import type { TubeConnectionRaw, TubeLineDef, TubeStationRaw } from "./tubeData";
+// Do not edit by hand.
+//
+// Powered by TfL Open Data. Contains OS data (c) Crown copyright and database
+// rights ${new Date().getFullYear()}, and Geomni UK Map data (c) and database rights
+// ${new Date().getFullYear()} — the attribution TfL's licence asks for, printed on /credits.
 
-export const tflLineDefs: TubeLineDef[] = ${JSON.stringify(outLines, null, 2)};
+export interface TubeLineDef { id: number; name: string; color: string; }
+export interface TubeStationRaw { name: string; lat: number; lng: number; zone: number; lines: string[]; }
+export interface TubeConnectionRaw { a: string; b: string; color: string; }
 
-export const tflStationsRaw: TubeStationRaw[] = ${JSON.stringify(outStations, null, 2)};
+export const tubeLineDefs: TubeLineDef[] = ${JSON.stringify(outLines, null, 2)};
 
-export const tflConnections: TubeConnectionRaw[] = ${JSON.stringify(outConnections, null, 2)};
+export const tubeStationsRaw: TubeStationRaw[] = ${JSON.stringify(outStations, null, 2)};
+
+export const tubeConnections: TubeConnectionRaw[] = ${JSON.stringify(outConnections, null, 2)};
 `;
 
-writeFileSync(new URL("../src/data/tubeDataTfl.ts", import.meta.url), body);
+writeFileSync(new URL("../src/data/tubeData.ts", import.meta.url), body);
 process.stderr.write(`stations ${outStations.length}, connections ${outConnections.length}\n`);

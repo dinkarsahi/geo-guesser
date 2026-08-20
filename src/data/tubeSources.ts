@@ -20,13 +20,7 @@ import {
  * out from under a running game. This file is the Office for National
  * Statistics' own boundary set, published under the Open Government Licence,
  * which asks for an attribution and grants everything else.
- *
- * **Both are here on purpose.** The legacy one is still what the game draws;
- * the vendored one stands beside it on the bench, so the swap gets looked at
- * before it is made rather than after. See `ScrapbookTube`.
  */
-export const LEGACY_BOROUGHS_URL =
-  "https://raw.githubusercontent.com/clementamiri/London-Borough-TopoJson/master/london-topojson.json";
 export const LONDON_BOROUGHS_URL = "/london-boroughs.json";
 
 /**
@@ -53,5 +47,5 @@ export const SHIPPED_TUBE: TubeData = {
   connections: tubeConnections,
   lines: tubeLines,
   coords: stationCoords,
-  boroughUrl: LEGACY_BOROUGHS_URL,
+  boroughUrl: LONDON_BOROUGHS_URL,
 };

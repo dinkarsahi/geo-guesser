@@ -15,7 +15,6 @@ import { spentOnThisDevice } from "./lib/leaderboard";
 import { loadWorldShapes } from "./lib/worldShapes";
 import { spellScreen, useRoute, type Route } from "./lib/useRoute";
 import CityLocator from "./modes/CityLocator";
-import ScrapbookTube from "./modes/ScrapbookTube";
 import CompanyGuesser from "./modes/CompanyGuesser";
 import CurrencyGuesser from "./modes/CurrencyGuesser";
 import FlagGuesser from "./modes/FlagGuesser";
@@ -441,18 +440,6 @@ export default function App() {
     );
   }
 
-  // The bench. What is on it now is the tube data's provenance — the same
-  // network drawn from TfL's own open data beside the unlicensed dataset the
-  // game ships with, so the difference is looked at rather than trusted. The
-  // City Spotter copy that stood here settled its arguments (the fall through
-  // space, the sky) and came down with them.
-  //
-  // No setup screen in front of it any more: that screen exists to ask a
-  // player whether they want to start a game, and this is not a game. Nothing
-  // is scored, nothing is filed, and there is no `match` to pass on.
-  if (route.at === "bench") {
-    return page(<ScrapbookTube onExit={() => go({ at: "games" })} />);
-  }
 
   if (route.at === "games") {
     return page(

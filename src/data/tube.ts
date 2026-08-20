@@ -81,31 +81,22 @@ const lineNameByRawColor: Record<string, string> = Object.fromEntries(
 );
 
 /**
- * What the dataset calls a station, and what it should be called here.
+ * What the source calls a station, and what it should be called here.
  *
- * The dataset tags stations that shared a name with the initial of their line,
- * which is nobody's name for them — a player asked to find "Shepherd's Bush
- * (H)" is being asked about a station that doesn't exist under that name on any
- * map, sign or ticket. Two of those tags are stale rather than merely ugly: the
- * Hammersmith & City one became Shepherd's Bush Market in 2008, which is
- * exactly the ambiguity the tag was invented to paper over, so the Central line
- * one is now just Shepherd's Bush.
+ * Nearly empty now, and that is the point. It used to carry a misspelling that
+ * left the old dataset holding two Piccadilly Circuses, and the initials that
+ * dataset tagged same-named stations with — "Shepherd's Bush (C)", "Edgware
+ * Road (B)" — which is nobody's name for them. Those went when the data came
+ * from TfL instead, which spells its own stations correctly.
  *
- * Where two entries end up under one name they become one station — see
- * `tubeStations`.
+ * What is left is the one thing TfL is *not* the right authority on. It lists
+ * stations operationally, so Hammersmith, Paddington and Edgware Road are each
+ * two entries — right for a journey planner, wrong for a guessing game, where
+ * two right answers to "Hammersmith" is a question with no answer. That merge
+ * happens in the generator, where it can also join the connections; nothing is
+ * left for this to do.
  */
-const stationNames: Record<string, string> = {
-  // A misspelling that left the dataset holding two Piccadilly Circuses.
-  "Picadilly Circus": "Piccadilly Circus",
-  "Shepherd's Bush (C)": "Shepherd's Bush",
-  "Shepherd's Bush (H)": "Shepherd's Bush Market",
-  // Both of these really are called Edgware Road, by TfL and by everyone else.
-  // They're separate stations 150 metres apart across the Marylebone Road, and
-  // no player asked for "Edgware Road" can be expected to pick which — so the
-  // question has one answer and either side of the road is it.
-  "Edgware Road (B)": "Edgware Road",
-  "Edgware Road (C)": "Edgware Road",
-};
+const stationNames: Record<string, string> = {};
 const canonical = (name: string) => stationNames[name] ?? name;
 
 /** "Zone 3", or "Zone 2/3" for a boundary station. */
