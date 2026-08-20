@@ -161,20 +161,11 @@ function DuelMark() {
  * are you playing — and seven cards in front of it made the answer "nobody"
  * look like the only one on offer.
  */
-function AllGames({
-  onPick,
-  onBack,
-}: {
-  onPick: (mode: Mode) => void;
-  onBack: () => void;
-}) {
+function AllGames({ onPick }: { onPick: (mode: Mode) => void }) {
   return (
     <div className="menu">
-      <div className="menu-bar">
-        <button className="btn btn-ghost" onClick={onBack}>
-          Home
-        </button>
-      </div>
+      {/* No Home button of its own any more: the bar across the top offers it,
+          in the same place on every screen. This one only ever said Home. */}
       <h1>All Games</h1>
       <p className="muted menu-sub">
         Seven ways to be wrong about where things are.
@@ -229,11 +220,14 @@ const NO_SESSION: Session = { path: "", started: false, match: null };
  * because the map is pinned to the window and nothing scrolls, so a footer
  * would either be painted over the map or never reached.
  *
- * These two are the contest flows: today's round, which is a draw that hands
- * straight over to a game, and the duel, which is a lobby walking through its
- * own steps to a start. A footer under either is a row of doors offered at the
- * moment the player has already chosen one — and on the draw it would be
- * carried off by the fade seven seconds later, having never been read.
+ * These are the contest screens: today's round, which is a draw that hands
+ * straight over to a game; its table; and the duel, which is a lobby walking
+ * through its own steps to a start. A footer under any of them is a row of
+ * doors offered at the moment the player has already chosen one — and on the
+ * draw it would be carried off by the fade seven seconds later, having never
+ * been read. The table has the strongest claim of the three: there is
+ * deliberately nothing under it but the table, and a row of links is one more
+ * way of saying "and now what?" beneath something somebody came here to read.
  *
  * **The way out of them is the bar across the top**, which every screen has:
  * one press to home, and the footer is there in full. Nothing is unreachable
@@ -243,7 +237,7 @@ const NO_SESSION: Session = { path: "", started: false, match: null };
  *
  * Written out rather than derived, so adding a route doesn't quietly join it.
  */
-const FOOTERLESS: Route["at"][] = ["daily", "duel"];
+const FOOTERLESS: Route["at"][] = ["daily", "leaderboard", "duel"];
 
 /** The mode itself, whichever it is, wired to the props they all share. */
 function PlayMode({ mode, ...props }: ModeProps & { mode: Mode }) {
@@ -399,12 +393,12 @@ export default function App() {
 
   if (route.at === "credits") {
     return page(
-      <Credits onBack={() => go({ at: "home" })} onAbout={() => go({ at: "about" })} />,
+      <Credits onAbout={() => go({ at: "about" })} />,
     );
   }
 
   if (route.at === "privacy") {
-    return page(<Privacy onBack={() => go({ at: "home" })} />);
+    return page(<Privacy />);
   }
 
   if (route.at === "settings") {
@@ -413,7 +407,8 @@ export default function App() {
         settings={settings}
         // Back to whichever screen sent you, which for a game's setup screen
         // is the difference between changing the map and losing your place.
-        backLabel={settingsFrom.at === "home" ? "Home" : "Back"}
+        // Nothing at all when that screen is home: the bar above offers it.
+        backLabel={settingsFrom.at === "home" ? null : "Back"}
         // Written through on every press rather than on a Save: the press is
         // the change, and a preference that needed confirming would be a
         // longer errand than the screen it replaced.
@@ -482,10 +477,7 @@ export default function App() {
 
   if (route.at === "games") {
     return page(
-      <AllGames
-        onPick={(m) => go({ at: "game", mode: m })}
-        onBack={() => go({ at: "home" })}
-      />,
+      <AllGames onPick={(m) => go({ at: "game", mode: m })} />,
     );
   }
 

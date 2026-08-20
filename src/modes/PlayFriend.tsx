@@ -440,11 +440,17 @@ export default function PlayFriend({
 
   return (
     <div className="menu setup">
-      <div className="menu-bar">
-        <button className="btn btn-ghost" onClick={back}>
-          {screen === "pick" ? "Home" : "Back"}
-        </button>
-      </div>
+      {/* The first screen's button only ever said Home, which the bar above
+          now says on every screen. The later ones step back through this
+          screen's own steps without leaving the duel, which is a different
+          thing entirely and stays. */}
+      {screen !== "pick" && (
+        <div className="menu-bar">
+          <button className="btn btn-ghost" onClick={back}>
+            Back
+          </button>
+        </div>
+      )}
       <h1>
         <span className="mode-emoji duel-mark" aria-hidden="true">
           <span className="duel-mark-blue">🥊</span>

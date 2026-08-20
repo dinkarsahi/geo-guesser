@@ -456,8 +456,8 @@ being rationed and a pair of buttons offering other games were three different
 ways of saying "and now what?" beneath something somebody came to read, and the
 bar across the top is where the way out lives.
 
-The three doors moved to `/home` and are one press away from anywhere — the
-wordmark in the top bar. That page asks one question — **who are you playing** —
+The three doors moved to `/home`, and each of them is now one press away from
+anywhere in its own right — they are named in the top bar. That page asks one question — **who are you playing** —
 and answers it with three cards: `Today's Round`, `Duel a Friend`, and `All Games`. The games
 themselves are behind the third of those, on a shelf that ends with whatever is
 being built next. That card sits after the games rather than among them: it
@@ -570,19 +570,48 @@ to offer the tube, and the setup screen now offers nothing to anybody.
 
 **A top bar across every screen that isn't a round** — `SiteFooter`'s opposite
 number, and drawn by the same `page()` wrapper. SpotOn on the left (the way
-home, and just a label on the home page itself), Settings on the right. Both
-were loose buttons before, in a different place on each screen; a thing that
-appears everywhere belongs in the same place everywhere.
+home, and just a label on the home page itself), then **the parts of the site
+this screen isn't**, then Settings on the right. All of them were loose buttons
+before, in a different place on each screen; a thing that appears everywhere
+belongs in the same place everywhere.
+
+**It offers the four sections rather than only a way back**: Home, Today's
+Round, Duel, All Games. With Home alone, every journey between two parts of the
+site went out through the front door — the table to the shelf was Home, then
+All Games — and the home page's three cards were the only place the parts were
+named together.
+
+**The one you are on is never offered**, which is what makes the bar say where
+you are as well as where else there is. That is a **section** and not a route,
+because several screens sit inside one: `sectionOf` in `TopBar` folds the
+leaderboard into today's round, and a game's setup screen and the bench into
+All Games. Without that fold, a setup screen would offer All Games in the bar
+next to its own Back, which goes to the same shelf — the same door twice, which
+is a reader wondering how they differ. The reading pages and the settings
+belong to no section and are offered all four.
+
+**Today's Round in the bar leads to the table once the device has had its go**,
+exactly as the home page's card does. `/` sends a spent device home, so offered
+bare it would bounce the player straight back out — a door that reads as
+broken.
+
+Four labels plus the wordmark and Settings will not sit on one line on a phone,
+so `.top-bar-nav` **wraps** rather than scrolling or squeezing: a bar that
+grows a second line is honest where one that clips a destination is not.
 
 It is **outside the reading column** so it runs the full width of the window,
 which is why `#root` is now full width and the 1126px column moved down to
 `.page-body`. A round renders neither, and takes the whole window as it always
 did.
 
-**The screen's own back button stays**, and is not the same thing: the bar is
-the way *out* — home, or to the settings — while several screens have a way
-*back* that means something else. A game's setup screen returns to the shelf it
-was picked off; the duel's steps back through its own screens without leaving.
+**A screen's own back button stays only where it means something the bar
+doesn't already offer.** A game's setup screen returns to the shelf it was
+picked off, the duel's steps back through its own screens without leaving, and
+Settings reached from a setup screen goes back to it — those are not the bar's
+job. What has gone is every button that only ever said **Home**: All Games,
+Credits, Privacy, Settings-from-home and the duel's first screen each had one,
+and a Home button under a bar with Home in it is the same door twice. The
+`onBack` props behind them went with them.
 
 **One palette, and it is dark.** The app used to carry two and let
 `prefers-color-scheme` choose, so a player whose laptop was set to light got a
@@ -1210,11 +1239,17 @@ cheating it only cheats you. This game has a table, so it is one notch tighter,
 and that notch is all it is.
 
 **What it costs, knowingly:** the shared laptop. One household tablet is one go
-at today's round, whoever picks it up. So the block is written for a person who
-may not be the one who played — `Leaderboard`'s locked line says "This device
-has already played", never "you have" — and `HeadToHead` puts All Games and Duel
-a Friend under the table, since neither is rationed by the day. That offer only
-appears under a table the player was *sent* to, never one they asked to see.
+at today's round, whoever picks it up.
+
+`Leaderboard`'s locked line used to be written for that person — "This device
+has already played", never "you have", so the second person in a household
+wasn't read an accusation about a game they never had. **It now says "You have
+already played today's round. See where you stand on the leaderboard."**, by
+decision rather than by drift. The honest note is that on a shared device it
+tells the wrong person they played; the judgement is that the ordinary case is
+one person one device, and that "this device" reads as machinery to everybody
+else. If the shared-laptop case ever comes back up, this is the line to change
+and this paragraph is why.
 
 **Duel a Friend** (`kind: "room"`, code letter `V`). A drawn code, a lobby, and
 a moment when it starts. That moment is the only thing that travels — after it,

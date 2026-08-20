@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { dailyCode, gameOfDay, modeEmoji, MATCH_ROUNDS, modeTitle } from "../lib/match";
+import { dailyCode, gameOfDay, modeEmoji, modeTitle } from "../lib/match";
 import { fetchBoard, type Board } from "../lib/leaderboard";
 import { hasRemote } from "../lib/supabase";
 import type { ModeId } from "../modes/ModeProps";
@@ -44,19 +44,18 @@ export default function Leaderboard({ mode, player, locked = false }: Leaderboar
   return (
     <div className="setup-panel h2h-code-panel">
       {locked && (
-        // "This device" rather than "you", and it is not a hedge: the lock is
-        // the device's, so this same line is what the second person on a shared
-        // laptop reads. Told "you've already played", they would be reading an
-        // accusation about a game they never had.
         <p className="h2h-locked">
-          This device has already played today's {modeTitle(game)}. One go a day —
-          here's the table.
+          You have already played today's round. See where you stand on the
+          leaderboard.
         </p>
       )}
 
+      {/* The game, and nothing else. "5 rounds · today" was two facts nobody
+          is here for: every game is five rounds, and a table headed Today's
+          Leaderboard is not going to be yesterday's. */}
       <p className="h2h-setup">
         <span className="mode-emoji h2h-setup-emoji">{modeEmoji(game)}</span>{" "}
-        {modeTitle(game)} · {MATCH_ROUNDS} rounds · today
+        {modeTitle(game)}
       </p>
 
       {loading && <p className="muted h2h-code-hint">Looking…</p>}

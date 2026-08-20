@@ -13,6 +13,17 @@
   margin: 0 auto;
   padding: 10px 20px;
 }
+/* The sections, next to the wordmark. Allowed to wrap rather than to scroll or
+   to squeeze: on a narrow window four labels and Settings won't sit on one
+   line, and a bar that grows a second line is honest where one that clips a
+   destination is not. */
+.top-bar-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  margin-left: 6px;
+}
 .top-bar-gap {
   flex: 1;
 }
@@ -39,6 +50,26 @@
 /* The name on the home page, where it is a label and not a way anywhere. */
 .top-bar-mark {
   cursor: default;
+}
+/* The wordmark is the one thing in the bar that never wraps away from the top
+   line, so the bar still says whose site it is however narrow the window. */
+.top-bar-mark,
+.top-bar-inner > .top-bar-link:first-child {
+  flex: none;
+}
+@media (max-width: 700px) {
+  .top-bar-inner {
+    flex-wrap: wrap;
+    padding: 8px 14px;
+  }
+  .top-bar-mark,
+  .top-bar-link {
+    font-size: 14px;
+    padding: 5px 8px;
+  }
+  .top-bar-nav {
+    margin-left: 0;
+  }
 }
 
 /* ---- Shared bits ---------------------------------------------------- */

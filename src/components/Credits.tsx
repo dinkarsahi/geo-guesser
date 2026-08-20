@@ -23,19 +23,12 @@ const SOFTWARE: { name: string; licence: string; holder: string }[] = [
 ];
 
 interface CreditsProps {
-  onBack: () => void;
   onAbout: () => void;
 }
 
-export default function Credits({ onBack, onAbout }: CreditsProps) {
+export default function Credits({ onAbout }: CreditsProps) {
   return (
     <div className="menu doc">
-      <div className="menu-bar">
-        <button className="btn btn-ghost" onClick={onBack}>
-          Home
-        </button>
-      </div>
-
       <h1>Credits</h1>
       <p className="muted menu-sub">
         SpotOn is built on other people's maps, measurements and code. This is who they

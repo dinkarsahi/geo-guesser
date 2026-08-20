@@ -14,17 +14,11 @@ import { CONTACT_EMAIL, DATA_REGION, POLICY_UPDATED } from "../lib/site";
  * into a box to play a geography game, and the honest summary of their position
  * is short enough to say in a sentence.
  */
-export default function Privacy({ onBack }: { onBack: () => void }) {
+export default function Privacy() {
   const mailto = `mailto:${CONTACT_EMAIL}`;
 
   return (
     <div className="menu doc">
-      <div className="menu-bar">
-        <button className="btn btn-ghost" onClick={onBack}>
-          Home
-        </button>
-      </div>
-
       <h1>Privacy</h1>
       <p className="muted menu-sub">
         No accounts, no sign-in, no tracking. The only thing SpotOn asks you for is a

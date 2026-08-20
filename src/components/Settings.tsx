@@ -60,18 +60,29 @@ export default function Settings({
   settings: GameSettings;
   onChange: (s: GameSettings) => void;
   onBack: () => void;
-  /** Named by the caller, because this screen is reached from two places and
-      a "Home" that goes back to a game's setup screen is a lie about where
-      the press leads. */
-  backLabel: string;
+  /**
+   * What the screen's own Back button says, or **null for no button at all**.
+   * Named by the caller because this screen is reached from two places and a
+   * "Home" that goes back to a game's setup screen is a lie about where the
+   * press leads — and null where the only honest label would be "Home", which
+   * the bar above already offers.
+   */
+  backLabel: string | null;
 }) {
   return (
     <div className="menu setup">
-      <div className="menu-bar">
-        <button className="btn btn-ghost" onClick={onBack}>
-          {backLabel}
-        </button>
-      </div>
+      {/* Only where Back means somewhere the bar above doesn't already go.
+          Reached from home there is nothing here the bar isn't offering, and
+          a Home button under a bar with Home in it is the same door twice;
+          reached from a game's setup screen it is the difference between
+          changing the map and losing your place, so it stays. */}
+      {backLabel !== null && (
+        <div className="menu-bar">
+          <button className="btn btn-ghost" onClick={onBack}>
+            {backLabel}
+          </button>
+        </div>
+      )}
       <h1>Settings</h1>
       <p className="muted menu-sub">
         How you like your map. Saved on this device, and used by every game.
