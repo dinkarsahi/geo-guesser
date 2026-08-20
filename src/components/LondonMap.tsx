@@ -23,7 +23,19 @@ const MIN_ZOOM = 0.45;
 // How near a station a click has to land, in screen pixels, to count as that
 // station. Generous, because the dots are small when you're zoomed out.
 const SNAP_PX = 20;
-const MAX_ZONE_BAND = 6; // zones 6+ grouped into the outermost band
+/**
+ * How many rings of shading the map is drawn in. Zones past this share the
+ * outermost one.
+ *
+ * Nothing on the map says which zone a band *is* any more — the numbered
+ * circles have gone. They were a fact nobody needed while looking for a
+ * station, and they were the only thing making the cap a lie: the eight
+ * stations out past Rickmansworth are zones 7 to 9, and every one of them was
+ * sitting inside a ring labelled 6. Unlabelled, the rings say the true thing
+ * and only the true thing — further out is further out. The real zone is still
+ * on the station itself, in the reveal.
+ */
+const MAX_ZONE_BAND = 6;
 
 // Zoomed-in stations are pushed apart on top of the plain zoom, so clusters
 // like Bank/Monument separate into individually clickable dots. Zoomed out
@@ -42,7 +54,6 @@ const prefersReducedMotion = () =>
   typeof window !== "undefined" &&
   !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-const ZONE_LABEL_R = 8;
 const LINE_WIDTH = 2.4;
 const STRIPE_GAP = 1.7; // sideways step between lines sharing a stretch of track
 
@@ -210,63 +221,6 @@ function clearance(p: Pt, stations: Pt[], segments: [Pt, Pt][], bound = -Infinit
   return best;
 }
 
-/** Distance from o to where a ray leaves a convex polygon (o must be inside). */
-function rayExitRadius(poly: Pt[], o: Pt, dir: Pt): number | null {
-  let best: number | null = null;
-  for (let i = 0; i < poly.length; i++) {
-    const a = poly[i];
-    const b = poly[(i + 1) % poly.length];
-    const ex = b[0] - a[0];
-    const ey = b[1] - a[1];
-    const denom = dir[0] * ey - dir[1] * ex;
-    if (Math.abs(denom) < 1e-9) continue;
-    const t = ((a[0] - o[0]) * ey - (a[1] - o[1]) * ex) / denom;
-    const u = ((a[0] - o[0]) * dir[1] - (a[1] - o[1]) * dir[0]) / denom;
-    if (t >= 0 && u >= -1e-9 && u <= 1 + 1e-9 && (best === null || t > best)) best = t;
-  }
-  return best;
-}
-
-/**
- * Finds the emptiest spot within an annulus (between `inner` and `outer`), at
- * least `radius` clear of the band edges and of anything already placed.
- */
-function findClearSpot(
-  outer: Pt[],
-  inner: Pt[] | null,
-  centre: Pt,
-  radius: number,
-  stations: Pt[],
-  segments: [Pt, Pt][],
-  taken: Pt[],
-): Pt | null {
-  const ANGLES = 128;
-  let best: Pt | null = null;
-  let bestScore = -Infinity;
-  for (let i = 0; i < ANGLES; i++) {
-    const a = (2 * Math.PI * i) / ANGLES;
-    const dir: Pt = [Math.cos(a), Math.sin(a)];
-    const rOut = rayExitRadius(outer, centre, dir);
-    if (rOut === null) continue;
-    const rIn = inner ? rayExitRadius(inner, centre, dir) ?? 0 : 0;
-    const lo = rIn + radius + 2;
-    const hi = rOut - radius - 2;
-    if (hi < lo) continue;
-    for (const t of [0, 0.25, 0.5, 0.75, 1]) {
-      const r = lo + (hi - lo) * t;
-      const p: Pt = [centre[0] + dir[0] * r, centre[1] + dir[1] * r];
-      let score = clearance(p, stations, segments, bestScore);
-      for (const q of taken)
-        score = Math.min(score, Math.hypot(p[0] - q[0], p[1] - q[1]) / 2.4);
-      if (score > bestScore) {
-        bestScore = score;
-        best = p;
-      }
-    }
-  }
-  return best;
-}
-
 export default function LondonMap({
   onGuess,
   guess,
@@ -300,8 +254,8 @@ export default function LondonMap({
   const theme = dark
     ? {
         bg: "#0d0f14", zoneOdd: "#141821", zoneEven: "#1c212c", borough: "#2b313d",
-        dot: "#0d0f14", dotStroke: "#cbd2dc", labelBg: "#1c212c", labelStroke: "#5a6473",
-        labelText: "#cbd2dc", thames: "#1d3a55", hoverRing: "#c084fc",
+        dot: "#0d0f14", dotStroke: "#cbd2dc", bandEdge: "#5a6473",
+        thames: "#1d3a55", hoverRing: "#c084fc",
         // The light edge under a line dark enough to be lost in the ground.
         // Not pure white: at this width that reads as the line rather than as
         // its outline, which is the mistake this replaced.
@@ -309,8 +263,8 @@ export default function LondonMap({
       }
     : {
         bg: "#ffffff", zoneOdd: "#ffffff", zoneEven: "#e6e6e6", borough: "#d3d3d3",
-        dot: "#ffffff", dotStroke: "#222", labelBg: "#ffffff", labelStroke: "#8a8a8a",
-        labelText: "#333", thames: "#9dc3e6", hoverRing: "#7c3aed",
+        dot: "#ffffff", dotStroke: "#222", bandEdge: "#8a8a8a",
+        thames: "#9dc3e6", hoverRing: "#7c3aed",
         // Never used on white paper, where a black line is the easiest thing
         // on the map to see. Present so the two themes are the same shape.
         casing: "#ffffff",
@@ -373,11 +327,6 @@ export default function LondonMap({
       band: Math.min(Math.round(s.zone), MAX_ZONE_BAND),
       p: projection([s.lng, s.lat]) as Pt,
     }));
-    const z1 = banded.filter((o) => o.band === 1).map((o) => o.p);
-    const centre: Pt = [
-      z1.reduce((a, p) => a + p[0], 0) / z1.length,
-      z1.reduce((a, p) => a + p[1], 0) / z1.length,
-    ];
 
     const hulls: Record<number, Pt[]> = {};
     for (let z = 1; z <= MAX_ZONE_BAND; z++)
@@ -417,18 +366,6 @@ export default function LondonMap({
       return { ...l, at, off: best };
     });
 
-    const labels: { z: number; x: number; y: number }[] = [];
-    for (let z = 1; z <= MAX_ZONE_BAND; z++) {
-      if (!hulls[z] || hulls[z].length < 3) continue;
-      const inner = z > 1 && hulls[z - 1].length >= 3 ? hulls[z - 1] : null;
-      const spot = findClearSpot(
-        hulls[z], inner, centre, ZONE_LABEL_R, stationPts, segments, taken,
-      );
-      if (!spot) continue;
-      labels.push({ z, x: spot[0], y: spot[1] });
-      taken.push(spot);
-    }
-
     const thames = THAMES.map((c) => projection(c)).filter((p): p is Pt => !!p);
 
     // One marker per station, carrying the colour of every line that calls
@@ -446,7 +383,7 @@ export default function LondonMap({
         .map((l) => l.color),
     }));
 
-    return { bands, labels, landmarks, thames, dots };
+    return { bands, landmarks, thames, dots };
   }, [projection, tubeStations, tubeConnections, tubeLines, stationCoords]);
 
   /**
@@ -705,7 +642,7 @@ export default function LondonMap({
                 key={z}
                 points={hull.map(px).join(" ")}
                 fill={z % 2 === 1 ? theme.zoneOdd : theme.zoneEven}
-                stroke={theme.labelStroke}
+                stroke={theme.bandEdge}
                 strokeOpacity={0.35}
                 strokeWidth={sz(0.6)}
               />
@@ -891,21 +828,6 @@ export default function LondonMap({
                     <circle cx={q[0]} cy={q[1]} r={r + sz(2.4)} fill="none"
                       stroke={theme.hoverRing} strokeWidth={sz(1.3)} />
                   )}
-                </g>
-              );
-            })}
-
-            {/* Zone number labels, sitting in the emptiest part of each band. */}
-            {layout.labels.map(({ z, x, y }) => {
-              const q = sp([x, y]);
-              return (
-                <g key={z}>
-                  <circle cx={q[0]} cy={q[1]} r={sz(ZONE_LABEL_R)} fill={theme.labelBg}
-                    stroke={theme.labelStroke} strokeWidth={sz(1.2)} />
-                  <text x={q[0]} y={q[1]} fontSize={sz(10)} fontWeight={700} textAnchor="middle"
-                    dominantBaseline="central" fill={theme.labelText}>
-                    {z}
-                  </text>
                 </g>
               );
             })}

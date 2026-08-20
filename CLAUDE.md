@@ -1021,10 +1021,22 @@ cosmetic. Measured against what the game actually plays (265 stations, after
   "Bromley-By-Bow". One is stale: Heathrow Terminal 1 closed in 2015.
 - **Stations move about 30 m** in the middle of the pack, 367 m at worst
   (Southwark) — platform centroid against entrance.
-- **Seventeen fare zones disagree**, and this is the one that reaches the
-  score: `tubeNearby.ts` sizes the Mind the Gap circle off the zone, so a zone
-  that moves moves a radius, and the circle's printed count has to keep
-  matching what a player can count off the screen.
+- **Sixteen fare zones disagree**, and this is the one that reaches the score:
+  `tubeNearby.ts` sizes the Mind the Gap circle off the zone, so a zone that
+  moves moves a radius, and the circle's printed count has to keep matching
+  what a player can count off the screen. Several are TfL correcting the old
+  set outright — Amersham and Chesham are zone 9, not 10.
+
+**The zone bands carry no numbers.** They were numbered circles once, placed in
+the emptiest part of each ring, and they went for two reasons at once. Nobody
+looking for a station needs to be told which zone they are looking at — the
+question is never about zones — and the numbers were the only thing making
+`MAX_ZONE_BAND` a lie: zones past 6 share the outermost ring, so the eight
+stations out beyond Rickmansworth, which are zones 7 to 9, all sat inside a
+ring that said **6**. Unlabelled, the rings say the true thing and only the
+true thing, which is that further out is further out. The real zone is still on
+the station itself in the reveal. `findClearSpot` and `rayExitRadius` went with
+them — ninety lines whose only customer was placing those numbers.
 
 **The trap, and it was visible on the map within a minute.** Zones do not come
 from `Route/Sequence` — that endpoint carries a `zone` on each stop but leaves
