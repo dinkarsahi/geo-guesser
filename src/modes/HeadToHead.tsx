@@ -29,10 +29,17 @@ interface HeadToHeadProps {
 /**
  * The three beats of the draw, and the third one says nothing.
  *
- * `DRAW_MS` is the light going round: long enough that a player can see what
- * kind of thing is happening and start to guess where it will stop, which
- * three and a half seconds was not — it read as a shuffle that was over before
- * it had been understood.
+ * `DRAW_MS` is the light going round, and it is **slow on purpose**. Four
+ * seconds of twenty-four hops was a fifty-millisecond flicker at the start —
+ * fast enough to read as the page glitching rather than as a wheel spinning,
+ * and somebody arriving for the first time could not tell what was being done
+ * to them before it was over. The fix is both halves at once: fewer hops over
+ * more time, so the first hold is about a seventh of a second and the last
+ * nearly a second and a half. The eye can follow every step of it, which is
+ * what makes it read as a draw slowing to a stop.
+ *
+ * It can afford the seconds because it is only ever shown **once a device** —
+ * see `SEEN_KEY`.
  *
  * `READ_MS` is the beat nothing moves in. The light has stopped, the six it
  * isn't have gone quiet and the name is printed under the shelf, and the
@@ -47,18 +54,56 @@ interface HeadToHeadProps {
  * carried no news. Faded out under its own answer, the last thing the player
  * sees is the thing they are about to play.
  */
-const DRAW_MS = 4000;
+const DRAW_MS = 6500;
 const READ_MS = 2600;
 const LEAVE_MS = 700;
 
 /**
+ * That this device has been shown the draw, so it is only ever shown once.
+ *
+ * The light going round is an explanation — *this is a different game every
+ * day, and here is today's* — and an explanation is worth watching the first
+ * time and nothing but a delay the second. A player who reloads before playing
+ * had it explained a moment ago; a regular had it explained the day they
+ * arrived. Both are sent straight to the last two beats, which still name the
+ * game, so nobody loses the answer by having already understood the question.
+ *
+ * Deliberately not keyed on the date: the draw is not news about today, it is
+ * news about how this game works, and that is only ever news once.
+ *
+ * **This is storage, so it is on the privacy page** — see `Privacy.tsx`, which
+ * names every key this app writes.
+ */
+const SEEN_KEY = "spoton.draw.v1";
+
+function drawSeen(): boolean {
+  try {
+    return localStorage.getItem(SEEN_KEY) === "1";
+  } catch {
+    // Storage off, or a private window that refuses it. The draw plays, which
+    // is the better of the two failures: a first-timer must not be robbed of
+    // the one screen that tells them the game changes daily.
+    return false;
+  }
+}
+
+function rememberDraw(): void {
+  try {
+    localStorage.setItem(SEEN_KEY, "1");
+  } catch {
+    /* see above */
+  }
+}
+
+/**
  * How many games are lit on the way, counting the one it stops on.
  *
- * Raised along with `DRAW_MS` rather than left alone: the same twenty hops
- * spread over five seconds is a slower light rather than a longer draw, and
- * slow hops early on read as hesitation rather than as a wheel spinning.
+ * Cut along with `DRAW_MS` being raised, and the two are one knob: hops over
+ * time is the rate the light travels at, and it was three times too fast to
+ * follow. Fourteen over six and a half seconds is still twice round the shelf
+ * — plainly a wheel going round — at a pace a first-time player can watch.
  */
-const HOPS = 24;
+const HOPS = 14;
 
 /**
  * Which game is lit when, and how long each one holds.
@@ -119,8 +164,14 @@ function drawPlan(landOn: number, count: number): { lit: number; wait: number }[
  * them and stops on today's, the other six go quiet, and *then* the world is
  * flown to.
  *
+ * **It is shown once a device, and slowly.** Both follow from what it is for:
+ * it exists to teach one thing, so it is paced to be followed rather than
+ * glimpsed, and once that has been taught there is nothing left for it to do
+ * — a returning player, or one who simply reloaded, is dropped at the last
+ * two beats, where the game is still named and held. See `SEEN_KEY`.
+ *
  * Two things it buys beyond the moment itself, and both are the reason it
- * earns its four and a half seconds rather than costing them:
+ * earns its seconds rather than costing them:
  *
  * - **The world is fetched and built while it runs.** `loadWorldShapes` is a
  *   megabyte of Natural Earth to download, parse, coarsen and index, and done
@@ -173,12 +224,23 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
   // same answer, fading out.
   const [beat, setBeat] = useState<"drawing" | "drawn" | "leaving">("drawing");
 
-  // Somebody who has asked not to be animated is told the answer instead of
-  // shown it: the same screen, the same words, without the light going round.
-  const [stillness] = useState(
+  // Who is told the answer instead of being shown it arrive: the same screen
+  // and the same words, without the light going round. Two people want that,
+  // for reasons that have nothing in common beyond the ending.
+  //
+  // Somebody who has asked not to be animated, and **anybody who has watched
+  // this draw before**. The light is an explanation, and an explanation is
+  // worth six seconds the first time and nothing but a wait every time after
+  // — most sharply on a reload before playing, where the player is watching a
+  // wheel decide something they were told a moment ago.
+  //
+  // Read once, on the first render, so a value written a line later can't
+  // restart the screen halfway through it.
+  const [skip] = useState(
     () =>
-      typeof matchMedia === "function" &&
-      matchMedia("(prefers-reduced-motion: reduce)").matches,
+      drawSeen() ||
+      (typeof matchMedia === "function" &&
+        matchMedia("(prefers-reduced-motion: reduce)").matches),
   );
 
   // Fetch and build the world while the light goes round, rather than at the
@@ -188,7 +250,13 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
   // `loadWorldShapes` caches its own promise, so this is a warm-up rather than
   // a second download however often it is called.
   useEffect(() => {
-    if (!spent) void loadWorldShapes().catch(() => {});
+    if (spent) return;
+    void loadWorldShapes().catch(() => {});
+    // Filed on arrival rather than on the deal, so a reload halfway through
+    // the light counts as having seen it — which is the exact case this is
+    // for. A device sent home unplayed never gets here, and so is still owed
+    // the draw.
+    rememberDraw();
   }, [spent]);
 
   // Straight back out again if the day has been spent here. Before the draw
@@ -218,7 +286,7 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
     };
 
     // The two beats after the light stops, and the deal at the end of them.
-    // Chained from wherever they are entered, so stillness and the hops below
+    // Chained from wherever they are entered, so the shortcut and the hops below
     // share one ending rather than each having their own.
     let id = 0;
     const settle = () => {
@@ -229,9 +297,12 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
       }, READ_MS);
     };
 
-    if (stillness) {
+    if (skip) {
       // Straight to the answer: the shelf is already showing it, because
-      // `shown` reads it off the preference rather than being walked there.
+      // `shown` reads it off `skip` rather than being walked there. The two
+      // beats that remain are still the whole point — the name is printed and
+      // held — and they are also what the world is loaded behind, which is why
+      // this is a shortcut rather than a cut.
       settle();
       return () => clearTimeout(id);
     }
@@ -251,16 +322,16 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
     };
     id = window.setTimeout(hop, plan[1].wait);
     return () => clearTimeout(id);
-  }, [code, spent, plan, stillness, onStart, setup]);
+  }, [code, spent, plan, skip, onStart, setup]);
 
-  // Where the light is: the last card outright for anybody who asked not to be
-  // animated, and otherwise wherever the chain has walked it to. Derived rather
-  // than set, so stillness needs no effect of its own to arrange it.
-  const shown = stillness ? plan.length - 1 : Math.min(step, plan.length - 1);
+  // Where the light is: the last card outright for anybody taking the shortcut,
+  // and otherwise wherever the chain has walked it to. Derived rather than set,
+  // so the shortcut needs no effect of its own to arrange it.
+  const shown = skip ? plan.length - 1 : Math.min(step, plan.length - 1);
   // Whether the six it isn't have gone quiet, which is the beat's business and
-  // not the light's: on the reduced-motion path the light is on the answer
-  // from the first frame, and greying the rest before the beat says so would
-  // give the answer away with no draw to have given it.
+  // not the light's: on the shortcut the light is on the answer from the first
+  // frame, and greying the rest before the beat says so would give the answer
+  // away with no draw to have given it.
   const landed = beat !== "drawing";
   const lit = plan[shown].lit;
 
@@ -271,9 +342,12 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
     // arrives, rather than one being cut to the other.
     <div className={`menu setup daily-draw${beat === "leaving" ? " is-leaving" : ""}`}>
       <h1>Today's Round</h1>
-      <p className="muted menu-sub">
-        One game a day, and the day picks it — the same one for everybody.
-      </p>
+      {/* No line under the heading. "One game a day, and the day picks it"
+          was a rule being explained above a shelf that was in the middle of
+          demonstrating it, and read as something to study at the one moment
+          the eye should be on the light. What it said is said by the draw
+          itself, and again by "Today's Round: Currency Spotter" across the
+          top of the round. */}
 
       <div className="h2h-modes draw-shelf">
         {MATCH_MODES.map((m, i) => (

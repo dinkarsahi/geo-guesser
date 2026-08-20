@@ -174,6 +174,15 @@ export default function GameFrame<T>({
   // wants it uncovered every time, and having to press it again each round is
   // the thing they were trying to get away from.
   const [panelFolded, setPanelFolded] = useState(false);
+  // Whether the player has closed the line telling them what to click. It is a
+  // reminder rather than a control, and on a phone it is a reminder sitting
+  // across the bottom of the map — which on a narrow screen is a fair share of
+  // the world you are being asked to point at. So it takes a cross.
+  //
+  // Closed for the rest of the game rather than for this round: somebody who
+  // has dismissed "click the map" has read it, and printing it again at the
+  // next question is the game insisting.
+  const [hintClosed, setHintClosed] = useState(false);
   // TEMPORARY — the tap cheat's counter. A ref rather than state: nothing on
   // screen changes until the sixth tap, and counting in state would redraw the
   // map under the player five times for nothing. Kept with the round it was
@@ -403,12 +412,26 @@ export default function GameFrame<T>({
         })}
       </div>
 
-      {!isResult && !currentGuess && (
+      {!isResult && !currentGuess && !(hintClosed && startingInMs === null) && (
         <p className="hint muted hud">
           {/* Nothing can be clicked yet, so it doesn't ask to be. The prompt
               above is already up, which is deliberate — reading the question
               while the world arrives is the point of the pause. */}
           {startingInMs === null ? hint : "Getting your bearings…"}
+          {/* Only over the hint itself. "Getting your bearings…" is a state
+              the game is in rather than something being said to the player,
+              and it takes itself off screen a moment later; a cross on it
+              offers to close something that is already closing. */}
+          {startingInMs === null && (
+            <button
+              type="button"
+              className="hint-close"
+              aria-label="Hide this tip"
+              onClick={() => setHintClosed(true)}
+            >
+              ×
+            </button>
+          )}
         </p>
       )}
 

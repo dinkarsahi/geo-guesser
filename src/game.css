@@ -1630,13 +1630,49 @@ body:has(.game-play) {
   left: 50%;
   transform: translateX(-50%);
   margin: 0;
-  padding: 8px 16px;
+  /* Room on the right for the cross, which sits inside the pill rather than
+     hanging off it: outside, it is a second floating thing over the map. */
+  padding: 8px 10px 8px 16px;
   border-radius: 999px;
   white-space: nowrap;
   background: rgba(12, 15, 22, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(6px);
   color: #d1d5db;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* The way to be rid of the tip. Chiefly for a phone, where the pill lies
+   across the bottom of the map and the map is the thing being asked about —
+   on a narrow screen that is a real share of the world taken up by a sentence
+   the player has already read. Deliberately quiet until it is wanted: bright
+   enough to find, dim enough that it isn't the thing the eye goes to on a
+   screen whose whole job is to be looked at. */
+.hint-close {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Comfortably over the 44px a thumb wants once the pill's own padding is
+     counted, without making the pill any taller than the line inside it. */
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  font: inherit;
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+}
+.hint-close:hover,
+.hint-close:focus-visible {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* ---- Result panel --------------------------------------------------- */
@@ -2259,6 +2295,10 @@ body:has(.game-play) {
   margin: 0 auto;
 }
 .draw-slot {
+  /* Nothing here is waiting to be pressed, so the cursor doesn't say it is.
+     `.h2h-mode` hands out a pointer and only takes it back once a card has
+     gone quiet or been drawn, which on this shelf is after the draw. */
+  cursor: default;
   /* Sized whole rather than by its content box, so the row arithmetic is the
      number written here: four of these and three gaps is 964 of the 980
      above, and the seventh game wraps to a second row of three. */
@@ -2285,6 +2325,24 @@ body:has(.game-play) {
 .draw-slot.is-active {
   box-shadow: 0 0 22px rgba(192, 132, 252, 0.35);
   font-weight: inherit;
+}
+/* Nothing on this shelf answers to the mouse. `.h2h-mode` lights its border on
+   hover because there it is a button and hovering it is the first half of
+   pressing it; here it is a card being drawn for, and a purple edge following
+   the cursor around while a purple light goes round on its own is two lights
+   saying different things. A first-time player reads their own as an offer and
+   tries to take it, which is the one thing this screen cannot let them do —
+   the day chose hours ago. It is a `div` besides, so `:disabled` was never
+   going to speak for it. */
+/* Written with the same weight as the rule it is answering
+   (`.h2h-mode:hover:not(:disabled)`, three classes deep) and further down the
+   file, which is the whole of why it wins. */
+.h2h-mode.draw-slot:hover {
+  border-color: var(--border);
+}
+.draw-slot.is-active:hover,
+.draw-slot.is-drawn:hover {
+  border-color: var(--accent);
 }
 /* Where it stopped. The glow is held rather than pulsed — a card still
    flashing after the draw has finished reads as a draw that hasn't. */

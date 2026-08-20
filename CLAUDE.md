@@ -90,6 +90,22 @@ without a word about what was picked — which in that game is the whole lesson,
 since the mistake is a clock and not a place. Return null to leave a round to
 the ordinary reading, which is what an unanswered one wants.
 
+### The hint, and the cross on it
+
+The pill along the bottom of every round — "Click the map to place your
+guess.", or whatever the mode's `hint` says — **can be closed**, and stays
+closed for the rest of the game rather than coming back at the next question.
+It is a reminder, not a control: somebody who has dismissed it has read it, and
+reprinting it every round is the game insisting. The reason it needs a cross at
+all is the phone, where the pill lies across the bottom of the map and the map
+is the thing being asked about — that is a real share of the world taken up by
+a sentence already read. `hintClosed` in `GameFrame`, and `.hint-close`.
+
+The cross is only ever drawn over the hint proper. "Getting your bearings…",
+which stands in the same pill while the globe falls, is a state the game is in
+rather than something being said to the player, and it takes itself off screen
+a moment later; a cross on it offers to close something already closing.
+
 ### The arrival: `INTRO_MS`, and why a duel can afford it
 
 **A game on the 3D globe waits five seconds before its first round opens** —
@@ -207,8 +223,8 @@ counting down while the rest are already answering. `matchOptions` passes
 `intro: false` for a room and leaves `startAt` alone.
 
 Today's round keeps the arrival: it has no timetable to disturb. It also now
-has the draw in front of it, which is seven seconds of the world being fetched
-and built behind a screen the player is reading — see "The way in". That is the
+has the draw in front of it, which is up to ten seconds of the world being
+fetched and built behind a screen the player is reading — see "The way in". That is the
 other half of why the arrival is worth five seconds there.
 
 **The trap in that one line:** it is spread in only when false, never as
@@ -335,10 +351,20 @@ so the landing is always a move the eye can follow. The holds grow as a cube,
 so the last is ten times the first, and they are **scaled to `DRAW_MS` rather
 than added up** — the draw is the same length on every device and however many
 hops it is next tuned to. **The draw is three beats, the middle one is the point, and the last one says
-nothing.** `DRAW_MS` (4 s) is the light going round, and **nothing is said
-under the shelf while it does** — a line under a shelf that is still deciding
-is a line nobody reads, because the eye is on the movement, and a standing
-"Today's game is…" made the answer feel already given rather than arriving.
+nothing.** `DRAW_MS` (6.5 s) over `HOPS` (14) is the light going round, and the
+two are one knob: hops over time is the rate the light travels at. Twenty-four
+hops in four seconds was a fifty-millisecond flicker to begin with, which reads
+as the page glitching rather than as a wheel spinning — a first-time player
+could not work out what was being done to them before it was over. Fourteen
+over six and a half seconds is still twice round the shelf, at a pace the eye
+can follow every step of: a seventh of a second at the start, nearly a second
+and a half at the end. **Nothing is said under the shelf while it goes round**
+— a line under a shelf that is still deciding is a line nobody reads, because
+the eye is on the movement, and a standing "Today's game is…" made the answer
+feel already given rather than arriving. There is **nothing under the heading
+either**: "One game a day, and the day picks it" was the rule being explained
+in words above a shelf in the middle of demonstrating it, at the one moment the
+eye should be on the light.
 `READ_MS` (2.6 s) is the beat nothing moves in: the light has stopped, the six
 it isn't have gone quiet, the name is printed, and the player is left alone
 with it long enough to actually read it. `LEAVE_MS` (0.7 s) is the screen
@@ -357,19 +383,34 @@ beneath the one thing the screen exists to say.
 
 Cut straight from the last hop to the globe and the name is on screen for a
 tenth of a second, which is the same as not showing it — that was the first
-version and it was too fast to land. Somebody who has asked for reduced motion
-skips the light and gets the last two beats.
+version and it was too fast to land.
+
+**The light is shown once a device**, which is what the six and a half seconds
+are affordable out of. The draw teaches exactly one thing — *this is a
+different game every day, and here is today's* — and once that has been taught
+it is a wait rather than an explanation. Sharpest on a reload before playing,
+where the player watches a wheel decide something they were told a moment ago.
+So `SEEN_KEY` (`spoton.draw.v1`, and therefore **on the privacy page**) is
+filed on arrival, and a device that has it — along with anybody who asked for
+reduced motion — is dropped at the last two beats, where the game is still
+named and held. Filed on arrival rather than on the deal, so a reload halfway
+through the light counts as having watched it; a device sent home unplayed
+never reaches that effect and so is still owed the draw. Deliberately **not
+keyed on the date**: the draw is news about how the game works, not news about
+today, and that is only ever news once.
 
 **It also pays for itself.** `loadWorldShapes()` runs while the light goes
 round — a megabyte of Natural Earth to download, parse, coarsen and index,
 which on the first frame of a round used to swallow the count-in whole. Every
 game off the shelf has a setup screen to do that behind; today's round had
 nothing, because it dealt on arrival. Now it has this, which is why the arrival
-after it is worth five seconds. See "The arrival".
+after it is worth five seconds. See "The arrival". A device taking the shortcut
+above still gets `READ_MS` + `LEAVE_MS` of it, which is the other reason the
+shortcut stops at the last two beats rather than dealing outright.
 
 A device that has already had its go is sent home before the draw rather than
-after it: seven seconds of ceremony in front of "you have already played" is
-seven seconds of being told nothing.
+after it: ten seconds of ceremony in front of "you have already played" is ten
+seconds of being told nothing.
 
 **The name is asked for at the end**, in `MatchResult`, where there is a score
 to put it to. Two things follow that are better than they sound: a player who

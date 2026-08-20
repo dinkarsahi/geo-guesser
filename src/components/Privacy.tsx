@@ -65,7 +65,7 @@ export default function Privacy({ onBack }: { onBack: () => void }) {
         <section className="doc-section">
           <h2>What your own browser keeps</h2>
           <p>
-            SpotOn stores five things on your device, and they stay there — they are not
+            SpotOn stores six things on your device, and they stay there — they are not
             sent anywhere except as described above:
           </p>
           <ul className="doc-bullets">
@@ -90,9 +90,14 @@ export default function Privacy({ onBack }: { onBack: () => void }) {
               map, whether borders are drawn, and whether the tube map is white or
               dark, so you aren't asked every game.
             </li>
+            <li>
+              <code>spoton.draw.v1</code> — that you have seen Today's Round being
+              drawn, so the animation only plays the once and later visits go straight
+              to the game it landed on.
+            </li>
           </ul>
           <p>
-            All five are needed for the game to work, so they are set without asking.
+            All six are needed for the game to work, so they are set without asking.
             Clearing your browser's data for this site removes them, and the game will
             treat you as a first-time visitor.
           </p>
