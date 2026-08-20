@@ -6,6 +6,7 @@ import DailyBoard from "./components/DailyBoard";
 import Privacy from "./components/Privacy";
 import Terms from "./components/Terms";
 import ExportGuesser from "./modes/ExportGuesser";
+import SubwayGuesser from "./modes/SubwayGuesser";
 import Settings from "./components/Settings";
 import SiteFooter from "./components/SiteFooter";
 import TopBar from "./components/TopBar";
@@ -44,6 +45,22 @@ const EXPORT_SPOTTER: GameCard = {
   emoji: "📦",
   smallprint:
     "Being built. What a country sells most of moves year to year, so the answers here are still being checked — nothing you score is recorded anywhere.",
+};
+
+/**
+ * The other game being built, on the same footing as Export Spotter.
+ *
+ * Tube Station Spotter in New York — same marking, same map component copied
+ * and re-skinned. Behind `/gamemakersscrapbook/subwayspotter`, and shown on
+ * the shelf as a dimmed coming-soon card that does nothing.
+ */
+const SUBWAY_SPOTTER: GameCard = {
+  title: "Subway Spotter",
+  hook: "Can you ride the New York subway blind?",
+  blurb: "With just the station name, can you spot it on the New York subway map?",
+  emoji: "🗽",
+  smallprint:
+    "Being built. Data from the Metropolitan Transportation Authority — nothing you score here is recorded anywhere.",
 };
 
 /* The bench has no card. It was never on the shelf — `/gamemakersscrapbook`
@@ -195,6 +212,13 @@ function AllGames({ onPick }: { onPick: (mode: Mode) => void }) {
           <span className="mode-soon">Coming soon</span>
           <span className="mode-hook">{EXPORT_SPOTTER.hook}</span>
           <span className="muted mode-blurb">{EXPORT_SPOTTER.blurb}</span>
+        </div>
+        <div className="mode-card is-coming">
+          <span className="mode-emoji">{SUBWAY_SPOTTER.emoji}</span>
+          <span className="mode-title">{SUBWAY_SPOTTER.title}</span>
+          <span className="mode-soon">Coming soon</span>
+          <span className="mode-hook">{SUBWAY_SPOTTER.hook}</span>
+          <span className="muted mode-blurb">{SUBWAY_SPOTTER.blurb}</span>
         </div>
       </div>
     </div>
@@ -479,11 +503,20 @@ export default function App() {
   // reach a leaderboard. See `ExportGuesser`, and the warning at the top of
   // `data/exports.ts`, which is what is keeping it here.
   if (route.at === "workshop") {
-    if (started) return <ExportGuesser {...modeProps} />;
+    const building = route.game === "subwayspotter" ? SUBWAY_SPOTTER : EXPORT_SPOTTER;
+    if (started) {
+      return route.game === "subwayspotter" ? (
+        <SubwayGuesser {...modeProps} />
+      ) : (
+        <ExportGuesser {...modeProps} />
+      );
+    }
     return page(
       <ModeSetup
-        mode={EXPORT_SPOTTER}
-        warmWorld
+        mode={building}
+        // The subway map is drawn from its own coordinates and wants nothing
+        // from Natural Earth, exactly as the tube's doesn't.
+        warmWorld={route.game !== "subwayspotter"}
         onStart={() => setSession({ path, started: true, match: null })}
         onBack={() => go({ at: "games" })}
       />,

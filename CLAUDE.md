@@ -811,7 +811,8 @@ browser's own back button works without a line of wiring.
 | `/terms` | the rules for using the site — and the one about leaderboard names |
 | `/settings` | how this device likes its map |
 | `/gamemakersscrapbook` | the bench — see "The bench" below. Goes when it does |
-| `/gamemakersscrapbook/exportspotter` | Export Spotter, being built — see "The last card" |
+| `/gamemakersscrapbook/exportspotter` | Export Spotter, being built — see "The last cards" |
+| `/gamemakersscrapbook/subwayspotter` | Subway Spotter, being built — same |
 | `/cityspotter`, `/flagspotter`, `/currencyspotter`, `/corporatehqspotter`, `/populationspotter`, `/tubestationspotter`, `/timezonespotter` | that game's setup screen, and the round itself |
 
 **The names crossed over and the file says so:** `/headtohead` is Duel a Friend,
@@ -1325,7 +1326,7 @@ The rules a bench lives by, all of them load-bearing:
   `669f41f`, which is where the three-skinned globe (tiles, tiles + sky, and an
   8k flat-ocean photograph) still lives.
 
-### The last card: coming soon
+### The last cards: coming soon
 
 `Export Spotter`, on the end of the shelf in `AllGames`. A `div` rather than a
 `button` and dimmed by `.mode-card.is-coming`: **there is something behind it
@@ -1364,11 +1365,63 @@ which is also what keeps it the right side of the line the tube data was on the
 wrong side of: individual facts belong to nobody, a compiled dataset can belong
 to somebody.
 
-**Graduating it** means: a `ModeId` in `ModeProps.ts`, a unique mode letter in
-`match.ts`, an ordinary path in `useRoute.ts` (and the `workshop` route
+**Graduating either** means: a `ModeId` in `ModeProps.ts`, a unique mode letter
+in `match.ts`, an ordinary path in `useRoute.ts` (and its `workshop` entry
 deleted), a row in the games table above, the scoring row below, a re-run of
 `supabase/schema.sql` against the live project, and the coming-soon `div` in
 `AllGames` becoming a `button`.
+
+**Subway Spotter** is the second, at `/gamemakersscrapbook/subwayspotter`:
+Tube Station Spotter in New York, marked the same way — whichever station's
+patch of the map you clicked is your answer, and the ride from there is what
+costs you. It imports `scoreFromStops` **from the tube's own module** rather
+than copying it, so both station games are marked on one curve; a second copy
+would be right the day it was written and free to drift after.
+
+`NewYorkMap` is `LondonMap` copied, which is the bench rule applied properly —
+the tube game is live and scored, and a flag inside its map is the last thing
+that should carry an experiment. The copy keeps London's variable names so the
+two can still be diffed. Three things it drops, and all three are facts about
+the networks rather than features left out:
+
+- **No fare zones.** New York has a flat fare. `MAX_ZONE_BAND` is 0, and that
+  is the second answer rather than the first: one hull round every station was
+  tried, and a single convex wedge across the harbour says nothing and pulls
+  the eye off the network. The borough outlines are the ground.
+- **No river ribbon.** London draws the Thames because it is the one
+  unmistakable thing on that map. New York's shoreline is already drawn — the
+  water *is* the gap between five borough shapes, from a boundary file. A
+  hand-drawn Hudson on top was redundant and, on screen, visibly wrong: it ran
+  diagonally across Manhattan, because it had been guessed at rather than
+  traced.
+- **No Mind the Gap.** That circle is sized off the fare zone, and there is no
+  zone here to size it from.
+
+**The data is the MTA's own**, by `tools/gen-subway-mta.mjs`: the Subway
+Stations dataset on data.ny.gov for the places and `complex_id` (Times Sq-42 St
+is several platform rows and one place to point at), and the GTFS static feed
+for what joins what and for `route_color`. It carries a small zip reader —
+forty lines of `inflateRawSync` — rather than a dependency for one build
+script.
+
+**The trap it recorded, because it cost a full rebuild.** MTA stop ids run in
+order along each physical line (R01, R03, R04 down the Astoria line), so
+building edges by sorting each line's stops looks right and *is* right within a
+line. It leaves the lines unjoined: 81 stations came out unreachable, whole
+branches of Brooklyn and Queens floating free, because a line that continues
+into another is two `line` values with two separate id blocks. "How many stops
+away" is a walk over that graph, so an unreachable station is a round with no
+answer. Real adjacency comes from the trip sequences in `stop_times.txt`, and
+**the generator now throws rather than writing a file with a stranded station
+in it**. Staten Island is excluded for the same reason: its railway is part of
+the MTA and no part of the subway graph.
+
+**Repeated names are the other thing London never had to solve.** London has no
+two stations called the same thing; New York has four called 86 St. Merging
+them would be a lie and leaving them bare is a question with several unmarked
+answers, so a repeated name carries its routes — "86 St (4·5·6)" — which is how
+New Yorkers tell them apart. Where name *and* routes collide, the borough
+follows.
 
 ---
 
