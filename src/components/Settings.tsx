@@ -118,18 +118,12 @@ export default function Settings({
         />
       </div>
 
-      {/* Said here because it is the one place these settings don't simply
-          apply: a duel is one room looking at one world, so it is the host's
-          map everybody plays on. Somebody who joins a friend's duel and finds
-          the flat map they turned off would otherwise think the setting had
-          failed.
-          The tube's colours are the exception to the exception, and stay each
-          player's own — the world map decides what the question looks like,
-          where white or dark only decides how comfortable it is to look at. */}
-      <p className="muted settings-note">
-        In a duel, everyone plays on the host's world map. The tube map's colours
-        stay your own.
-      </p>
+      {/* Nothing under the rows. The line that was here — that a duel is played
+          on the host's world map, and that the tube's colours stay your own —
+          was a footnote about a screen the player is not on, printed under the
+          three settings it qualifies rather than beside the one it belongs to.
+          The lobby names the map the room is playing on, which is where it is
+          actually needed. */}
     </div>
   );
 }

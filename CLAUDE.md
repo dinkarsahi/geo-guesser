@@ -366,8 +366,14 @@ either**: "One game a day, and the day picks it" was the rule being explained
 in words above a shelf in the middle of demonstrating it, at the one moment the
 eye should be on the light.
 `READ_MS` (2.6 s) is the beat nothing moves in: the light has stopped, the six
-it isn't have gone quiet, the name is printed, and the player is left alone
-with it long enough to actually read it — `SEEN_READ_MS` (2 s) where the device
+it isn't have gone quiet, the name is printed **with the game's own `blurb`
+under it**, and the player is left alone with the two long enough to actually
+read them. The blurb is the same sentence the shelf prints in `AllGames`, out
+of the one `GameCard` — a name alone answers only somebody who already knows
+the seven, and this screen exists for the player who doesn't; without it they
+meet the rules for the first time inside the round. Its box keeps the depth of
+the longest of the seven, which is two lines, so the answer arriving doesn't
+shove the shelf up the page — `SEEN_READ_MS` (2 s) where the device
 has already had today's draw, which is a name being confirmed rather than
 announced. Shortened but never dropped: a player reloads for a reason, and may
 never have got as far as reading it. `LEAVE_MS` (0.7 s) is the screen
@@ -485,6 +491,14 @@ A card's words are a `GameCard`, and `MODES` is that plus a `ModeId`. The split
 is what lets something have the same setup screen as a game without being a
 mode — a bench, next time there is one: `ModeSetup` takes a card, not an id.
 
+**Both live in `src/data/gameCards.ts`**, not in `App`, and the reason is a
+second reader: the draw on Today's Round prints the `blurb` of whichever game
+the day landed on, and `App` renders `HeadToHead`, so `HeadToHead` importing
+from `App` would be a cycle. They are out of `lib/match` for a different
+reason — `MATCH_MODES` there is the machinery a code is built from, and a
+screen that wants the words shouldn't have to pull in the code format to get
+them.
+
 **A game's setup screen asks nothing any more.** It names the game, says what a
 round involves, prints the small print where one is owed, and offers Start. The
 globe-or-flat and borders-or-not it used to ask stood in front of all seven
@@ -545,7 +559,10 @@ will find "Game" sitting in a 104px column beside eight game cards.
 Two consequences worth knowing. `HeadToHead` and `PlayFriend` now *read* that
 preference instead of asking; in a duel it is the **host's** that the room
 plays on, which is the one setting in the app reaching past the device that
-chose it, so the settings screen says so and the lobby names the map. And
+chose it, and the **lobby** is where that is said. It used to be said on the
+settings screen too, under the three rows: a footnote about a screen the
+player is not on, printed beneath the settings it qualifies rather than beside
+the one it belongs to. And
 `GameCard.ownMap` is gone — it existed to tell the setup screen it had nothing
 to offer the tube, and the setup screen now offers nothing to anybody.
 

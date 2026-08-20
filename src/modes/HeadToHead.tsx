@@ -8,6 +8,7 @@ import {
   modeTitle,
   type Match,
 } from "../lib/match";
+import { MODES } from "../data/gameCards";
 import { spentOnThisDevice } from "../lib/leaderboard";
 import { loadSettings } from "../lib/preferences";
 import { loadWorldShapes } from "../lib/worldShapes";
@@ -411,6 +412,20 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
             Today's game is <strong>{modeTitle(today)}</strong>
           </>
         )}
+      </p>
+      {/* What a round of it actually involves, in the game's own words — the
+          same sentence the shelf prints under it in `AllGames`, from the one
+          `GameCard`, so the two can't come to describe the game differently.
+          
+          A name alone is an answer only to somebody who already knows the
+          seven. This screen exists for the player who doesn't, and "Population
+          Spotter" tells them nothing about what they are about to be asked;
+          they would otherwise meet the rules for the first time in the round,
+          on a clock. It appears with the name and not before it, because a
+          description of a game still being drawn for is a description of
+          nothing. */}
+      <p className="draw-blurb muted">
+        {beat !== "drawing" && MODES.find((m) => m.id === today)?.blurb}
       </p>
     </div>
   );
