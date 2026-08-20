@@ -458,7 +458,12 @@ export default function PlayFriend({
         </span>{" "}
         Duel a Friend
       </h1>
-      <p className="muted menu-sub">{RULES}</p>
+      {/* Narrowed on this screen alone. `.menu-sub` is a one-line subtitle
+          everywhere else, so it has never needed a width; the duel's rules are
+          a real paragraph, and run the full column they were over a thousand
+          pixels of unbroken prose — twice the width anything is comfortably
+          read at, and three times the column of controls underneath. */}
+      <p className="muted menu-sub h2h-rules">{RULES}</p>
 
       {!canPlayRooms && (
         <p className="h2h-taken">

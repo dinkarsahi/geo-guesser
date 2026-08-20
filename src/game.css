@@ -452,22 +452,24 @@
 /* Three doors — make, join, or just read the table — and nothing else on the
    screen to weigh up. Wide enough that all three sit in one row on a desktop
    and stack rather than splitting 2-and-1 on anything narrower. */
+/* The same 340 the field above is, so the two read as one column. It used to
+   be 940 — half again as wide as anything else on the screen — which is what
+   made two ordinary choices look like the main event. */
 .h2h-choices {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-  max-width: 940px;
+  gap: 8px;
+  max-width: 340px;
   margin: 0 auto;
 }
 .h2h-choice {
   font: inherit;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
   text-align: left;
-  padding: 20px;
-  border-radius: 12px;
-  border: 2px solid var(--border);
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
   background: var(--social-bg);
   color: var(--text-h);
   cursor: pointer;
@@ -482,24 +484,49 @@
   cursor: not-allowed;
 }
 /* Who's playing, asked once and remembered. */
-.h2h-name {
+/* The duel's rules are a paragraph rather than a subtitle — see `PlayFriend`.
+   Set to a reading width so the screen reads as a column: a line of prose and
+   a form field want different widths, but neither wants the whole window. */
+.h2h-rules {
   max-width: 620px;
-  margin: 0 auto 20px;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* A name is sixteen characters at most — `maxLength` on the input says so —
+   and a box six hundred pixels wide for sixteen characters is the single
+   thing that made this screen look unfinished: a field's width is a promise
+   about how much is wanted, and that one promised an essay. Narrowed to the
+   width the answer actually needs, and to the same width as the two cards
+   under it, so the screen is one column rather than a stack of three
+   different ones. */
+.h2h-name {
+  max-width: 340px;
+  margin: 0 auto 18px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   align-items: flex-start;
 }
 .h2h-name-input {
   font: inherit;
-  font-size: 18px;
+  font-size: 15px;
   width: 100%;
   box-sizing: border-box;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 2px solid var(--border);
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
   background: var(--social-bg);
   color: var(--text-h);
+  transition: border-color 0.15s;
+}
+/* A field being typed into should say so. Nothing did before, which on a
+   screen whose only job is to take a name left the box looking inert. */
+.h2h-name-input:focus {
+  outline: none;
+  border-color: var(--accent-border);
 }
 .h2h-name-input:focus {
   outline: none;
@@ -514,12 +541,12 @@
   color: var(--accent);
 }
 .h2h-choice-title {
-  font-size: 19px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
 }
 .h2h-choice-hint {
-  font-size: 14px;
-  line-height: 1.35;
+  font-size: 13px;
+  line-height: 1.4;
 }
 .h2h-modes {
   display: grid;
