@@ -91,9 +91,9 @@ export default function Privacy({ onBack }: { onBack: () => void }) {
               dark, so you aren't asked every game.
             </li>
             <li>
-              <code>spoton.draw.v1</code> — that you have seen Today's Round being
-              drawn, so the animation only plays the once and later visits go straight
-              to the game it landed on.
+              <code>spoton.draw.v2</code> — the day you last watched Today's Round
+              being drawn, so the animation plays once a day and a reload before you
+              have played goes straight to the game it landed on.
             </li>
           </ul>
           <p>

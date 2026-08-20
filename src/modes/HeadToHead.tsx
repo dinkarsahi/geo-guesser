@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   dailyCode,
   gameOfDay,
+  localDay,
   parseMatchCode,
   MATCH_MODES,
   modeTitle,
@@ -34,9 +35,9 @@ interface HeadToHeadProps {
  * fast enough to read as the page glitching rather than as a wheel spinning,
  * and somebody arriving for the first time could not tell what was being done
  * to them before it was over. The fix is both halves at once: fewer hops over
- * more time, so the first hold is about a seventh of a second and the last
- * nearly a second and a half. The eye can follow every step of it, which is
- * what makes it read as a draw slowing to a stop.
+ * more time, so the first hold is about an eighth of a second and the last a
+ * little over a second and a quarter. The eye can follow every step of it,
+ * which is what makes it read as a draw slowing to a stop.
  *
  * It can afford the seconds because it is only ever shown **once a device** —
  * see `SEEN_KEY`.
@@ -47,6 +48,12 @@ interface HeadToHeadProps {
  * beat that was missing at first: the answer landed and the globe took the
  * screen before anybody had finished looking at what they had been told.
  *
+ * `SEEN_READ_MS` is that same beat, shortened, for a device that has already
+ * been told today's game once — see `SEEN_KEY`. Shorter but not gone: the
+ * screen still has to say which game it is, because a player who reloads has
+ * usually reloaded for a reason and may never have got as far as reading it.
+ * Two seconds is a name being confirmed rather than a name being announced.
+ *
  * `LEAVE_MS` is the screen fading out — **still showing the answer**, which is
  * the whole of why there is nothing else to say by then. A "Let's begin" here
  * was a second thing to read at the moment the first one was being taken away,
@@ -54,42 +61,52 @@ interface HeadToHeadProps {
  * carried no news. Faded out under its own answer, the last thing the player
  * sees is the thing they are about to play.
  */
-const DRAW_MS = 6500;
+const DRAW_MS = 5500;
 const READ_MS = 2600;
+const SEEN_READ_MS = 2000;
 const LEAVE_MS = 700;
 
 /**
- * That this device has been shown the draw, so it is only ever shown once.
+ * The day this device last watched the draw, as a `localDay` number.
  *
  * The light going round is an explanation — *this is a different game every
- * day, and here is today's* — and an explanation is worth watching the first
- * time and nothing but a delay the second. A player who reloads before playing
- * had it explained a moment ago; a regular had it explained the day they
- * arrived. Both are sent straight to the last two beats, which still name the
- * game, so nobody loses the answer by having already understood the question.
+ * day, and here is today's* — and it is worth watching once a day and nothing
+ * but a delay every time after. A player who reloads before playing had it
+ * explained a moment ago, and is sent straight to the last beats, which still
+ * name the game: nobody loses the answer by having already been given it.
  *
- * Deliberately not keyed on the date: the draw is not news about today, it is
- * news about how this game works, and that is only ever news once.
+ * **The day is stored rather than a flag**, and that is the whole of why this
+ * is a day's worth of memory rather than a device's. What the draw announces
+ * *is* the day's news, so it is owed again when the news changes; a device
+ * that watched it last week is a device that has not been told about today.
+ * The turnover is `localDay`, the same notion of today the daily code is built
+ * from, so the draw and the round it opens can never disagree about which day
+ * it is.
  *
  * **This is storage, so it is on the privacy page** — see `Privacy.tsx`, which
  * names every key this app writes.
  */
-const SEEN_KEY = "spoton.draw.v1";
+const SEEN_KEY = "spoton.draw.v2";
 
-function drawSeen(): boolean {
+function drawSeenOn(): number | null {
   try {
-    return localStorage.getItem(SEEN_KEY) === "1";
+    const raw = localStorage.getItem(SEEN_KEY);
+    // Checked rather than trusted: what comes back is whatever was in
+    // localStorage, and a `NaN` compared against today is false either way —
+    // but only because this says so rather than by luck.
+    const day = raw === null ? NaN : Number(raw);
+    return Number.isFinite(day) ? day : null;
   } catch {
     // Storage off, or a private window that refuses it. The draw plays, which
     // is the better of the two failures: a first-timer must not be robbed of
     // the one screen that tells them the game changes daily.
-    return false;
+    return null;
   }
 }
 
-function rememberDraw(): void {
+function rememberDraw(day: number): void {
   try {
-    localStorage.setItem(SEEN_KEY, "1");
+    localStorage.setItem(SEEN_KEY, String(day));
   } catch {
     /* see above */
   }
@@ -100,7 +117,7 @@ function rememberDraw(): void {
  *
  * Cut along with `DRAW_MS` being raised, and the two are one knob: hops over
  * time is the rate the light travels at, and it was three times too fast to
- * follow. Fourteen over six and a half seconds is still twice round the shelf
+ * follow. Fourteen over five and a half seconds is still twice round the shelf
  * — plainly a wheel going round — at a pace a first-time player can watch.
  */
 const HOPS = 14;
@@ -224,24 +241,31 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
   // same answer, fading out.
   const [beat, setBeat] = useState<"drawing" | "drawn" | "leaving">("drawing");
 
+  // Whether today's draw has already been watched here. Read once, on the
+  // first render, because the effect below writes it a moment later — read on
+  // every render it would flip to true under its own screen and restart it
+  // halfway through the light.
+  const [seenToday] = useState(() => drawSeenOn() === localDay());
+
   // Who is told the answer instead of being shown it arrive: the same screen
   // and the same words, without the light going round. Two people want that,
-  // for reasons that have nothing in common beyond the ending.
-  //
-  // Somebody who has asked not to be animated, and **anybody who has watched
-  // this draw before**. The light is an explanation, and an explanation is
-  // worth six seconds the first time and nothing but a wait every time after
-  // — most sharply on a reload before playing, where the player is watching a
+  // for reasons that have nothing in common beyond the ending — somebody who
+  // has asked not to be animated, and anybody who has already had today's
+  // draw. The second is the reload before playing, where the player watches a
   // wheel decide something they were told a moment ago.
-  //
-  // Read once, on the first render, so a value written a line later can't
-  // restart the screen halfway through it.
   const [skip] = useState(
     () =>
-      drawSeen() ||
+      seenToday ||
       (typeof matchMedia === "function" &&
         matchMedia("(prefers-reduced-motion: reduce)").matches),
   );
+
+  // How long the answer is held. Off `seenToday` rather than off `skip`,
+  // which is the distinction that matters: somebody who asked not to be
+  // animated is having the game named to them for the first time today, and
+  // this beat is the whole of the screen for them. Only a player who has
+  // genuinely been told already gets the shorter one.
+  const readMs = seenToday ? SEEN_READ_MS : READ_MS;
 
   // Fetch and build the world while the light goes round, rather than at the
   // moment the round opens. This is the whole of what the screen buys the
@@ -256,7 +280,7 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
     // the light counts as having seen it — which is the exact case this is
     // for. A device sent home unplayed never gets here, and so is still owed
     // the draw.
-    rememberDraw();
+    rememberDraw(localDay());
   }, [spent]);
 
   // Straight back out again if the day has been spent here. Before the draw
@@ -294,7 +318,7 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
       id = window.setTimeout(() => {
         setBeat("leaving");
         id = window.setTimeout(deal, LEAVE_MS);
-      }, READ_MS);
+      }, readMs);
     };
 
     if (skip) {
@@ -322,7 +346,7 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
     };
     id = window.setTimeout(hop, plan[1].wait);
     return () => clearTimeout(id);
-  }, [code, spent, plan, skip, onStart, setup]);
+  }, [code, spent, plan, skip, readMs, onStart, setup]);
 
   // Where the light is: the last card outright for anybody taking the shortcut,
   // and otherwise wherever the chain has walked it to. Derived rather than set,
