@@ -2157,6 +2157,13 @@ body:has(.game-play) {
 .faq-card p:last-child {
   margin-bottom: 0;
 }
+/* A list inside a card wants the same gap under it that a paragraph has.
+   `.doc-bullets` carries no margin of its own — on the pages it was written
+   for it is always the last thing in its section — so the sentence following
+   one here sat hard against the final bullet and read as part of it. */
+.faq-card .doc-bullets {
+  margin-bottom: 12px;
+}
 .faq-card code {
   padding: 1px 5px;
   border-radius: 4px;

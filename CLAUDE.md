@@ -601,6 +601,21 @@ The pages behind it:
   that page**: a copy is right on the day it is written and wrong ever after.
   (`scoreFromPopulationRatio` was moved into `data/populations.ts` for this —
   exporting it from the mode's own file breaks fast refresh.)
+
+  It also carries **"Can I turn the animations down?"**, which is the app's
+  answer to reduced motion: the setting stays the **device's**, not a switch in
+  Settings, because it is set once and every site obeys it — a per-site toggle
+  asks the same person to solve the same problem again, and would mean every
+  animated thing reading a React preference instead of a media query, three.js
+  included. What the FAQ owes in exchange is teaching people the setting
+  exists, which is what that card does, per platform.
+
+  **It names what reduced motion does not cover, and that list has to be kept
+  honest.** `prefers-reduced-motion` is read in seven places — `HeadToHead`,
+  `WorldMap`, `LondonMap` and four blocks in `game.css` — and **not** by
+  `globeFlight.ts` or `GlobeMap`'s reveal flight, so the globe's camera still
+  falls and still swings onto the answer. The card says so and points at the
+  flat map. Honour it there and that paragraph comes out.
 - **`Credits`** — the attributions, and four of them are **owed rather than
   offered**: NASA asks for its imagery line, TfL's open data asks for "Data
   provided by Transport for London", and the MIT and ISC licences on React,

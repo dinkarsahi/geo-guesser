@@ -285,9 +285,53 @@ export default function Faq({ onAbout, onPrivacy }: FaqProps) {
             <h3>Why does the globe take a moment to arrive?</h3>
             <p>
               The world is satellite imagery cut into tiles, which sharpen as you zoom
-              rather than being one photograph magnified. Those tiles have to travel, so
-              a game on the globe counts you in for three seconds while they do — and
-              gives you something to watch on the way.
+              rather than being one photograph magnified. Those tiles have to travel, and
+              the globe's coastlines have to be built before anything can be drawn on
+              them, so a game on the globe waits five seconds at the start — once a game,
+              never between rounds — and gives you a fall through space to watch while it
+              does. The question is held back until the round can actually take your
+              answer.
+            </p>
+          </div>
+
+          <div className="faq-card">
+            <h3>Can I turn the animations down?</h3>
+            <p>
+              Yes, and it is a setting on your device rather than one in here — which
+              means you set it once and every site you visit obeys it, instead of hunting
+              for the same switch on each of them. It is meant for anyone who finds
+              movement on a screen uncomfortable or distracting, and it is worth knowing
+              about even if you have never gone looking for it:
+            </p>
+            <ul className="doc-bullets">
+              <li>
+                <strong>Windows</strong> — Settings → Accessibility → Visual effects →
+                Animation effects.
+              </li>
+              <li>
+                <strong>macOS</strong> — System Settings → Accessibility → Display →
+                Reduce motion.
+              </li>
+              <li>
+                <strong>iPhone and iPad</strong> — Settings → Accessibility → Motion →
+                Reduce Motion.
+              </li>
+              <li>
+                <strong>Android</strong> — Settings → Accessibility → Remove animations,
+                though the wording moves around between makes of phone.
+              </li>
+            </ul>
+            <p>
+              With it on, SpotOn stops the things that move for effect. Today's Round is
+              named outright instead of being drawn for, the line to the answer appears
+              rather than being drawn across the map, and the tube map cuts to the whole
+              network at the reveal instead of pulling back to it.
+            </p>
+            <p>
+              One thing it does <em>not</em> stop yet is the globe's own camera — the
+              fall through space at the start of a game, and the swing round to the
+              answer at the end of a round. If that is the part you wanted rid of, the
+              flat map under <strong>Settings</strong> has none of it.
             </p>
           </div>
 
