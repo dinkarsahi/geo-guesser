@@ -77,7 +77,12 @@ export default function Settings({
         How you like your map. Saved on this device, and used by every game.
       </p>
 
-      <div className="setup-panel">
+      {/* `settings-panel` is what scopes the layout below to this screen. The
+          rows are `.setup-row`, which the duel's game picker also uses — a
+          label over a grid of seven cards, which wants the label on top. Here
+          there are two options to a row and the label reads better beside
+          them. */}
+      <div className="setup-panel settings-panel">
         <Choice<boolean>
           label="Map"
           value={settings.flat}

@@ -291,6 +291,63 @@
   font-size: 14px;
   line-height: 1.35;
 }
+/* ---- The settings screen's own rows ---------------------------------- */
+/* Label to the left, its two options to the right — three rows that read as
+   one column of questions with one column of answers beside it, rather than
+   three stacked blocks each announcing itself. Scoped to this screen, because
+   `.setup-row` is also the duel's game picker, where the label stands over a
+   grid of seven cards and belongs on top.
+
+   The buttons are smaller here than the pair they grew out of. Those were
+   sized for a setup screen where choosing the map was the whole errand and
+   the two cards were the page; on a settings screen they are three rows of
+   furniture, and at 200px wide with a bold 17px title apiece they read as the
+   most important thing on a screen whose job is to be left again quickly. */
+.settings-panel {
+  gap: 14px;
+}
+.settings-panel .setup-row {
+  display: grid;
+  /* Wide enough for "Tube map" on one line, and fixed rather than auto so the
+     three rows agree with each other: sized to content, each label would set
+     its own column and the options would start in three different places. */
+  grid-template-columns: 104px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+/* The page is centred and the labels inherited it, so three labels in three
+   equal columns still started in three different places — a column of
+   questions has to be flush to read as one. */
+.settings-panel .setup-label {
+  text-align: left;
+}
+.settings-panel .setup-options {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+.settings-panel .setup-option {
+  gap: 2px;
+  padding: 9px 12px;
+  border-radius: 10px;
+}
+.settings-panel .setup-option-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+.settings-panel .setup-option-hint {
+  font-size: 12.5px;
+  line-height: 1.3;
+}
+/* Back over the label at a width where 104px of it would leave the two options
+   sharing what's left. */
+@media (max-width: 700px) {
+  .settings-panel .setup-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 8px;
+  }
+}
+
 .setup-start {
   margin-top: 28px;
 }

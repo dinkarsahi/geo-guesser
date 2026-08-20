@@ -304,6 +304,27 @@ interface Session {
 
 const NO_SESSION: Session = { path: "", started: false, match: null };
 
+/**
+ * The screens the footer is kept off, on top of a round — where it is off
+ * because the map is pinned to the window and nothing scrolls, so a footer
+ * would either be painted over the map or never reached.
+ *
+ * These two are the contest flows: today's round, which is a draw that hands
+ * straight over to a game, and the duel, which is a lobby walking through its
+ * own steps to a start. A footer under either is a row of doors offered at the
+ * moment the player has already chosen one — and on the draw it would be
+ * carried off by the fade seven seconds later, having never been read.
+ *
+ * **The way out of them is the bar across the top**, which every screen has:
+ * one press to home, and the footer is there in full. Nothing is unreachable
+ * — including the privacy policy, which is the one link here with an outside
+ * obligation attached to it. If a screen is ever added to this list, check
+ * that it still has the bar.
+ *
+ * Written out rather than derived, so adding a route doesn't quietly join it.
+ */
+const FOOTERLESS: Route["at"][] = ["daily", "duel"];
+
 /** The mode itself, whichever it is, wired to the props they all share. */
 function PlayMode({ mode, ...props }: ModeProps & { mode: Mode }) {
   if (mode === "city") return <CityLocator {...props} />;
@@ -401,10 +422,13 @@ export default function App() {
     return () => document.body.classList.remove("playing");
   }, [playing]);
 
-  // The screen, and under it the footer — on everything except a round, where
-  // the map is pinned to the window and nothing scrolls. Written as a wrapper
-  // rather than dropped into each screen: there are ten of them, and a footer
-  // missing from one is exactly the sort of thing nobody notices.
+  // The screen, and under it the footer. Written as a wrapper rather than
+  // dropped into each screen: there are ten of them, and a footer missing from
+  // one is exactly the sort of thing nobody notices.
+  //
+  // Which screens go without it is decided from the route here rather than
+  // passed in at each call site, for the same reason: a list can't forget, and
+  // a call site can. See `FOOTERLESS`.
   const page = (screen: ReactNode) => (
     <>
       {/* Outside the reading column, so it runs the full width of the window
@@ -412,7 +436,7 @@ export default function App() {
       <TopBar go={go} here={route.at} onSettings={() => openSettings(route)} />
       <div className="page-body">
         {screen}
-        <SiteFooter go={go} here={route.at} />
+        {!FOOTERLESS.includes(route.at) && <SiteFooter go={go} here={route.at} />}
       </div>
     </>
   );

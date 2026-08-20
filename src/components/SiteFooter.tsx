@@ -31,7 +31,13 @@ const LINKS: { route: Route; label: string }[] = [
 ];
 
 /**
- * The line at the bottom of every screen that isn't a round.
+ * The line at the bottom of the screens that are read rather than played.
+ *
+ * Not quite everywhere: `FOOTERLESS` in `App` keeps it off today's round and
+ * the duel as well as off a round in progress, because both of those are
+ * flows on their way into a game rather than pages — a row of doors offered
+ * at the moment the player has already chosen one. The bar across the top is
+ * on every one of them, so nothing here is ever more than a press away.
  *
  * The app had no footer at all, which meant there was nowhere for a credit, a
  * copyright line or a policy link to live — and nowhere for a reader who wants
@@ -45,9 +51,10 @@ const LINKS: { route: Route; label: string }[] = [
  * whose photographs it borrowed rather than asking where Lima is. One honest
  * page carries them; the link to it is three words to the left.
  *
- * Kept off a round in progress. There the map is pinned to the window and the
- * page doesn't scroll, so a footer would either be drawn over the map or never
- * reached — see `body.playing` in the stylesheet.
+ * Kept off a round in progress for a harder reason than taste. There the map
+ * is pinned to the window and the page doesn't scroll, so a footer would
+ * either be drawn over the map or never reached — see `body.playing` in the
+ * stylesheet.
  */
 export default function SiteFooter({ go, here }: SiteFooterProps) {
   return (

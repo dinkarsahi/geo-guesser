@@ -528,6 +528,20 @@ reason the other two moved there — it's a preference, not a decision about thi
 round — and the tube's own setup screen has Settings one press away in the bar
 above it.
 
+**The settings rows are label-left, options-right**, and small. Three stacked
+blocks each announcing itself was a setup screen's layout carried over from
+when choosing the map *was* the errand and the two cards were the page; on a
+screen whose job is to be left again quickly, three rows of questions with
+their answers beside them is what it actually is. The buttons came down with
+it — 200px cards with a bold 17px title apiece read as the most important
+thing on screen.
+
+**The trap:** `.setup-row`, `.setup-label` and `.setup-options` are **also the
+duel's game picker**, where the label stands over a grid of seven cards and
+belongs on top. So the new layout is scoped to `.settings-panel`, a second
+class on this screen's panel alone. Style the bare `.setup-*` classes and you
+will find "Game" sitting in a 104px column beside eight game cards.
+
 Two consequences worth knowing. `HeadToHead` and `PlayFriend` now *read* that
 preference instead of asking; in a duel it is the **host's** that the room
 plays on, which is the one setting in the app reaching past the device that
@@ -565,11 +579,36 @@ where they lead.
 
 ### The footer, and the two pages that are read
 
-`SiteFooter` is drawn under every screen **except a round in progress** — there
-the map is pinned to the window and nothing scrolls, so a footer would either be
-painted over the map or never reached. `App` wraps each screen in a `page()`
-helper rather than each screen carrying its own, because there are ten of them
-and the one that quietly lost its footer is exactly what nobody would notice.
+`SiteFooter` is drawn under the screens that are **read** rather than played.
+`App` wraps each screen in a `page()` helper rather than each screen carrying
+its own, because there are ten of them and the one that quietly lost its footer
+is exactly what nobody would notice.
+
+Three kinds of screen go without it, and the reasons are not the same:
+
+- **A round in progress**, which is not negotiable: the map is pinned to the
+  window and nothing scrolls, so a footer would either be painted over the map
+  or never reached. That one is `body.playing` and the fact that a round never
+  calls `page()` at all.
+- **Today's round and the duel** — `FOOTERLESS` in `App`. Both are flows on
+  their way into a game rather than pages, so a row of doors under them is an
+  offer made at the moment the player has already chosen one. On the draw it
+  would be carried off by the fade seven seconds later, having never been read.
+- Nothing else. **The doc pages keep it**, and that is load-bearing rather than
+  an omission: the footer is how About reaches Privacy and the only place
+  Contact appears at all, so a doc page without one is a dead end.
+
+**The list is read off the route in `page()`, not passed in at each call
+site.** Same reasoning as the wrapper itself — a call site can forget, a list
+can't.
+
+**What this costs, and why it is still safe.** The footer is where the privacy
+policy lives, and a policy has an outside obligation on it: it must be easily
+accessible, and an AdSense reviewer looks for it. Today's round is `/`, the
+front door. What holds it up is the **bar across the top**, which every one of
+these screens has — one press to home, where the footer is in full. **Add a
+screen to `FOOTERLESS` and check it still has that bar**, or the policy becomes
+genuinely unreachable from somewhere.
 
 It exists because there was nowhere for a credit, a copyright line or a policy
 link to live. It holds Home, About, Credits, Privacy and Contact — and
