@@ -269,7 +269,22 @@ Three of them, all satisfying `GuessMapProps` in `src/components/mapTypes.ts`:
   below — and stands on the sea from `src/lib/globeGround.ts`. Its outlines are
   fed in by `src/lib/polygonFeed.ts` rather than handed over whole; both of
   those are explained under "The arrival".
-- **`LondonMap.tsx`** — bespoke SVG of the tube network. Takes an optional
+- **`LondonMap.tsx`** — bespoke SVG of the tube network. **Its Thames is
+  traced, not drawn** — `src/data/thames.ts`, by `tools/gen-thames.mjs`. The
+  trap it fixes is worth keeping: the map draws the borough outlines *and* a
+  river, London's borough boundaries run down the middle of the Thames, and the
+  river was 29 points typed from memory. So the map drew the same river twice,
+  in two places, about half a kilometre apart — 16 of those 29 points sat on
+  dry land. The fix is that the boundary file the map already uses has a
+  **full-extent** edition where the boroughs meet mid-water rather than stopping
+  at the bank: Tower Hamlets and Southwark share 742 vertices along it, and
+  those vertices *are* the river. Same ONS source, same licence. **A second
+  trap inside the first:** the shared stretches must be chained by whichever
+  loose end is nearest, not sorted west to east — the Thames loops round the
+  Isle of Dogs, so neighbours in longitude can be miles apart on the water, and
+  sorting drew a 12 km bar across London. It comes out as several polylines
+  rather than one, because the boroughs meet mid-river in most places and not
+  quite all, and one line would have to invent the joins. Takes an optional
   `data` bundle (`TubeData` in `src/data/tubeSources.ts`) so the bench can hand
   it a different network; defaults to `SHIPPED_TUBE`, so the game is unchanged.
   Its two big `useMemo`s now depend on that data — the projection is *fitted to

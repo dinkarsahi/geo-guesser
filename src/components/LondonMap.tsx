@@ -12,6 +12,7 @@ import type { GuessMapProps } from "./mapTypes";
 import { needsCasing, tubeConnections, tubeLines } from "../data/tube";
 import type { TubeConnectionRaw, TubeLineDef } from "../data/tube";
 import { SHIPPED_TUBE, type TubeData } from "../data/tubeSources";
+import { THAMES } from "../data/thames";
 import MapZoomControls from "./MapZoomControls";
 
 const WIDTH = 800;
@@ -84,19 +85,6 @@ const LANDMARKS: {
 }[] = [
   { name: "Big Ben", lat: 51.5007, lng: -0.1246, icon: "bigben", base: 11 },
   { name: "Tower Bridge", lat: 51.5055, lng: -0.0754, icon: "tower", base: 7 },
-];
-
-// Rough course of the River Thames across the map (west -> east), incl. the
-// distinctive loop around the Isle of Dogs.
-const THAMES: Pt[] = [
-  [-0.33, 51.47], [-0.308, 51.472], [-0.286, 51.488], [-0.255, 51.487],
-  [-0.23, 51.474], [-0.216, 51.467], [-0.195, 51.469], [-0.175, 51.482],
-  [-0.15, 51.485], [-0.132, 51.486], [-0.122, 51.494], [-0.122, 51.501],
-  [-0.116, 51.507], [-0.106, 51.509], [-0.094, 51.508], [-0.084, 51.506],
-  [-0.075, 51.505], [-0.06, 51.506], [-0.043, 51.51], [-0.035, 51.501],
-  [-0.028, 51.492], [-0.012, 51.485], [0.001, 51.492], [0.005, 51.503],
-  [0.008, 51.508], [0.022, 51.505], [0.038, 51.497], [0.065, 51.497],
-  [0.09, 51.508],
 ];
 
 /**
@@ -366,7 +354,12 @@ export default function LondonMap({
       return { ...l, at, off: best };
     });
 
-    const thames = THAMES.map((c) => projection(c)).filter((p): p is Pt => !!p);
+    // Traced from the borough boundaries rather than drawn by hand — see
+    // `data/thames.ts`. In pieces, because the boroughs meet mid-river in most
+    // places and not quite all of them, and one line would invent the joins.
+    const thames = THAMES.map((piece) =>
+      piece.map((c) => projection(c)).filter((p): p is Pt => !!p),
+    );
 
     // One marker per station, carrying the colour of every line that calls
     // there — always in line order, so an interchange's ring looks the same
@@ -596,7 +589,7 @@ export default function LondonMap({
   const guessPt = guess ? project(guess) : null;
   const answerPt = answer ? project(answer) : null;
 
-  const thamesPoints = layout.thames.map(px).join(" ");
+  const thamesPieces = layout.thames.map((piece) => piece.map(px).join(" ")).filter(Boolean);
 
   return (
     <div className="tube-wrap">
@@ -693,10 +686,14 @@ export default function LondonMap({
               );
             })}
 
-            {/* River Thames ribbon. */}
-            {thamesPoints && (
+            {/* The Thames, on the course the borough boundaries put it —
+                which is the course those same outlines are drawn along, so
+                the map now says the same thing twice instead of two things
+                half a kilometre apart. */}
+            {thamesPieces.map((points, i) => (
               <polyline
-                points={thamesPoints}
+                key={i}
+                points={points}
                 fill="none"
                 stroke={theme.thames}
                 strokeWidth={szStroke(5)}
@@ -704,7 +701,7 @@ export default function LondonMap({
                 strokeLinejoin="round"
                 strokeLinecap="round"
               />
-            )}
+            ))}
 
             {/* Landmark icons. Zoomed out they're small and parked in a
                 nearby gap, with a leader back to the exact spot; zooming in
