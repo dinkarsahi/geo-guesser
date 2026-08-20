@@ -70,7 +70,17 @@ export type Route =
    * duel codes, so the address bar is the only thing here that knows it
    * exists. It comes out again with the bench.
    */
-  | { at: "bench" };
+  | { at: "bench" }
+  /**
+   * A game being built, reachable only under the bench's own path.
+   *
+   * `/gamemakersscrapbook/exportspotter`. It is deliberately **not** a
+   * `ModeId` and deliberately not in `MODE_PATHS`: a `ModeId` enters the daily
+   * rota and needs a letter in a duel code, and neither belongs to a game
+   * whose data has not been checked. When it graduates it becomes an ordinary
+   * mode with an ordinary path and this goes.
+   */
+  | { at: "workshop"; game: "exportspotter" };
 
 /**
  * The seven games, as they're spelled in an address bar.
@@ -139,6 +149,8 @@ const SETTINGS = "settings";
  * somewhere it is being made. Delete this line with the bench.
  */
 const BENCH = "gamemakersscrapbook";
+/** Under the bench, not beside the games — see the `workshop` route. */
+const EXPORTS = "exportspotter";
 
 /** What a path means. Anything unrecognised is the front door. */
 function parse(path: string): Route {
@@ -167,7 +179,12 @@ function parse(path: string): Route {
   if (at === PRIVACY) return { at: "privacy" };
   if (at === TERMS) return { at: "terms" };
   if (at === SETTINGS) return { at: "settings" };
-  if (at === BENCH) return { at: "bench" };
+  if (at === BENCH) {
+    // The bench's own sub-paths: a game being built, kept off the shelf and
+    // out of `MODE_PATHS` until its data has been checked.
+    if (second === EXPORTS) return { at: "workshop", game: "exportspotter" };
+    return { at: "bench" };
+  }
   const mode = (Object.keys(MODE_PATHS) as ModeId[]).find((m) => MODE_PATHS[m] === at);
   // Anything unrecognised is the front door, which is now today's round.
   return mode ? { at: "game", mode } : { at: "daily" };
@@ -196,6 +213,8 @@ export function spell(route: Route): string {
       return `/${PRIVACY}`;
     case "terms":
       return `/${TERMS}`;
+    case "workshop":
+      return `/${BENCH}/${EXPORTS}`;
     case "settings":
       return `/${SETTINGS}`;
     case "bench":

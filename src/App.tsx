@@ -5,6 +5,7 @@ import Faq from "./components/Faq";
 import DailyBoard from "./components/DailyBoard";
 import Privacy from "./components/Privacy";
 import Terms from "./components/Terms";
+import ExportGuesser from "./modes/ExportGuesser";
 import Settings from "./components/Settings";
 import SiteFooter from "./components/SiteFooter";
 import TopBar from "./components/TopBar";
@@ -27,6 +28,23 @@ import TubeGuesser from "./modes/TubeGuesser";
 import type { GameSettings, ModeId, ModeProps } from "./modes/ModeProps";
 
 type Mode = ModeId;
+
+/**
+ * The card for the game being built, used by its setup screen and nowhere else.
+ *
+ * **Not in `MODES`**, which is the list of games that are real: this one is
+ * behind `/gamemakersscrapbook/exportspotter`, and `AllGames` still shows it
+ * as the dimmed coming-soon card that does nothing. The words are the same
+ * ones that card carries, so the day it graduates the two cannot disagree.
+ */
+const EXPORT_SPOTTER: GameCard = {
+  title: "Export Spotter",
+  hook: "Know what the world sells?",
+  blurb: "Given a country's biggest export, can you spot the country?",
+  emoji: "📦",
+  smallprint:
+    "Being built. What a country sells most of moves year to year, so the answers here are still being checked — nothing you score is recorded anywhere.",
+};
 
 /* The bench has no card. It was never on the shelf — `/gamemakersscrapbook`
    is the whole of how it is reached — and now that it isn't a game at all,
@@ -165,14 +183,18 @@ function AllGames({ onPick }: { onPick: (mode: Mode) => void }) {
             a button because there is nothing behind it yet: a card that takes
             the press and does nothing reads as a broken game rather than an
             unfinished one, and this way it can't be tabbed to either. */}
+        {/* Read from `EXPORT_SPOTTER` rather than written out again, so the
+            card promising the game and the setup screen behind
+            `/gamemakersscrapbook/exportspotter` cannot describe it
+            differently. Still a `div` and still dimmed: there is nothing here
+            for a player to press yet, and a card that takes the press and does
+            nothing reads as a broken game rather than an unfinished one. */}
         <div className="mode-card is-coming">
-          <span className="mode-emoji">📦</span>
-          <span className="mode-title">Export Spotter</span>
+          <span className="mode-emoji">{EXPORT_SPOTTER.emoji}</span>
+          <span className="mode-title">{EXPORT_SPOTTER.title}</span>
           <span className="mode-soon">Coming soon</span>
-          <span className="mode-hook">Know your trade?</span>
-          <span className="muted mode-blurb">
-            With a country's biggest export, can you spot who it is?
-          </span>
+          <span className="mode-hook">{EXPORT_SPOTTER.hook}</span>
+          <span className="muted mode-blurb">{EXPORT_SPOTTER.blurb}</span>
         </div>
       </div>
     </div>
@@ -450,6 +472,23 @@ export default function App() {
     );
   }
 
+
+  // A game being built, behind the bench's own path rather than on the shelf.
+  // It gets the ordinary setup screen — the point is to judge it exactly as a
+  // player would meet it — but no `match` is passed on, so nothing it does can
+  // reach a leaderboard. See `ExportGuesser`, and the warning at the top of
+  // `data/exports.ts`, which is what is keeping it here.
+  if (route.at === "workshop") {
+    if (started) return <ExportGuesser {...modeProps} />;
+    return page(
+      <ModeSetup
+        mode={EXPORT_SPOTTER}
+        warmWorld
+        onStart={() => setSession({ path, started: true, match: null })}
+        onBack={() => go({ at: "games" })}
+      />,
+    );
+  }
 
   if (route.at === "games") {
     return page(

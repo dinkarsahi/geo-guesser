@@ -811,6 +811,7 @@ browser's own back button works without a line of wiring.
 | `/terms` | the rules for using the site — and the one about leaderboard names |
 | `/settings` | how this device likes its map |
 | `/gamemakersscrapbook` | the bench — see "The bench" below. Goes when it does |
+| `/gamemakersscrapbook/exportspotter` | Export Spotter, being built — see "The last card" |
 | `/cityspotter`, `/flagspotter`, `/currencyspotter`, `/corporatehqspotter`, `/populationspotter`, `/tubestationspotter`, `/timezonespotter` | that game's setup screen, and the round itself |
 
 **The names crossed over and the file says so:** `/headtohead` is Duel a Friend,
@@ -1327,11 +1328,47 @@ The rules a bench lives by, all of them load-bearing:
 ### The last card: coming soon
 
 `Export Spotter`, on the end of the shelf in `AllGames`. A `div` rather than a
-`button` and dimmed by `.mode-card.is-coming`: there is nothing behind it, and a
-card that takes the press and does nothing reads as a broken game rather than an
-unfinished one. It is not a `ModeId` and nothing in `match.ts`, `duel.ts` or the
-database knows it exists — when it is built, it becomes one, and that means a
-row in the table above, a unique mode letter, and a re-run of `schema.sql`.
+`button` and dimmed by `.mode-card.is-coming`: **there is something behind it
+now, and it is still not for players.** It is not a `ModeId`, and nothing in
+`match.ts`, `duel.ts` or the database knows it exists.
+
+**It is playable at `/gamemakersscrapbook/exportspotter` and nowhere else.**
+The route is `{ at: "workshop" }` — under the bench's path rather than beside
+the games, and deliberately out of `MODE_PATHS`, because a `ModeId` enters the
+daily rota and needs a letter in a duel code, and neither belongs to a game
+whose answers have not been checked. It gets the ordinary `ModeSetup` screen,
+so it is judged exactly as a player would meet it, but no `match` is passed on:
+nothing it scores can reach a leaderboard.
+
+The card's words are read from `EXPORT_SPOTTER` in `App`, which is also what
+the setup screen behind the bench path uses — so the promise on the shelf and
+the game behind it cannot describe themselves differently.
+
+**The question is the currency round's shape**: it names a *thing* rather than
+a place, several countries are right, and the reveal paints all of them. The
+mode is `ExportGuesser`, and it is `CurrencyGuesser` with the pool swapped —
+same `hitTest` across a group, same `answerFor` picking the nearest member,
+same `guessAt` anchoring, so a miss is charged to the nearest country that
+really does sell it rather than to the middle of a group, which for crude
+petroleum would be a spot in the Arabian desert and for fish the open sea.
+
+**What is keeping it off the shelf is the data, not the code** — see the
+warning at the top of `src/data/exports.ts`. "Main export" is a moving target:
+it depends on the year, on how finely goods are categorised, and on whether
+services count. 106 countries and 28 goods are in, and the ones whose answer
+flips year to year are deliberately out — Thailand is famous for rubber and
+exports more cars, Costa Rica is famous for bananas and exports more medical
+instruments, Rwanda is famous for coffee and exports more gold. The data is
+hand-written from general knowledge rather than lifted from a trade database,
+which is also what keeps it the right side of the line the tube data was on the
+wrong side of: individual facts belong to nobody, a compiled dataset can belong
+to somebody.
+
+**Graduating it** means: a `ModeId` in `ModeProps.ts`, a unique mode letter in
+`match.ts`, an ordinary path in `useRoute.ts` (and the `workshop` route
+deleted), a row in the games table above, the scoring row below, a re-run of
+`supabase/schema.sql` against the live project, and the coming-soon `div` in
+`AllGames` becoming a `button`.
 
 ---
 

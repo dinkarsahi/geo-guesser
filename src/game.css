@@ -2640,3 +2640,30 @@ body:has(.game-play) {
 .doc-link:hover {
   color: var(--text-h);
 }
+
+/* Export Spotter's question: a good, named, with one character beside it.
+   Built out of the currency round's prompt, which asks the same shape of
+   question — a thing rather than a place, with several countries right. */
+.prompt-export {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.prompt-export-emoji {
+  font-size: 26px;
+  line-height: 1;
+}
+.prompt-export-name {
+  font-family: var(--heading);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+@media (max-width: 700px) {
+  .prompt-export-name {
+    font-size: 19px;
+  }
+  .prompt-export-emoji {
+    font-size: 21px;
+  }
+}
