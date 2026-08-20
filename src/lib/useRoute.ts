@@ -56,6 +56,8 @@ export type Route =
   | { at: "credits" }
   /** What the game knows about the people who play it. */
   | { at: "privacy" }
+  /** The rules for using the site — see `Terms`. */
+  | { at: "terms" }
   /** How this device likes its map — the two questions the games stopped asking. */
   | { at: "settings" }
   /** A game off the shelf: its setup screen, and the round itself. */
@@ -122,6 +124,7 @@ const ABOUT = "about";
 const FAQ = "faq";
 const CREDITS = "credits";
 const PRIVACY = "privacy";
+const TERMS = "terms";
 
 /**
  * The map preferences. `settings` rather than `preferences` because it is the
@@ -162,6 +165,7 @@ function parse(path: string): Route {
   if (at === FAQ) return { at: "faq" };
   if (at === CREDITS) return { at: "credits" };
   if (at === PRIVACY) return { at: "privacy" };
+  if (at === TERMS) return { at: "terms" };
   if (at === SETTINGS) return { at: "settings" };
   if (at === BENCH) return { at: "bench" };
   const mode = (Object.keys(MODE_PATHS) as ModeId[]).find((m) => MODE_PATHS[m] === at);
@@ -190,6 +194,8 @@ export function spell(route: Route): string {
       return `/${CREDITS}`;
     case "privacy":
       return `/${PRIVACY}`;
+    case "terms":
+      return `/${TERMS}`;
     case "settings":
       return `/${SETTINGS}`;
     case "bench":

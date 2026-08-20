@@ -1,0 +1,12 @@
+# SpotOn — https://playspoton.com
+#
+# Everything here is public and there is nothing to keep out: no accounts, no
+# user area, and the only thing behind any URL is a game or a page about one.
+# Said explicitly rather than left to the default, because a crawler that has
+# to assume is a crawler that may assume the other way.
+User-agent: *
+Allow: /
+
+# The site is one page that rewrites itself, so a crawler that does not run
+# JavaScript sees a single URL. This is where the rest of them are listed.
+Sitemap: https://playspoton.com/sitemap.xml

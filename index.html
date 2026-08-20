@@ -10,10 +10,105 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SpotOn</title>
+
+    <title>SpotOn — Play the world in 5 rounds</title>
+    <!-- What the page is, for a search result and for anything that reads a
+         link before a human does. Without it Google writes its own from
+         whatever text it can scrape, which on an app that builds itself in
+         JavaScript is nothing at all. -->
+    <meta
+      name="description"
+      content="A geography guessing game. Spot cities, flags, currencies, company head offices, populations, tube stations and time zones on a 3D globe. One round a day for everybody, or duel a friend."
+    />
+    <!-- The real address, so preview deploys and any other copy of the site do
+         not compete with it in search. -->
+    <link rel="canonical" href="https://playspoton.com/" />
+
+    <!-- What a link to SpotOn looks like when it is pasted into a message.
+         Without these it is a bare URL: no name, no picture, nothing to click.
+         The image is the app icon, which is square — hence the `summary` card
+         rather than `summary_large_image`, which wants a 1200x630 banner and
+         crops a square one badly. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SpotOn" />
+    <meta property="og:title" content="SpotOn — Play the world in 5 rounds" />
+    <meta
+      property="og:description"
+      content="A geography guessing game. Spot cities, flags, currencies, company head offices, populations, tube stations and time zones on a 3D globe."
+    />
+    <meta property="og:url" content="https://playspoton.com/" />
+    <meta property="og:image" content="https://playspoton.com/apple-touch-icon.png" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="SpotOn — Play the world in 5 rounds" />
+    <meta
+      name="twitter:description"
+      content="A geography guessing game. Spot cities, flags, currencies, company head offices, populations, tube stations and time zones on a 3D globe."
+    />
+    <meta name="twitter:image" content="https://playspoton.com/apple-touch-icon.png" />
   </head>
   <body>
-    <div id="root"></div>
+    <!--
+      The page says what it is before the app has run.
+
+      Everything below is replaced the moment React mounts — `createRoot`
+      clears the container it is given — so no player ever sees it. It is here
+      for everything that reads a page **without executing it**: crawlers, link
+      previewers, an AdSense reviewer's tooling, and anyone with JavaScript
+      turned off. Empty, all of those saw a blank white rectangle, and "site
+      under construction" is one of the commonest reasons an ad application is
+      refused.
+
+      It is deliberately not a `<noscript>` block. Content inside the root does
+      the same job for a crawler *and* stays on screen for a reader whose
+      JavaScript never runs, where a `<noscript>` would only serve the second.
+
+      Keep it honest: it describes the game as it actually is, and its links go
+      to pages that actually exist. A shell that oversells what is behind it is
+      worse than no shell.
+    -->
+    <div id="root">
+      <main>
+        <h1>SpotOn</h1>
+        <p>
+          A geography guessing game. You are shown a place — a city name, a flag, a
+          currency, a company logo, a population figure, a tube station or a live
+          clock — and you spin a 3D globe and click where you think it belongs.
+          Every game is five rounds, and each round is marked out of 100 on how
+          close you were.
+        </p>
+        <h2>Seven games</h2>
+        <ul>
+          <li>City Spotter — with just the name, spot where the city is.</li>
+          <li>Flag Spotter — spot which country the flag belongs to.</li>
+          <li>Currency Spotter — spot a country that spends it.</li>
+          <li>Corporate HQ Spotter — spot where a company is headquartered.</li>
+          <li>Population Spotter — spot the country from its population.</li>
+          <li>Tube Station Spotter — find the station on the London Underground.</li>
+          <li>Time Zone Spotter — read the clock, spot a country keeping it.</li>
+        </ul>
+        <h2>Three ways to play</h2>
+        <ul>
+          <li>
+            <a href="/dailyround">Today's Round</a> — one game a day, the same one for
+            everybody, with a leaderboard.
+          </li>
+          <li>
+            <a href="/headtohead">Duel a Friend</a> — a room, a code, and the same five
+            rounds at the same moment.
+          </li>
+          <li>
+            <a href="/allgames">All Games</a> — any of the seven, at your own pace,
+            scored nowhere.
+          </li>
+        </ul>
+        <p>
+          <a href="/about">About SpotOn</a> · <a href="/faq">How scoring works</a> ·
+          <a href="/credits">Credits</a> · <a href="/privacy">Privacy</a> ·
+          <a href="/terms">Terms</a>
+        </p>
+        <p>SpotOn needs JavaScript to play. Please turn it on and reload.</p>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -4,6 +4,7 @@ import Credits from "./components/Credits";
 import Faq from "./components/Faq";
 import DailyBoard from "./components/DailyBoard";
 import Privacy from "./components/Privacy";
+import Terms from "./components/Terms";
 import Settings from "./components/Settings";
 import SiteFooter from "./components/SiteFooter";
 import TopBar from "./components/TopBar";
@@ -380,6 +381,15 @@ export default function App() {
 
   if (route.at === "privacy") {
     return page(<Privacy />);
+  }
+
+  if (route.at === "terms") {
+    return page(
+      <Terms
+        onPrivacy={() => go({ at: "privacy" })}
+        onCredits={() => go({ at: "credits" })}
+      />,
+    );
   }
 
   if (route.at === "settings") {

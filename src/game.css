@@ -2622,3 +2622,21 @@ body:has(.game-play) {
 .bench-notes strong {
   color: var(--text-h);
 }
+
+/* A cross-reference inside a paragraph on a doc page. A button rather than an
+   anchor, because the app routes in place and a real href would reload the
+   whole thing to reach a page it already has — but it has to read as a link,
+   since that is what it is doing. */
+.doc-link {
+  font: inherit;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.doc-link:hover {
+  color: var(--text-h);
+}

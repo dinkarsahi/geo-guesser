@@ -28,6 +28,7 @@ const LINKS: { route: Route; label: string }[] = [
   { route: { at: "faq" }, label: "FAQ" },
   { route: { at: "credits" }, label: "Credits" },
   { route: { at: "privacy" }, label: "Privacy" },
+  { route: { at: "terms" }, label: "Terms" },
 ];
 
 /**
