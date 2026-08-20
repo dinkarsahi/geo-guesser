@@ -15,7 +15,7 @@ import { spentOnThisDevice } from "./lib/leaderboard";
 import { loadWorldShapes } from "./lib/worldShapes";
 import { spellScreen, useRoute, type Route } from "./lib/useRoute";
 import CityLocator from "./modes/CityLocator";
-import CityScrapbook, { SCRAPBOOK_TITLE } from "./modes/CityScrapbook";
+import ScrapbookTube from "./modes/ScrapbookTube";
 import CompanyGuesser from "./modes/CompanyGuesser";
 import CurrencyGuesser from "./modes/CurrencyGuesser";
 import FlagGuesser from "./modes/FlagGuesser";
@@ -28,28 +28,10 @@ import type { GameSettings, ModeId, ModeProps } from "./modes/ModeProps";
 
 type Mode = ModeId;
 
-/**
- * The bench: a copy of City Spotter kept aside to try things on.
- *
- * **Off the shelf and reachable only at `/gamemakersscrapbook`.** Nothing is on
- * trial there at the moment — the fall through space and the sky both
- * graduated — and a card offering a copy of a game that scores nothing is an
- * odd thing to put in front of a player who came to play. It is one line away
- * from coming back: a `mode-card` in `AllGames` pressing `go({ at: "bench" })`.
- *
- * A card of its own rather than a row in `MODES`, because it must never be a
- * `ModeId` — that would enter it in the daily rota and in duel codes, which is
- * the last place an experiment belongs. It is a `GameCard` and not a
- * `GameCard & { id }`, and the type split exists for exactly this. See
- * `CityScrapbook` for the rest of the rules it lives by.
- */
-const SCRAPBOOK: GameCard = {
-  title: SCRAPBOOK_TITLE,
-  hook: "Fancy being the game maker?",
-  blurb:
-    "City Spotter, kept aside to try things on. Nothing here counts for anything.",
-  emoji: "🧪",
-};
+/* The bench has no card. It was never on the shelf — `/gamemakersscrapbook`
+   is the whole of how it is reached — and now that it isn't a game at all,
+   there is nothing for a card to offer. Putting it back is a `mode-card` in
+   `AllGames` pressing `go({ at: "bench" })`. */
 
 /** Choose how to play before a mode starts. */
 function ModeSetup({
@@ -459,20 +441,17 @@ export default function App() {
     );
   }
 
-  // The bench: the games' own setup screen, and a copy of a game behind it.
-  // `ModeSetup` takes a card rather than a mode id so that this screen can be
-  // had without a `ModeId` to go with it, and no `match` is passed on from
-  // here — there is nothing an experiment could file to.
+  // The bench. What is on it now is the tube data's provenance — the same
+  // network drawn from TfL's own open data beside the unlicensed dataset the
+  // game ships with, so the difference is looked at rather than trusted. The
+  // City Spotter copy that stood here settled its arguments (the fall through
+  // space, the sky) and came down with them.
+  //
+  // No setup screen in front of it any more: that screen exists to ask a
+  // player whether they want to start a game, and this is not a game. Nothing
+  // is scored, nothing is filed, and there is no `match` to pass on.
   if (route.at === "bench") {
-    if (started) return <CityScrapbook {...modeProps} />;
-    return page(
-      <ModeSetup
-        mode={SCRAPBOOK}
-        warmWorld
-        onStart={() => setSession({ path, started: true, match: null })}
-        onBack={() => go({ at: "games" })}
-      />,
-    );
+    return page(<ScrapbookTube onExit={() => go({ at: "games" })} />);
   }
 
   if (route.at === "games") {

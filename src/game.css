@@ -2556,3 +2556,69 @@ body:has(.game-play) {
     transition: none;
   }
 }
+
+/* ---- The bench ------------------------------------------------------- */
+/* Whatever is being argued about this week — see `ScrapbookTube`. Plain on
+   purpose: nothing here is being sold to a player, and a screen that dresses
+   an experiment up is a screen that gets judged instead of the thing on it. */
+/* `.tube-wrap` is `position: absolute; inset: 0`, because in a round it fills a
+   `.map-layer` that a flex column has already given a height to. There is no
+   such column here, so the bench states one — without it the map is a
+   zero-height box and the switch floats over the notes. */
+.bench-map {
+  position: relative;
+  height: min(68vh, 620px);
+  max-width: 900px;
+  margin: 0 auto 22px;
+}
+/* On the map, because two versions have to be judged in the same second on the
+   same view. A switch on a screen before this one is judged from memory. */
+.bench-switch {
+  position: absolute;
+  z-index: 3;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(12, 15, 22, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+}
+.bench-pick {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #d1d5db;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.bench-pick:hover {
+  color: #fff;
+}
+.bench-pick.is-on {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+/* The readout. Set left in a reading column like the doc pages, because it is
+   a list of findings and not a caption. */
+.bench-notes {
+  max-width: 820px;
+  margin: 0 auto;
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bench-notes strong {
+  color: var(--text-h);
+}

@@ -264,7 +264,12 @@ Three of them, all satisfying `GuessMapProps` in `src/components/mapTypes.ts`:
   below — and stands on the sea from `src/lib/globeGround.ts`. Its outlines are
   fed in by `src/lib/polygonFeed.ts` rather than handed over whole; both of
   those are explained under "The arrival".
-- **`LondonMap.tsx`** — bespoke SVG of the tube network. Also takes `rings` —
+- **`LondonMap.tsx`** — bespoke SVG of the tube network. Takes an optional
+  `data` bundle (`TubeData` in `src/data/tubeSources.ts`) so the bench can hand
+  it a different network; defaults to `SHIPPED_TUBE`, so the game is unchanged.
+  Its two big `useMemo`s now depend on that data — the projection is *fitted to
+  the stations it holds*, so an empty dependency array there would draw one
+  network through another's frame. Also takes `rings` —
   the circle a tube guess is marked against, from `src/lib/tubeReach.tsx`. The
   game only ever hands it a circle on a round the circle actually paid for. The
   array's identity must be stable, since the map re-projects the lot whenever
@@ -996,6 +1001,51 @@ lets the pool be *every* country rather than the ones someone got round to.
   one place and only the punctuation differs. Only the wording moves — what
   counts as full marks is still scoring's business.
 
+### Where the tube data comes from
+
+`src/data/tubeData.ts` is generated from a third-party GitHub dataset that
+declares **no licence**, which is item C1 of the ad-readiness register and one
+of the two with real teeth. `tools/gen-tube-tfl.mjs` rebuilds the same tables
+from **TfL's own open data** — free, and asking only for the credit already on
+`/credits` — into `src/data/tubeDataTfl.ts`. Run it with
+`node tools/gen-tube-tfl.mjs`; no key is needed at this volume.
+
+**It is on the bench, not shipped**, and the reason is that the swap is not
+cosmetic. Measured against what the game actually plays (265 stations, after
+`canonical()` has merged the raw file's duplicates):
+
+- **Four stations are simply missing** from the shipped set — Battersea Power
+  Station, Nine Elms, Wood Lane and Heathrow Terminal 5. The dataset predates
+  the 2021 Northern line extension.
+- **Two names are misspelled** and reach the screen: "Harrow & Wealdston" and
+  "Bromley-By-Bow". One is stale: Heathrow Terminal 1 closed in 2015.
+- **Stations move about 30 m** in the middle of the pack, 367 m at worst
+  (Southwark) — platform centroid against entrance.
+- **Seventeen fare zones disagree**, and this is the one that reaches the
+  score: `tubeNearby.ts` sizes the Mind the Gap circle off the zone, so a zone
+  that moves moves a radius, and the circle's printed count has to keep
+  matching what a player can count off the screen.
+
+**The generator follows the game's naming policy, not TfL's.** TfL lists
+Hammersmith, Paddington and Edgware Road twice each, because they are
+operationally separate stations — right for a journey planner and wrong for a
+guessing game, where two right answers to "Hammersmith" is a question with no
+answer. `RENAME` in the generator merges them, matching what `canonical()` in
+`tube.ts` already does and for the reason already written there.
+
+**The colours are a separate argument and were already settled.** `lineColors`
+in `tube.ts` is a hand-tuned palette, deliberately pushed further apart than
+either the old dataset's values or TfL's own, so each line reads as its own hue
+at map scale. The generator emits TfL's official hexes; `lineColors` would
+override them anyway. Don't conflate the two: the licence question is about the
+station table, and recolouring cannot answer it.
+
+`public/london-boroughs.json` is the C2 half — the ONS boundary set under the
+Open Government Licence, vendored rather than fetched live from
+`raw.githubusercontent.com`, which is both unlicensed and not a CDN. Both URLs
+are kept in `tubeSources.ts` so the bench can show them side by side; the game
+still draws the legacy one until the swap is made.
+
 ### The circle the tube marks by
 
 Sized in `src/data/tubeNearby.ts`: from zone 3 outwards every station gets one,
@@ -1106,15 +1156,35 @@ Two things left open, both seen rather than guessed at:
 
 ### The bench
 
-`Game Maker's Scrapbook` — a copy of City Spotter, on the end of the shelf next
-to the coming-soon card, at `/gamemakersscrapbook`.
+`Game Maker's Scrapbook`, at `/gamemakersscrapbook`. **Not on the shelf** — the
+URL is the whole of how it is reached.
 
-**Nothing is on trial there at the moment.** Both arguments it was built for
-have been settled and shipped: the fall through space, and the sky, which is
-stars alone now that the cloud layer was compared against no cloud layer and
-lost. What is left is a copy of City Spotter that files nothing anywhere,
-standing ready for the next thing worth trying on a globe. By the rule below it
-could equally come down; it is kept because it was asked for.
+**On trial now: where the tube data comes from.** `ScrapbookTube` draws the
+network twice, from the dataset the game ships with and from one rebuilt out of
+TfL's own open data, with a switch on the map and a readout of every difference
+underneath. This is items **C1 and C2** of the ad-readiness register: the
+shipped station table was generated from a third-party GitHub repository that
+declares **no licence**, and the borough outlines are fetched live from a
+second one. No licence grants no permission to redistribute, and UK database
+right sits on top of copyright for a compilation like the first. Both
+originate with public bodies who publish the same thing under terms that do
+grant it.
+
+**It is not a game.** No `ModeSetup` in front of it, no `useGame`, nothing
+scored and nothing filed — a setup screen exists to ask a player whether they
+want to start, and there is nothing here to start.
+
+The City Spotter copy that used to stand here came down with the arguments it
+settled: the fall through space, and the sky.
+
+**It hands the real `LondonMap` a second dataset rather than copying it**, which
+is a deliberate departure from the "a bench is a copy" rule below. What is on
+trial is the *data*, so the renderer has to be identical on both sides — which
+one shared component gives by construction and a duplicate only promises. The
+seam is `TubeData` and `SHIPPED_TUBE` in `src/data/tubeSources.ts`, and
+`LondonMap`'s `data` prop, which defaults to the shipped bundle so the game is
+untouched. It lives in its own module because exporting a constant from a
+component file breaks fast refresh.
 
 Two things about the fall worth remembering, now that it is shipped code:
 
@@ -1135,7 +1205,7 @@ sliding under the cursor is nobody's answer.
 
 The rules a bench lives by, all of them load-bearing:
 
-- **Never a `ModeId`** — a card and a route, and nothing else. A `ModeId`
+- **Never a `ModeId`** — a route, and a card only if it is on the shelf. A `ModeId`
   enters the daily rota, needs a letter in a duel code and a re-run of
   `schema.sql`, and an experiment is the last thing to hand somebody as their
   round of the day. The route is the concession the URL era forces, since every

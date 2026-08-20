@@ -9,20 +9,10 @@ import {
 import { geoMercator } from "d3-geo";
 import type { Coord } from "../lib/geo";
 import type { GuessMapProps } from "./mapTypes";
-import {
-  needsCasing,
-  stationCoords,
-  tubeConnections,
-  tubeLines,
-  tubeStations,
-} from "../data/tube";
-import type { TubeConnectionRaw } from "../data/tube";
+import { needsCasing, tubeConnections, tubeLines } from "../data/tube";
+import type { TubeConnectionRaw, TubeLineDef } from "../data/tube";
+import { SHIPPED_TUBE, type TubeData } from "../data/tubeSources";
 import MapZoomControls from "./MapZoomControls";
-
-// London borough boundaries (TopoJSON, object key "london_geo"), drawn as faint
-// outlines only — our own geographic rendering, not the copyrighted TfL diagram.
-const londonTopoUrl =
-  "https://raw.githubusercontent.com/clementamiri/London-Borough-TopoJson/master/london-topojson.json";
 
 const WIDTH = 800;
 const PAD = 44;
@@ -105,7 +95,10 @@ const THAMES: Pt[] = [
  * line, so the corridor reads as parallel stripes like the TfL map. Ordering by
  * line keeps a stripe on the same side along a whole corridor.
  */
-const stripedConnections = (() => {
+const stripeConnections = (
+  tubeLines: TubeLineDef[],
+  tubeConnections: TubeConnectionRaw[],
+) => {
   const rank = new Map(tubeLines.map((l, i) => [l.color, i]));
   const corridors = new Map<string, TubeConnectionRaw[]>();
   for (const c of tubeConnections) {
@@ -120,7 +113,10 @@ const stripedConnections = (() => {
     group.forEach((c, i) => out.push({ ...c, slot: i - (group.length - 1) / 2 }));
   }
   return out;
-})();
+};
+
+/** The shipped network's stripes, laid out once at module load as before. */
+const shippedStripes = stripeConnections(tubeLines, tubeConnections);
 
 /**
  * A circle of real ground drawn on the map — a radius in kilometres around a
@@ -147,6 +143,8 @@ interface LondonMapProps extends GuessMapProps {
   rings?: MapRing[];
   /** The network on a dark ground rather than the white paper one. */
   dark?: boolean;
+  /** Which network to draw. The shipped one unless the bench says otherwise. */
+  data?: TubeData;
 }
 
 interface Position {
@@ -276,7 +274,20 @@ export default function LondonMap({
   disabled = false,
   rings,
   dark = false,
+  data = SHIPPED_TUBE,
 }: LondonMapProps) {
+  // Shadowing the names the module used to import on purpose: everything below
+  // reads exactly as it did when the network could only come from one place,
+  // and nothing can quietly go on drawing the shipped one when the bench has
+  // handed over another.
+  const {
+    stations: tubeStations,
+    connections: tubeConnections,
+    lines: tubeLines,
+    coords: stationCoords,
+  } = data;
+  const stripedConnections =
+    data === SHIPPED_TUBE ? shippedStripes : stripeConnections(tubeLines, tubeConnections);
   // Two grounds for one network, and **only the ground changes**. The line
   // colours are TfL's and are how a Londoner reads this map at a glance — a
   // Piccadilly that isn't dark blue is a different map, whatever the
@@ -333,7 +344,10 @@ export default function LondonMap({
       .scale(scale)
       .translate([PAD - minX * scale, PAD - minY * scale]);
     return { projection: proj, mapHeight: height };
-  }, []);
+    // The projection is fitted to the stations it has to hold, so a different
+    // network wants a different fit — an empty list here would leave the bench
+    // drawing TfL's stations through the shipped set's frame.
+  }, [tubeStations]);
 
   /**
    * Everything below is laid out once, in un-zoomed map pixels: the zone bands,
@@ -433,7 +447,7 @@ export default function LondonMap({
     }));
 
     return { bands, labels, landmarks, thames, dots };
-  }, [projection]);
+  }, [projection, tubeStations, tubeConnections, tubeLines, stationCoords]);
 
   /**
    * The rings in un-zoomed map pixels. Their radius is measured by projecting a
@@ -699,7 +713,7 @@ export default function LondonMap({
 
             {/* Faint borough outlines, spread to match the rest of the map. */}
             <g transform={`translate(${anchor[0] * (1 - s)} ${anchor[1] * (1 - s)}) scale(${s})`}>
-              <Geographies geography={londonTopoUrl}>
+              <Geographies geography={data.boroughUrl}>
                 {({ geographies }) =>
                   geographies.map((geo) => (
                     <Geography
