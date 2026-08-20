@@ -45,6 +45,21 @@
       content="A geography guessing game. Spot cities, flags, currencies, company head offices, populations, tube stations and time zones on a 3D globe."
     />
     <meta name="twitter:image" content="https://playspoton.com/apple-touch-icon.png" />
+
+    <!--
+      Marks the document the instant it is parsed, before the body exists and
+      long before the bundle has arrived. The stylesheet hides the shell below
+      whenever this has run, so a browser that can play the game never paints
+      the copy written for one that cannot.
+
+      Inline and in the head on purpose: an external script would be a second
+      round trip, and anything deferred is too late — the shell would flash in
+      the gap. Nothing that reads a page without executing it ever sees this,
+      which is exactly the audience the shell is for.
+    -->
+    <script>
+      document.documentElement.classList.add("js");
+    </script>
   </head>
   <body>
     <!--
@@ -65,9 +80,15 @@
       Keep it honest: it describes the game as it actually is, and its links go
       to pages that actually exist. A shell that oversells what is behind it is
       worse than no shell.
+
+      It is **hidden the moment JavaScript runs** — see the script above and
+      `.boot-shell` in the stylesheet. Left visible it painted from the first
+      frame and stayed until the bundle had downloaded and mounted, so a player
+      on a slow connection was shown a page telling them to turn on JavaScript
+      they already had.
     -->
     <div id="root">
-      <main>
+      <main class="boot-shell">
         <h1>SpotOn</h1>
         <p>
           A geography guessing game. You are shown a place — a city name, a flag, a

@@ -861,6 +861,17 @@ traffic.
 - **`index.html` carries the game in plain HTML**, inside `#root`. React's
   `createRoot` clears the container it is handed, so no player ever sees it; a
   crawler, a link previewer and a reader with JavaScript off all do.
+
+  **It has to be hidden the moment JavaScript runs, and that is not automatic.**
+  Left to React, the shell paints from the first frame and stays until 744 KB
+  of bundle has downloaded and mounted — so a player on a slow connection is
+  shown a page telling them to turn on the JavaScript they already have. An
+  inline script in the head adds `js` to the root element before the body is
+  even parsed, and `.js .boot-shell` in `index.css` hides it. Inline and in the
+  head on purpose: an external script is a second round trip and anything
+  deferred is too late, which is to say the flash is exactly the gap. Nothing
+  that reads a page without executing it ever sets that class, so the shell
+  stays visible for precisely the readers it was written for.
   Deliberately **not** a `<noscript>` block: content inside the root does the
   same job for a crawler *and* stays on screen for the reader whose JavaScript
   never runs, where `<noscript>` only does the second. Keep it honest — it

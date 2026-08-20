@@ -130,3 +130,17 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* The plain-HTML description of the game that `index.html` carries inside the
+   root — see the comment there. It is for crawlers, link previewers and
+   readers with no JavaScript, and it is painted from the first frame, so
+   without this a browser that is perfectly capable of the game showed a page
+   telling it to turn JavaScript on until the bundle finished arriving.
+
+   Hidden on the class the inline head script adds, which has run before this
+   element is even parsed. Nothing that reads the page without executing it
+   ever sets that class, so the shell stays visible for exactly the readers it
+   was written for. */
+.js .boot-shell {
+  display: none;
+}
