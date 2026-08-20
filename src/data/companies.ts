@@ -37,6 +37,18 @@ export function logoUrl(slug: string): string {
 }
 
 /**
+ * The same mark, served from here instead — see `tools/gen-company-logos.mjs`.
+ *
+ * On the bench while the swap is looked at. The files are the CDN's own
+ * output rather than the repository's, so they carry the brand colour the
+ * game already draws; vendoring from the repository would have turned every
+ * one of them black.
+ */
+export function localLogoUrl(slug: string): string {
+  return `/logos/${slug}.svg`;
+}
+
+/**
  * Where the world's better-known companies actually keep their head office —
  * which is often not where you'd guess, and occasionally not the country the
  * brand feels like it belongs to.
@@ -45,7 +57,8 @@ export function logoUrl(slug: string): string {
  * appears the map has already flown to the country and lit it up, so "Nokia is
  * headquartered in Finland" would be telling the player what they just watched.
  */
-const COMPANIES: Company[] = [
+/** Every company in the pool, before the map has said which countries exist. */
+export const ALL_COMPANIES: Company[] = [
   // --- United States ---------------------------------------------------
   { name: "Apple", slug: "apple", code: "us",
     fact: "Founded in 1976 and long said to have started in a garage — which Steve Wozniak later called a bit of a myth, since most of the work happened elsewhere." },
@@ -1064,7 +1077,7 @@ export function companyPool(countries: Country[]): CompanyTarget[] {
 
   const byCode = new Map(countries.map((c) => [c.code, c]));
   cachedFor = countries;
-  cached = COMPANIES.filter((c) => byCode.has(c.code)).map((c) => {
+  cached = ALL_COMPANIES.filter((c) => byCode.has(c.code)).map((c) => {
     const home = byCode.get(c.code)!;
     return { ...c, country: home.name, lat: home.lat, lng: home.lng };
   });

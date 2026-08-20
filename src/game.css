@@ -2622,3 +2622,55 @@ body:has(.game-play) {
 .bench-notes strong {
   color: var(--text-h);
 }
+
+/* The logo bench — see `ScrapbookLogos`. Dense on purpose: a difference in one
+   mark out of 486 has to be findable by scanning, which means both versions of
+   each company sitting next to each other rather than on two screens. */
+.bench-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.bench-switch.is-inline {
+  position: static;
+  transform: none;
+}
+.bench-count {
+  font-size: 14px;
+  color: var(--text);
+  margin: 0 0 16px;
+}
+.logo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(184px, 1fr));
+  gap: 4px 10px;
+  max-width: 1080px;
+  margin: 0 auto 24px;
+  text-align: left;
+}
+.logo-pair {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: var(--social-bg);
+  font-size: 12px;
+  color: var(--text);
+  overflow: hidden;
+}
+.logo-pair span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The marks come in the brand's own colour and several are black, which this
+   page's ground is too — the same reason the game gives them a plate. */
+.logo-pair img {
+  flex: none;
+  background: #fff;
+  border-radius: 4px;
+  padding: 2px;
+}

@@ -1196,10 +1196,22 @@ Two things left open, both seen rather than guessed at:
 
 ### The bench
 
-**Nothing is on the bench, and there is no bench screen.** `/gamemakersscrapbook`
-is still a route, but nothing renders for it: the last argument it settled was
-where the tube data comes from, and by the rule below the bench came down with
-it. The one before that was the fall through space and the sky.
+**On the bench now: where the company logos are served from** — item C3 of the
+ad-readiness register. `ScrapbookLogos` draws all 486 marks twice, from
+`cdn.simpleicons.org` and from `public/logos/`, one pair per company. Pairs
+rather than a switch between two screens, because the thing being checked is
+whether any single mark out of 486 came out different, and that has to be
+findable by scanning.
+
+**The trap it exists to catch:** Simple Icons keeps each mark as a single black
+path and the *CDN* paints it — ask GitHub for `nvidia.svg` and there is no
+`fill` at all, ask the CDN and you get `fill="#76B900"`. Vendoring from the
+repository, which is the obvious thing to do, would have turned all 486 logos
+black. `tools/gen-company-logos.mjs` fetches the CDN's own output and refuses
+any file that comes back without a fill.
+
+Arguments it settled before this one: where the tube data comes from, and
+before that the fall through space and the sky.
 
 Putting one back is a component and one line in `App`'s route table. Two things
 from the last one are worth reusing rather than rebuilding: `TubeData` and
