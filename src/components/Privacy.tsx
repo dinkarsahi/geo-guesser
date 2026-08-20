@@ -106,9 +106,11 @@ export default function Privacy() {
           </p>
           <p>
             The maps, flags and logos you see are fetched by your browser directly from
-            the services that publish them — NASA's imagery service, jsDelivr, flagcdn.com
-            and Simple Icons. As with any image on any website, those services can see the
-            request your browser makes, including your IP address.
+            the services that publish them — NASA's imagery service, jsDelivr for the
+            country shapes, and flagcdn.com for the flags. As with any image on any
+            website, those services can see the request your browser makes, including
+            your IP address. The company logos and the world texture used to be fetched
+            this way too, and are now served from this site.
           </p>
         </section>
 

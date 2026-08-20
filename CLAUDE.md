@@ -256,7 +256,12 @@ Two things follow, both load-bearing:
 Three of them, all satisfying `GuessMapProps` in `src/components/mapTypes.ts`:
 
 - **`WorldMap.tsx`** — flat, plate carrée, `react-simple-maps` + `d3-geo`. Draws
-  `WORLD_TILES` over the satellite texture.
+  `WORLD_TILES` over the satellite texture, which is **served from this site**
+  (`public/earth-blue-marble.jpg`, `src/lib/textures.ts`) rather than hotlinked
+  from a package CDN. It is copied from `node_modules/three-globe` rather than
+  imported: that package's `exports` field refuses deep imports, so Vite cannot
+  reach `example/img` to bundle it. Nothing is owed for it beyond the NASA line
+  the maps already print.
 - **`GlobeMap.tsx`** — `react-globe.gl` (three.js). Draws from a **coarsened**
   copy of the country shapes; at full 1:50m detail the globe is a slideshow.
   Never score against the coarse copy. Skinned in `WORLD_TILES`, which also sets
