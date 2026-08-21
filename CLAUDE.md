@@ -1540,6 +1540,22 @@ days, so every game gets exactly one day in seven and none can turn up twice in
 a week. No clock on a round — see above. Needs no server to work; falls back to
 a device-local table.
 
+**A day can be pinned by hand** — `PINNED_DAYS` in `match.ts`, a day number from
+`localDay` to a `ModeId`, consulted before the shuffle and winning outright. It
+is an override rather than a re-deal: the block around it is left as dealt, so a
+pin **costs that block its permutation** — the game it displaces loses its turn,
+and the game pinned on gets two days if it already had one in that block. That
+is the price of moving one day and only one day; swapping instead keeps the
+promise but moves a second day nobody asked to move. Nothing checks a pin
+against its neighbours, so two of the same game running back to back is a thing
+to catch while writing the pin down.
+
+**Only pin a day that hasn't happened.** A played day has a table filed under
+its `dailyCode`, which is built from the mode *and* the day — change the mode
+and the old scores are still filed under the old code, so the day quietly grows
+a second leaderboard nobody can reach and the players on the first one are
+marked at a game that day no longer is.
+
 ### One go a device
 
 Two layers, and they are locks on different things — which is the whole of why

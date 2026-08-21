@@ -307,6 +307,32 @@ function dayOrder(block: number): ModeId[] {
 }
 
 /**
+ * Days whose game is chosen by hand rather than by the shuffle.
+ *
+ * Keyed on the day number `localDay` returns, so a pin means the same day
+ * everywhere the way the rest of the rota does — not "27 August wherever you
+ * are, once your calendar says so".
+ *
+ * This is deliberately an override and not a re-shuffle: it wins outright, and
+ * the block around it is left exactly as it was dealt. So a pin **breaks the
+ * one-day-in-seven promise** for its block — the game it displaces loses its
+ * turn, and the game pinned on gets two if it already had one. That is the
+ * whole cost of pinning and it is paid knowingly; the alternative, swapping the
+ * two days, keeps the promise but moves a second day nobody asked to move.
+ *
+ * Nothing checks a pin against its neighbours, so a pin landing next to the
+ * same game is a thing to notice when writing one down rather than something
+ * the code will catch. Pins are for days that haven't happened: a day already
+ * played has a table filed under it, and changing the game underneath it leaves
+ * scores from one game sitting on another's leaderboard.
+ */
+const PINNED_DAYS: Record<number, ModeId> = {
+  // 27 Aug 2026. Flag Spotter also falls on 1 Sep, in this same block, and
+  // Population Spotter therefore sits the block out.
+  20692: "flag",
+};
+
+/**
  * Which game today is.
  *
  * Nobody picks any more: the day does, and it's the same day's game for
@@ -317,8 +343,12 @@ function dayOrder(block: number): ModeId[] {
  * Evenly spread by construction. Every run of seven days is a permutation of
  * the seven, so no game can go a fortnight unplayed or turn up twice in a week,
  * which is what an unconstrained draw would do often enough to look broken.
+ * `PINNED_DAYS` is the one thing that can break that, and only for the block a
+ * pin falls in.
  */
 export function gameOfDay(day: number = localDay()): ModeId {
+  const pinned = PINNED_DAYS[day];
+  if (pinned) return pinned;
   const size = MATCH_MODES.length;
   const block = Math.floor(day / size);
   const index = mod(day, size);
