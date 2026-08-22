@@ -52,11 +52,13 @@ options or in `GameFrame`'s props instead.
   in open water or inside a neighbour.
 - **`easierBy`** — deal a game that climbs. The pool is ranked by this (**bigger
   is easier**), cut into as many bands as there are rounds, and one target taken
-  at random from each, easiest first. Only Population Spotter sets it, ranking
-  by population: a flat shuffle of every country on Earth deals mostly from the
-  long tail, and five rounds of small islands is a fair deal and a rotten game.
-  Nothing leaves the pool — every country is still reachable, in its own band.
-  Works with `seed`, so a duel climbs identically on both devices.
+  at random from each, easiest first. Two games set it. **Population Spotter**
+  ranks by population: a flat shuffle of every country on Earth deals mostly
+  from the long tail, and five rounds of small islands is a fair deal and a
+  rotten game. Nothing leaves its pool — every country is still reachable, in
+  its own band. **Flag Spotter sets it too, but only for today's round** — see
+  "The flag ladder" below, where the pool *is* cut down. Works with `seed`, so a
+  duel climbs identically on both devices.
 - **`seed`** — deal deterministically. This is the whole of how two devices play
   the same rounds without talking to each other. Seeded games deliberately skip
   the "recently seen" memory, which differs per device.
@@ -1035,6 +1037,42 @@ Pools are filtered against the map at runtime rather than hardcoded, so a
 country missing from Natural Earth simply never comes up. `countries.ts` also
 falls back to a generated fact for anywhere without a written one, which is what
 lets the pool be *every* country rather than the ones someone got round to.
+
+### The flag ladder: today's round, and only today's round
+
+`src/data/flagLadder.ts` is 120 country codes written down in order of how
+recognisable the flag is, easiest first, and **Today's Round deals Flag Spotter
+from it**. Off the shelf and in a duel the game is unchanged: `climbing` in
+`FlagGuesser` is `match?.kind === "daily"`, and it decides both the pool and
+whether `easierBy` is passed at all.
+
+**Why the daily alone.** It is the front door — most of the people who see it
+followed a link from a friend and have never played — and a first round asking
+for the flag of Nauru is a tab that closes. Somebody who picked Flag Spotter off
+a shelf of seven has chosen the whole world, and a duel is two people who agreed
+to it.
+
+**Why a written list and not a measurement.** `easierBy` wants a number and the
+obvious ones are all to hand, but none of them measures whether you have *seen
+this flag before*. Ranked by population the first band is the top fifth of the
+world by headcount — Burkina Faso and Malawi and Mozambique alongside China —
+which is correct arithmetic and a rotten first round, while Switzerland is a
+hundredth their size and everyone knows its flag. There is no column for fame,
+so fame is written down. **The order carries the difficulty, not a score**:
+`climbingDeal` cuts by rank, so 120 entries over five rounds is a band of 24,
+and anything added goes where it belongs rather than on the end.
+
+**This is the one `easierBy` that also narrows the pool**, which Population
+Spotter deliberately does not. Small countries are kept out by not being written
+on the list rather than by a size rule — Luxembourg and Malta would pass a size
+test and fail a fame one, and Iceland fails the size test and has earned its
+place.
+
+**Changing the ladder re-deals a day that may already have been played.** The
+daily code is built from the mode and the day, not from the pool, so the table
+survives a change the questions did not: yesterday's scores stay filed under a
+code whose five rounds are now different ones. That is a table to clear by hand
+if the change lands mid-day, and a reason to make changes like this overnight.
 
 ### Per-game nuances
 
