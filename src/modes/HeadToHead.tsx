@@ -221,7 +221,10 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
   const [setup] = useState(loadSettings);
   // The game the day landed on, which is nobody's choice and everybody's.
   const today = gameOfDay();
-  const code = useMemo(() => parseMatchCode(dailyCode(today)), [today]);
+  // And which day that is, carried on the match because the code cannot be read
+  // back into one — it is what the no-repeats cycle counts from.
+  const day = localDay();
+  const code = useMemo(() => parseMatchCode(dailyCode(today, day)), [today, day]);
 
   // Whether this device has already had its go. Answered from localStorage, so
   // nothing stands between arriving and the draw — not even a round trip. The
@@ -307,7 +310,7 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
       dealt.current = true;
       // No name: this player has one at the end if they finish, and none of
       // their business until then.
-      onStart({ ...code, player: "", flat: setup.flat, borders: setup.borders });
+      onStart({ ...code, player: "", flat: setup.flat, borders: setup.borders, day });
     };
 
     // The two beats after the light stops, and the deal at the end of them.
@@ -347,7 +350,7 @@ export default function HeadToHead({ onStart, onSpent }: HeadToHeadProps) {
     };
     id = window.setTimeout(hop, plan[1].wait);
     return () => clearTimeout(id);
-  }, [code, spent, plan, skip, readMs, onStart, setup]);
+  }, [code, spent, plan, skip, readMs, onStart, setup, day]);
 
   // Where the light is: the last card outright for anybody taking the shortcut,
   // and otherwise wherever the chain has walked it to. Derived rather than set,

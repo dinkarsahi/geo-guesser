@@ -52,6 +52,13 @@ export interface Match extends MatchCode {
    * the player's own "next round" button.
    */
   startAt?: number;
+  /**
+   * Today's round only: which day it is, which is what the no-repeats cycle
+   * counts from. Not on `MatchCode`, because a code cannot be read back into a
+   * day — the scramble in `dailyCode` is one-way — so it is carried from where
+   * the day was known.
+   */
+  day?: number;
 }
 
 /** Rounds in a match. Fixed, so that two players always play the same game. */
@@ -297,13 +304,22 @@ export const MATCH_MODES: { id: ModeId; title: string; emoji: string; noun: stri
  * day in every block however that block falls. Drawn from the hash rather than a
  * generator, since all this needs is the same answer on every device forever.
  */
+const blockOrders = new Map<number, ModeId[]>();
+
 function dayOrder(block: number): ModeId[] {
+  const seen = blockOrders.get(block);
+  // Handed back copied, not shared: `gameOfDay` swaps two entries of what it is
+  // given, and a caller that mutated the cache would change what day it is for
+  // everyone who asked afterwards. Cached at all because `dailyAppearance`
+  // walks every day since the epoch and asks twice a day.
+  if (seen) return [...seen];
   const order = MATCH_MODES.map((m) => m.id);
   for (let i = order.length - 1; i > 0; i--) {
     const j = hash(`${block}:${i}`) % (i + 1);
     [order[i], order[j]] = [order[j], order[i]];
   }
-  return order;
+  blockOrders.set(block, order);
+  return [...order];
 }
 
 /**
@@ -367,6 +383,47 @@ export function gameOfDay(day: number = localDay()): ModeId {
   return order[index];
 }
 
+/**
+ * The first day the no-repeats cycle applies from — 23 August 2026.
+ *
+ * **A day that has been played cannot have its questions changed.** Today's
+ * round is on the board with real scores against it by the time this ships, and
+ * a player in a late time zone is still on it, so the cycle starts tomorrow and
+ * everything before keeps the draw it was dealt. Once the world is past it this
+ * boundary is dead weight and can go, along with the branch in `climbingDeal`
+ * that a missing cycle takes — no day but today's is reachable, since the code
+ * is worked out from the date and there is nothing anywhere that plays an old
+ * one.
+ */
+const CYCLE_EPOCH = 20_688;
+
+/**
+ * How many times this game has been the game of the day, counting from
+ * `CYCLE_EPOCH` — or undefined before it, which means "deal the old way".
+ *
+ * **This is what stops today's round repeating itself for months.** A band is
+ * only twenty-odd targets, and drawn afresh from the seed every time the game
+ * came round it would hand back Canada twice in a fortnight often enough to
+ * look broken. Given a count, `climbingDeal` walks each band in a shuffled
+ * order instead of drawing from it, so nothing comes back until its whole band
+ * has been used up — twenty-four weeks for a flag, nineteen for a currency.
+ *
+ * **Counted rather than worked out from the block number**, which is the same
+ * thing right up until it isn't: every block of seven days is a permutation of
+ * the seven games, so a game does appear once a block — *unless* `PINNED_DAYS`
+ * has put it in one twice, which is exactly what a pin does. Two days sharing
+ * a count would be two days sharing five questions. Walking the days is a few
+ * thousand iterations over a memoised shuffle, once, when a game starts.
+ */
+export function dailyAppearance(mode: ModeId, day: number): number | undefined {
+  if (day < CYCLE_EPOCH) return undefined;
+  let n = 0;
+  for (let d = CYCLE_EPOCH; d <= day; d++) if (gameOfDay(d) === mode) n++;
+  // Zero-based, and never negative: the caller only ever asks about a day this
+  // game is actually on.
+  return Math.max(0, n - 1);
+}
+
 /** What a game is called, given only its id. */
 export const modeTitle = (mode: ModeId) => MATCH_MODES.find((m) => m.id === mode)!.title;
 
@@ -397,6 +454,8 @@ export function matchPoints(accuracy: number, elapsedMs: number): number {
 
 /** What a match changes about a round, ready to spread into `useGame`. */
 export interface MatchGameOptions {
+  /** Today's round only — see `dailyAppearance` and `useGame`'s `cycle`. */
+  cycle?: number;
   /** Withholds the count-in. A room's rounds turn over on a shared timetable
       and a pause in front of one would put this device out of step with it. */
   intro?: boolean;
@@ -430,6 +489,14 @@ export function matchOptions(match?: Match): MatchGameOptions | undefined {
   return {
     rounds: MATCH_ROUNDS,
     seed: match.seed,
+    // Today's round walks its bands instead of drawing from them, so nothing
+    // comes back until its band is used up — see `dailyAppearance`. A duel does
+    // not: it is one game between people who arranged it, with no yesterday to
+    // avoid repeating.
+    cycle:
+      match.kind === "daily" && match.day !== undefined
+        ? dailyAppearance(match.mode, match.day)
+        : undefined,
     // **A duel has no arrival**, and this is the one place that decides it.
     // The fall could be afforded — shifting the room's whole timetable back by
     // the same constant keeps every device in step and costs nobody their

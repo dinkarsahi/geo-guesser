@@ -63,6 +63,9 @@ options or in `GameFrame`'s props instead.
   which is the whole of how a game keeps a bagful of hard material for the last
   round. `bandsByMeasure` in `ladders.ts` builds one from a measurement for the
   games whose difficulty is a real number.
+- **`cycle`** — today's round only: how many times this game has come round. Given
+  it, each band is *walked* rather than drawn from, so nothing repeats until its
+  band is used up. See "No repeats in today's round" below.
 - **`seed`** — deal deterministically. This is the whole of how two devices play
   the same rounds without talking to each other. Seeded games deliberately skip
   the "recently seen" memory, which differs per device.
@@ -1153,6 +1156,59 @@ band the answer belongs in**, not just whether it is right.
 **Adding a target to a game means placing it on that game's ladder**, or it will
 only ever be a fifth round in a duel. `tools/` has no generator for these — they
 are read and checked by hand against the pool they filter.
+
+### No repeats in today's round
+
+A band is only twenty-odd targets. Drawn afresh from each day's seed, one comes
+back far sooner than it feels it should — two draws a fortnight apart collide
+about one time in twelve — and today's round is the one people come back to.
+
+So today's round **walks** its bands instead of drawing from them. `cycle` on
+`useGame` is how many times this game has been the game of the day, and `walk`
+in `useGame.ts` turns that into a position in a shuffled order. **A duel and a
+game off the shelf still draw at random**, which is right: neither has a
+yesterday to avoid repeating.
+
+**The guarantee is half a band**, and it is worth stating because it was
+measured rather than hoped for. Each lap of a band is freshly shuffled, but a
+target keeps the *half* of the lap it belongs to for good, so it can never jump
+from the end of one lap to the start of the next. The closest possible pair of
+showings is `size / 2 + 1` appearances apart. Swept over three years of dailies:
+
+| Game | Band | Soonest repeat |
+|---|---|---|
+| Tube | 54 | 28 appearances — 196 days |
+| City | 39 | 20 — 138 days |
+| Corporate HQ | 30 | 16 — 106 days |
+| Flag, Population | 24 | 13 — 89 days |
+| Currency | 19 | 10 — 65 days |
+| Time zone | 7 | 4 — 23 days |
+
+Time zone is the short one and cannot be otherwise: there are only thirty-five
+clocks in the world, so a band is seven and a lap is seven weeks.
+
+**The trap, and it cost a round of the probe.** The first cut shuffled each lap
+independently and then, where a new lap opened on the target the old one closed
+with, swapped the first two — the same repair `gameOfDay` makes at its block
+boundaries, and it reads as correct. It is not: **a swap moves a collision one
+place along rather than removing it**, so the repeat came back two appearances
+later instead of one. A two-year sweep found Cambodia asked twice in ten days.
+The lesson generalises — *a repair that shifts a collision has not removed it* —
+and it is why the guarantee above is a property of the construction rather than
+a patch on the join.
+
+**`dailyAppearance` counts days rather than dividing by seven.** Every block of
+seven days is a permutation of the seven games, so a game does appear once a
+block — until `PINNED_DAYS` puts it in one twice, which is exactly what a pin is
+for. Two days sharing a count would be two days sharing five questions. Counting
+is a few thousand iterations over a memoised shuffle, once, when a game starts.
+
+**`CYCLE_EPOCH` is 23 August 2026, and it is dead weight now.** A day already
+played cannot have its questions changed, and the day this shipped was on the
+board with real scores against it, so the cycle starts the day after and
+everything before keeps the draw it was dealt. Nothing can reach an older day —
+the code is worked out from the date — so once the world is past it, the
+constant and the `cycle === undefined` branch in `climbingDeal` can both go.
 
 ### Per-game nuances
 

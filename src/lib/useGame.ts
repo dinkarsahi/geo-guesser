@@ -181,6 +181,17 @@ export interface GameOptions<T> {
    */
   bandOf?: (t: T) => number;
   /**
+   * Today's round only: how many times this game has come round since the
+   * cycle began. Given it, each band is *walked* in a shuffled order rather
+   * than drawn from, so nothing repeats until its whole band has been used —
+   * see `walk` below, and `dailyAppearance` in `match.ts` for where the number
+   * comes from.
+   *
+   * A duel and a game off the shelf leave it out and draw at random, which is
+   * right: neither has a yesterday to avoid repeating.
+   */
+  cycle?: number;
+  /**
    * Deal from this seed rather than at random. Two devices given the same seed
    * deal the same rounds in the same order, which is the whole of how a
    * head-to-head match works without a server between them. Seeded games skip
@@ -415,6 +426,7 @@ function climbingDeal<T>(
   n: number,
   bandOf: (t: T) => number,
   random: () => number,
+  cycle?: number,
 ): T[] {
   // Bands of one are not bands: with nothing to choose inside them the game
   // would deal the same targets in the same order every time.
@@ -436,10 +448,69 @@ function climbingDeal<T>(
     // Rounds and bands need not be the same in number — five of each today,
     // but a ten-round game would climb the same five bands twice as slowly
     // rather than running out of them.
-    const from = filled[Math.min(filled.length - 1, Math.floor((i * filled.length) / n))];
-    picked.push(from[Math.floor(random() * from.length)]);
+    const band = filled[Math.min(filled.length - 1, Math.floor((i * filled.length) / n))];
+    picked.push(cycle === undefined ? band[Math.floor(random() * band.length)] : walk(band, i, cycle));
   }
   return picked;
+}
+
+/**
+ * The `cycle`-th target of a band, taken in an order that uses the whole band
+ * up before it repeats — today's round's deal.
+ *
+ * **Why a walk and not a draw.** A band is only twenty-odd targets, and drawn
+ * afresh from each day's seed it hands back the same one far sooner than it
+ * feels it should: with twenty-four flags in a band, two draws a fortnight
+ * apart collide about one time in twelve, and today's round is the one people
+ * come back to.
+ *
+ * **The guarantee: no target returns within half a band.** Each lap is a fresh
+ * shuffle, but a target keeps the *half* of the lap it belongs to for good, so
+ * it can never jump from the end of one lap to the start of the next. That puts
+ * the closest possible pair of showings `size / 2 + 1` appearances apart —
+ * thirteen weeks for a flag, ten for a currency — and inside a lap nothing
+ * repeats at all.
+ *
+ * **Fixing only the join is not enough, and this is the trap.** The first cut
+ * shuffled each lap independently and then, where the new lap opened on the
+ * target the old one closed with, swapped the first two — the same repair
+ * `gameOfDay` makes at its block boundaries. It reads as correct and it is not:
+ * a swap moves the collision one place along, so the repeat came back two
+ * appearances later instead of one. A two-year sweep found Cambodia asked twice
+ * in ten days. **A repair that shifts a collision has not removed it.**
+ *
+ * Seeded on the lap and not on the day, since a permutation has to hold still
+ * while it is being walked. The bands are walked independently and, in three of
+ * the games, are different lengths, so a whole five never returns as a set.
+ */
+function walk<T>(band: T[], round: number, cycle: number): T {
+  const size = band.length;
+  if (size < 2) return band[0];
+  const lap = Math.floor(cycle / size);
+  // Which half of a lap each target lives in. Seeded on the band alone, so it
+  // is the same halving for ever — that permanence *is* the guarantee.
+  const halved = shuffle([...band], seededRandom(hash(`${round}:${size}:halves`)));
+  const half = Math.ceil(size / 2);
+  const order = [
+    ...shuffle(halved.slice(0, half), seededRandom(hash(`${round}:${size}:${lap}:front`))),
+    ...shuffle(halved.slice(half), seededRandom(hash(`${round}:${size}:${lap}:back`))),
+  ];
+  return order[cycle % size];
+}
+
+/** The same string hash the daily codes are built from — see `match.ts`. */
+function hash(text: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return h >>> 0;
 }
 
 /** `n` targets from the pool, avoiding the ones dealt most recently. */
@@ -448,11 +519,12 @@ function pickTargets<T>(
   n: number,
   seed?: number,
   bandOf?: (t: T) => number,
+  cycle?: number,
 ): T[] {
   const random = seed === undefined ? Math.random : seededRandom(seed);
   const deal = (from: T[]) =>
     bandOf
-      ? climbingDeal(from, n, bandOf, random)
+      ? climbingDeal(from, n, bandOf, random, cycle)
       : shuffle([...from], random).slice(0, Math.min(n, from.length));
 
   // A seeded deal is a promise to another device that it will get these same
@@ -499,6 +571,7 @@ export function useGame<T>(
     answerFor,
     guessAt,
     bandOf,
+    cycle,
     seed,
     roundLimitMs,
     adjustScore,
@@ -524,7 +597,7 @@ export function useGame<T>(
   // than on that identity.
   const startAt = schedule?.startAt;
 
-  const [targets, setTargets] = useState(() => pickTargets(pool, rounds, seed, bandOf));
+  const [targets, setTargets] = useState(() => pickTargets(pool, rounds, seed, bandOf, cycle));
   const [roundIndex, setRoundIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("guessing");
   const [currentGuess, setCurrentGuess] = useState<Coord | null>(null);
@@ -763,13 +836,13 @@ export function useGame<T>(
   const restart = useCallback(() => {
     // A seeded game replays the same five rounds, which is the point of it:
     // the code names one game, not one sitting of it.
-    setTargets(pickTargets(pool, rounds, seed, bandOf));
+    setTargets(pickTargets(pool, rounds, seed, bandOf, cycle));
     setRoundIndex(0);
     setCurrentGuess(null);
     setResults([]);
     setTimeLeftMs(roundLimitMs ?? null);
     setPhase("guessing");
-  }, [pool, rounds, seed, bandOf, roundLimitMs]);
+  }, [pool, rounds, seed, bandOf, cycle, roundLimitMs]);
 
   // TEMPORARY — the tap cheat's half of the bargain. It goes through
   // `submitGuess` like any other click, so the round is marked, timed and filed

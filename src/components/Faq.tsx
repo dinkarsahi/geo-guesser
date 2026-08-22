@@ -139,6 +139,12 @@ export default function Faq({ onAbout, onPrivacy }: FaqProps) {
               welcome.
             </p>
             <p>
+              <strong>Today's round also tries not to repeat itself.</strong> Rather
+              than drawing each band afresh, it works through one — so an answer you
+              have seen will not come back until most of its band has been used. In
+              practice that is about three months for a flag and over four for a city.
+            </p>
+            <p>
               <strong>A duel and a game off the shelf get everything.</strong> The whole
               tail is back in — every country on the map, all 154 currencies, all 486
               company logos — and it can only ever turn up as the <em>fifth</em> round.
