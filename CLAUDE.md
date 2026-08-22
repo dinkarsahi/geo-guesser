@@ -345,6 +345,19 @@ is what the eye reads, which is the whole job of a highlight: to say *this*
 country at a glance, wherever it is. The values live in `WorldMap`'s `theme`
 and `GlobeMap`'s `TONE_CAP`, and they should move together.
 
+**And "move together" caught a case the first pass missed.** `GlobeMap`'s
+`polygonCap` has three branches, and only two of them went through `TONE_CAP`:
+the painted patches and the red miss. The **green on the answer's own country**
+— the one every flag, currency, company and population round ends on — kept an
+inline `rgba(34,197,94,0.45)` from the initial commit and stayed a half
+transparent wash for months after the fix was written up here. If a colour on
+either map is not read out of `theme` or `TONE_CAP`, that is the bug.
+
+**The blotchiness was two faults wearing one face, and the second one was
+real.** The opacity above is the half that was a wash over changing ground. The
+other half is geometry, it is worse on exactly the same countries, and it is
+written up under "The cap that sinks into the globe" below.
+
 Reveal colouring comes in two flavours, and they are not interchangeable:
 
 - **`highlightCodes` + `missCode`** — green on the answer's country, red on the
@@ -361,6 +374,26 @@ point-in-polygon isn't run over 242 coastlines per mouse move, and
 `smallTargets` — countries under 12,000 km² get a 250 km reach so the Maldives
 is answerable at all. That reach is only ever granted to the country being asked
 for, so it can never cost anyone a round.
+
+**The trap in the coarse copy: simplifying a coastline can tie it in a knot.**
+Ramer-Douglas-Peucker drops the points that sit near the line between their
+neighbours, and it is blind to topology — where a coastline doubles back on
+itself, a fjord or a spit or the mouth of an inlet, the survivors can cross.
+**Fifteen of the world's 1,632 rings do it** at `GLOBE_TOLERANCE_DEG`, and they
+are the countries you would guess: Canada, Russia, the United States, the United
+Kingdom, Chile, Greenland, India, Mexico, Pakistan, Panama, the Netherlands,
+Papua New Guinea, Turkmenistan, The Gambia, Western Sahara.
+
+It matters because everything downstream assumes a ring is simple. The globe
+decides which triangles of a country to keep by asking whether their centre is
+inside it, and "inside" has no answer for a ring that crosses itself. So
+`simplifyRingSafely` halves the tolerance and tries again — all fifteen come
+good within three halvings — and keeps the full-detail ring rather than ship a
+broken one. About 15% more points across the world, and 35 ms once, at load.
+
+`crossesItself` is O(n²) and is affordable only because it is asked of the
+*simplified* ring: 20,000 points across the whole world rather than 550,000.
+Never call it on the fine shapes.
 
 ---
 
@@ -1381,9 +1414,62 @@ Two things left open, both seen rather than guessed at:
   Much less pressing on NASA, whose floor is shallower than the point where the
   outlines embarrass themselves — but it is the trade to revisit if the imagery
   ever gets deeper.
-- **The answer pin doesn't shrink.** `pointRadius` is in globe-radius units, so
-  the green disc that looks right at reveal altitude swallows the city once you
-  zoom past it. Pre-existing, and invisible until deep zoom was worth doing.
+- **The answer pin doesn't shrink.** `pointRadius` is in degrees of arc, so the
+  green disc that looks right at reveal altitude swallows the city once you zoom
+  past it. Pre-existing, and invisible until deep zoom was worth doing.
+
+### The cap that sinks into the globe
+
+**A highlighted Canada or Russia came out in patches, and this was why.** A
+country's fill is not painted on the sphere — it is flat triangles with their
+corners on it, floating a hair above the terrain. The middle of a flat triangle
+hangs *below* the sphere it is chorded across, by `R(1 − cos(θ/2))` for a
+triangle θ of arc wide, and at three-globe's default `polygonCapCurvatureResolution`
+of 5° that reaches **0.45 units on a globe of radius 100** while the fill floated
+only 0.2 above the ground. So the biggest triangles were buried and the terrain
+showed through them: **174 of the world's 6,635 cap triangles**, every one of
+them in a country big enough to need a triangle that size. Small countries were
+never affected, which is why it read as "the big ones are broken".
+
+`CAP_RESOLUTION` (2°) and `LIT_ALTITUDE` (0.004) in `GlobeMap` are the two
+halves of the fix, and both are needed: 2° takes the buried count to 13 and the
+deepest to 0.133, and the doubled altitude clears those. It costs 13,700 cap
+triangles across the world rather than 6,600, which no GPU notices and the
+polygon feed absorbs — the world simply takes a little longer to finish
+appearing behind the arrival.
+
+**Neither knob can be pushed on its own.** Altitude alone would clear it at
+about 0.007, but the fill is what a click lands on and what the eye compares to
+the coastline, so at that height the green shape visibly slides off the country
+at any oblique angle. Resolution alone never reaches zero — three of the world's
+triangles are still buried at 1°, and 1° is 34,600 triangles.
+
+**And the resolution has to be a constant.** three-globe rebuilds a polygon's
+geometry when it changes, so making it finer only for the country being revealed
+would rebuild that country at the exact moment the camera starts moving — which
+is the same reason the revealed country is not lifted.
+
+### The reveal stands back far enough to fit the answer
+
+`revealAltitude` in `GlobeMap`. It used to be a flat 1.6 for every answer on
+Earth, which frames Jordan and Canada identically.
+
+**The reason it had to change is the phone.** three.js's field of view is
+*vertical*, so on a portrait screen the horizontal one is far narrower — at 1.6
+the globe already overflows the window sideways, and a country covering most of
+the visible face then genuinely does fill the screen with green. `fitAltitude`
+solves the camera distance that puts the answer's own country inside the
+narrower of the two half-angles, and 1.6 stays the floor, so nothing that used
+to fit moves. Canada on a phone goes to 2.9, Russia and the United States to the
+zoom-out limit, and everything smaller than about 20° of reach is untouched on
+every screen.
+
+**It fits the country the camera is standing over, not every highlighted one**,
+and that is what keeps it safe for Currency Spotter: a currency lights up twenty
+countries and the camera flies to the nearest one that spends it, so fitting the
+lot would stand the reveal off to take in a hemisphere nobody asked about. Every
+other mode lights one country, so there is nothing else to pick. A painted band
+(the time zone game) keeps its own fixed 2.4.
 
 ### The bench
 

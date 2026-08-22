@@ -4,12 +4,59 @@ import { ARRIVAL, MIN_FLIGHT_MS, flightStart, flyIn } from "../lib/globeFlight";
 import { addGround } from "../lib/globeGround";
 import { addSky } from "../lib/globeSky";
 import { usePolygonFeed } from "../lib/polygonFeed";
+import { geoDistance } from "d3-geo";
+import type { Geometry, GeometryCollection, Position } from "geojson";
+import type { Coord } from "../lib/geo";
 import type { GuessMapProps, MapHighlight } from "./mapTypes";
-import { countryAt, useWorldShapes, type CountryFeature } from "../lib/worldShapes";
+import { countryAt, useWorldShapes, type CountryFeature, type WorldShapes } from "../lib/worldShapes";
 import { WORLD_TILES } from "../lib/mapTiles";
 import MapZoomControls from "./MapZoomControls";
 
 const MAX_ALTITUDE = 3.5; // farthest button zoom
+
+/**
+ * How finely the cap of a country is cut into triangles, in degrees of arc.
+ *
+ * **This is a rendering fault, not a taste.** A country's fill is flat
+ * triangles with their corners on the sphere, so the middle of a triangle
+ * hangs *below* the surface it is chorded across — by `R(1 − cos(θ/2))` for a
+ * triangle θ across, which at three-globe's default of 5° reaches 0.45 units
+ * on a globe of radius 100. The fill floats a fraction of that above the
+ * terrain, so the biggest triangles sink under it and the ground shows through:
+ * **174 of the world's 6,635 cap triangles were buried at the default**, all of
+ * them in the countries big enough to need triangles that size. That is what a
+ * highlighted Canada or Russia coming out in patches actually was.
+ *
+ * At 2° the count is 13, and raising the cap to `LIT_ALTITUDE` clears every one
+ * of them. The cost is 13,700 triangles across the world rather than 6,600,
+ * which no GPU notices — and it is paid by the polygon feed, not by the frame.
+ *
+ * Constant on purpose: three-globe rebuilds a polygon's geometry when this
+ * changes, and doing that per-country at the reveal would rebuild the answer's
+ * geometry at the exact moment the camera starts moving.
+ */
+const CAP_RESOLUTION = 2;
+
+/**
+ * How far the country fills float above the terrain, in globe radii.
+ *
+ * Doubled from 0.002 to clear the last few triangles that still dip under the
+ * surface at `CAP_RESOLUTION` — the deepest is 0.133 units and this gives 0.4.
+ * It is not free: the polygons are what a click lands on, so the further they
+ * float the further a click at a shallow angle lands from the spot under the
+ * cursor. At 0.4 units that is about 25 km at a 45° view and nothing at all
+ * looking straight down, which no mode's marking can feel — the country modes
+ * anchor a click to the country it lands in, and the nearest border is never
+ * that close to where anyone aimed.
+ */
+const LIT_ALTITUDE = 0.004;
+/** The painted patches, which overlap the countries and so sit above them. */
+const PAINTED_ALTITUDE = 0.006;
+
+/** three.js's default vertical field of view, which react-globe.gl leaves alone. */
+const FOV_DEG = 50;
+/** How much of the frame the answer is allowed to fill, edge to edge. */
+const FRAME_FILL = 0.8;
 
 /** Constant, so the globe isn't handed a new one to re-apply on every render. */
 const noSide = () => "rgba(0,0,0,0)";
@@ -51,6 +98,87 @@ interface GlobeMapProps extends GuessMapProps {
  */
 const TONE_CAP = { right: "rgba(34,197,94,0.72)", wrong: "rgba(225,29,72,0.74)" };
 const TONE_LINE = { right: "#22c55e", wrong: "#fb7185" };
+
+/** Every position in a geometry, however deeply it is nested. */
+function* positionsOf(geometry: Geometry | null | undefined): Generator<Position> {
+  if (!geometry) return;
+  const walk = function* (part: unknown): Generator<Position> {
+    if (!Array.isArray(part)) return;
+    if (typeof part[0] === "number") {
+      yield part as Position;
+      return;
+    }
+    for (const inner of part) yield* walk(inner);
+  };
+  if (geometry.type === "GeometryCollection") {
+    for (const g of geometry.geometries) yield* positionsOf(g);
+    return;
+  }
+  yield* walk((geometry as Exclude<Geometry, GeometryCollection>).coordinates);
+}
+
+/**
+ * How far the country under the camera reaches, in radians of arc — the
+ * angular radius of the thing the reveal has to fit on screen.
+ *
+ * **The one the camera is standing over**, not all of them, and that is the
+ * whole of what makes this safe for Currency Spotter: a currency lights up
+ * twenty countries and the camera flies to the nearest one that spends it, so
+ * framing the lot would stand the reveal off at arm's length to take in a
+ * hemisphere nobody asked about. Every other mode highlights one country and
+ * this picks it, there being nothing else to pick.
+ *
+ * Walked over the coarse copy of the world: a camera decision, not a scoring
+ * one, and a tenth of the points.
+ */
+function spreadOf(shapes: WorldShapes | null, codes: Set<string>, at: Coord): number {
+  if (!shapes) return 0;
+  const from: [number, number] = [at.lng, at.lat];
+  let nearest = Infinity;
+  let spread = 0;
+  for (const code of codes) {
+    const f = shapes.globeFeatures.find(
+      (g) =>
+        (g.properties?.ISO_A2_EH || g.properties?.ISO_A2 || "").toLowerCase() === code,
+    );
+    let near = Infinity;
+    let far = 0;
+    for (const p of positionsOf(f?.geometry)) {
+      const d = geoDistance(from, [p[0], p[1]]);
+      if (d < near) near = d;
+      if (d > far) far = d;
+    }
+    if (near < nearest) {
+      nearest = near;
+      spread = far;
+    }
+  }
+  return spread;
+}
+
+/**
+ * The altitude that fits something `spread` radians across into this window.
+ *
+ * **The reason this exists is the phone.** The reveal used to fly to a fixed
+ * altitude of 1.6, which frames a country the size of Jordan and a country the
+ * size of Canada identically — and the field of view three.js gives us is
+ * *vertical*, so on a portrait screen the horizontal one is far narrower than
+ * the 50° a desktop gets. At 1.6 on a phone the globe already overflows the
+ * window sideways, and Canada, which covers most of the visible face, then
+ * genuinely does fill the screen with green. Fitted, the same reveal stands off
+ * to about 2.9 and Canada is a country again.
+ *
+ * The camera is at distance `D` from the centre and the globe has radius `R`, so
+ * a point `spread` from the middle of the view sits `atan(R sin s / (D − R cos
+ * s))` off the axis; setting that to the half-angle of the narrower side and
+ * solving for D is the line below.
+ */
+function fitAltitude(spread: number, aspect: number): number {
+  const halfV = ((FOV_DEG / 2) * Math.PI) / 180;
+  const halfH = Math.atan(Math.tan(halfV) * aspect);
+  const half = Math.min(halfV, halfH) * FRAME_FILL;
+  return Math.cos(spread) + Math.sin(spread) / Math.tan(half) - 1;
+}
 
 /** Minimal shape of the three OrbitControls we touch (three ships no types here). */
 interface OrbitLike {
@@ -195,17 +323,6 @@ export default function GlobeMap({
     );
   }, [readyCount, arriveAt]);
 
-  // Fly to the true location when the answer is revealed — and, where the
-  // answer is painted across half the world rather than pinned to one spot,
-  // hang back far enough to take it in.
-  useEffect(() => {
-    if (answer && globeRef.current) {
-      globeRef.current.pointOfView(
-        { lat: answer.lat, lng: answer.lng, altitude: painted ? 2.4 : 1.6 },
-        1200,
-      );
-    }
-  }, [answer, painted]);
 
   const points = useMemo<PointDatum[]>(() => {
     const pts: PointDatum[] = [];
@@ -231,6 +348,34 @@ export default function GlobeMap({
   const miss = answer ? (missCode ?? "").toLowerCase() : "";
 
   /**
+   * How far back the reveal stands, which is a question about the answer and
+   * about the window rather than a constant.
+   *
+   * A painted band crosses the whole world and is met at a fixed distance, as
+   * it always was. Everything else is *fitted*: a highlighted country is framed
+   * so that all of it is on screen, and where there is nothing highlighted —
+   * City Spotter, where the answer is one point — the old 1.6 is what fits.
+   * That is also the floor, so a small country is still met at the distance
+   * every round used to be.
+   */
+  const revealAltitude = useMemo(() => {
+    if (painted) return 2.4;
+    if (!answer || !lit.size) return 1.6;
+    const spread = spreadOf(shapes, lit, answer);
+    return Math.min(MAX_ALTITUDE, Math.max(1.6, fitAltitude(spread, size.w / size.h)));
+  }, [painted, answer, lit, shapes, size.w, size.h]);
+
+  // Fly to the true location when the answer is revealed.
+  useEffect(() => {
+    if (answer && globeRef.current) {
+      globeRef.current.pointOfView(
+        { lat: answer.lat, lng: answer.lng, altitude: revealAltitude },
+        1200,
+      );
+    }
+  }, [answer, revealAltitude]);
+
+  /**
    * These three have to keep the same identity between renders. The globe
    * re-applies an accessor to all 242 countries the moment it's handed a new
    * one, and written inline they were new on every render — including the ones
@@ -252,7 +397,7 @@ export default function GlobeMap({
       const tone = toneOf.get(d);
       if (tone) return TONE_CAP[tone];
       const code = codeOf(d as CountryFeature);
-      if (lit.has(code)) return "rgba(34,197,94,0.45)";
+      if (lit.has(code)) return TONE_CAP.right;
       return code && code === miss ? TONE_CAP.wrong : "rgba(0,0,0,0)";
     },
     [lit, miss, toneOf],
@@ -272,7 +417,7 @@ export default function GlobeMap({
   // over the same pixels — and still flat enough that a click at a shallow
   // angle lands where the cursor is.
   const polygonAltitude = useCallback(
-    (d: object) => (toneOf.has(d) ? 0.004 : 0.002),
+    (d: object) => (toneOf.has(d) ? PAINTED_ALTITUDE : LIT_ALTITUDE),
     [toneOf],
   );
 
@@ -366,6 +511,9 @@ export default function GlobeMap({
         // moving, and the green wash marks it perfectly well without. Only the
         // painted patches sit higher, and only because they overlap.
         polygonAltitude={polygonAltitude}
+        // How finely a country's fill is cut up — see `CAP_RESOLUTION`, which
+        // is where the patchy highlight on the big countries actually was.
+        polygonCapCurvatureResolution={CAP_RESOLUTION}
         polygonCapColor={polygonCap}
         polygonSideColor={noSide}
         // An empty colour draws no outline at all, which is how the invisible
