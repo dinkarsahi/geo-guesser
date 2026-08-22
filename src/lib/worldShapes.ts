@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { geoArea, geoCentroid, geoContains, type ExtendedFeature } from "d3-geo";
+import { geoArea, geoBounds, geoCentroid, geoContains, type ExtendedFeature } from "d3-geo";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import { haversineKm, type Coord } from "./geo";
 
@@ -46,6 +46,30 @@ const SMALL_TARGET_KM = 250;
  */
 const GLOBE_TOLERANCE_DEG = 0.2;
 const GLOBE_MIN_ISLAND_KM2 = 500;
+
+/**
+ * The longest straight run a coarse outline may contain, in degrees.
+ *
+ * **This is about the border between the United States and Canada**, and about
+ * every other border somebody once drew along a line of latitude. Simplifying
+ * leaves the 49th parallel as a *single* segment 18° long, because every point
+ * along it sits on the line between its neighbours — which is correct, and is
+ * the whole point of simplifying. Then the globe fills that segment back in
+ * along a **great circle**, which is the shortest path over a sphere and not
+ * the parallel: between those two ends it bulges to latitude 49.8, **92 km
+ * north of the border and well inside Canada**.
+ *
+ * The library decides which triangles belong to a country by asking whether
+ * their centre is inside it, so every triangle that fell in the bulge was
+ * judged to be Canada's and dropped — and the top edge of a highlighted United
+ * States came out as a row of triangular bites.
+ *
+ * So a long run is split before the globe ever sees it, and there is nothing
+ * left for the great circle to cut a corner across. **It has to be at or below
+ * `CAP_RESOLUTION` in `GlobeMap`**, which is the length the globe interpolates
+ * at; the two are a pair. Costs about 8% more points across the world.
+ */
+const GLOBE_MAX_SEGMENT_DEG = 2;
 
 type Pt = [number, number];
 
@@ -150,25 +174,90 @@ function crossesItself(ring: Pt[]): boolean {
 }
 
 /**
- * Simplify, but never into a ring that crosses itself: halve the tolerance and
- * try again, and keep the full-detail ring rather than ship a broken one.
+ * Does this landmass claim to be the whole planet?
  *
- * All fifteen of the world's problem rings come good within three halvings, so
- * the fallback has never yet been reached — it is there because a coastline
- * that defeats it should cost points rather than correctness. The whole repair
- * costs about 15% more points across the world and 35 ms once, at load.
+ * **This is the one that painted the globe green**, and it is worth the whole
+ * paragraph. Five islands — one each off Canada, Norway, Portugal, Chile and
+ * Saudi Arabia — are small and knobbly enough that the simplification above
+ * crushes them to a bare triangle: four points, three of them corners. A
+ * spherical triangle that thin is ambiguous, because a ring on a sphere divides
+ * it into *two* regions and nothing but the winding says which one is the
+ * inside. d3 reads these as the outside, so `geoBounds` hands back the entire
+ * world — and three-conic-polygon-geometry, seeing a shape that crosses the
+ * poles and the antimeridian, drops onto its whole-sphere triangulation and
+ * builds a cap over the planet.
+ *
+ * The cap is invisible while the country is not highlighted, because every
+ * unhighlighted country is painted `rgba(0,0,0,0)`. **The moment one of those
+ * five is the answer, the entire globe turns green.** Canada is one of them,
+ * which is how it was finally seen.
+ *
+ * None of the 1,620 full-detail parts does this and all five come good at half
+ * the tolerance, so the ladder below fixes it outright. Testing `geoBounds` is
+ * the right test rather than a proxy for it, because it is the exact question
+ * the renderer branches on.
  */
-function simplifyRingSafely(points: Pt[], tolerance: number): Pt[] {
+function spansTheWorld(rings: Pt[][]): boolean {
+  const [[minLng, minLat], [maxLng, maxLat]] = geoBounds({
+    type: "Polygon",
+    coordinates: rings,
+  } as unknown as ExtendedFeature);
+  return minLng === -180 && minLat === -90 && maxLng === 180 && maxLat === 90;
+}
+
+/**
+ * Coarsen one landmass, and never into something the globe cannot draw.
+ *
+ * Two things can go wrong on the way down, and they are checked together
+ * because the cure is the same: simplify, look, and halve the tolerance if what
+ * came out is broken. A ring that crosses itself has no inside for the globe to
+ * test triangles against; a landmass that reads as the whole world paints one.
+ *
+ * Twenty of the world's parts need a second go and none needs a fourth, so the
+ * full-detail fallback has never yet been reached — it is there because a
+ * coastline that defeats the ladder should cost points rather than correctness.
+ * The whole repair is about 15% more points across the world and 35 ms once, at
+ * load.
+ */
+function coarsenPart(rings: Pt[][], tolerance: number): Pt[][] {
   let tol = tolerance;
-  // Four goes — the tolerance, then an eighth of it — and one crossing test
-  // apiece, which is the expensive half and shouldn't be paid twice for a ring
-  // that was fine to begin with.
   for (let tries = 0; tries <= 3; tries++) {
-    const out = simplifyRing(points, tol);
-    if (!crossesItself(out)) return out;
+    const simplified = rings
+      .map((ring) => simplifyRing(ring, tol))
+      .filter((ring) => ring.length >= 4);
+    const out = simplified.map(splitLongRuns);
+    // Crossing is asked of the simplified ring, because laying extra points
+    // along a straight segment cannot cross one and the test is O(n²) — but
+    // **spanning the world is asked of what actually ships**. Splitting a run
+    // *can* tip a thin shape over that edge, and it does: one Antarctic islet
+    // reads as the whole planet once its longest side is halved. Checking
+    // before the split missed it.
+    if (out.length && !simplified.some(crossesItself) && !spansTheWorld(out)) return out;
     tol /= 2;
   }
-  return points;
+  return rings.map(splitLongRuns);
+}
+
+/** Lay points along any segment too long to be left to the globe — see
+    `GLOBE_MAX_SEGMENT_DEG`, which is where the whole argument is. */
+function splitLongRuns(ring: Pt[]): Pt[] {
+  const out: Pt[] = [];
+  for (let i = 0; i < ring.length - 1; i++) {
+    const [aLng, aLat] = ring[i];
+    const [bLng, bLat] = ring[i + 1];
+    out.push(ring[i]);
+    // Measured in plain degrees rather than as an arc: what matters is how far
+    // the great circle the globe would draw strays from the line the border
+    // follows, and that is a question about the lng/lat grid the border was
+    // drawn on.
+    const steps = Math.ceil(
+      Math.max(Math.abs(bLng - aLng), Math.abs(bLat - aLat)) / GLOBE_MAX_SEGMENT_DEG,
+    );
+    for (let k = 1; k < steps; k++)
+      out.push([aLng + ((bLng - aLng) * k) / steps, aLat + ((bLat - aLat) * k) / steps]);
+  }
+  out.push(ring[ring.length - 1]);
+  return out;
 }
 
 const ringKm2 = (ring: Pt[]) =>
@@ -192,11 +281,7 @@ function coarsenForGlobe(features: CountryFeature[]): CountryFeature[] {
 
     const kept = ranked
       .filter((p, i) => i === 0 || p.km2 >= GLOBE_MIN_ISLAND_KM2)
-      .map(({ rings }) =>
-        rings
-          .map((ring) => simplifyRingSafely(ring, GLOBE_TOLERANCE_DEG))
-          .filter((ring) => ring.length >= 4),
-      )
+      .map(({ rings }) => coarsenPart(rings, GLOBE_TOLERANCE_DEG))
       .filter((rings) => rings.length > 0);
 
     if (!kept.length) return f;

@@ -1418,9 +1418,57 @@ Two things left open, both seen rather than guessed at:
   green disc that looks right at reveal altitude swallows the city once you zoom
   past it. Pre-existing, and invisible until deep zoom was worth doing.
 
-### The cap that sinks into the globe
+### Painting a country green: four ways it went wrong
 
-**A highlighted Canada or Russia came out in patches, and this was why.** A
+A highlighted Canada came out with the **whole planet** washed green and its own
+middle in patches. It was four separate faults, three of them in the shapes and
+one in the fill, and they are written up in the order they were found because
+the first three passes fixed real things and still left the screen green. **The
+lesson is the one CLAUDE.md already had and this ignored twice: the globe cannot
+be judged by reasoning, and a driven browser freezes `requestAnimationFrame` so
+nothing animates and every screenshot of the canvas is stale.** What broke the
+deadlock was a throwaway page that built a `ThreeGlobe` by hand and called
+`renderer.render` *synchronously* from a tool call — no `rAF`, so a screenshot
+caught a real frame. Ten minutes of that beat three rounds of arithmetic. **Build
+the probe first next time.**
+
+#### 1. Five islands claimed to be the whole world
+
+`spansTheWorld` in `worldShapes.ts`. **This is the one that turned the screen
+green**, and it is worth the paragraph. Five islands — one each off Canada,
+Norway, Portugal, Chile and Saudi Arabia — are small and knobbly enough that
+simplification crushes them to a bare triangle: four points, three of them
+corners. A spherical triangle that thin is ambiguous, because a ring on a sphere
+divides it into *two* regions and nothing but the winding says which is inside.
+d3 reads these as the outside, so `geoBounds` hands back the entire planet — and
+three-conic-polygon-geometry, seeing a shape that crosses the poles and the
+antimeridian, drops onto its whole-sphere triangulation and builds a cap over
+the world.
+
+That cap is invisible while the country is not the answer, because every
+unhighlighted country is painted `rgba(0,0,0,0)`. **The moment one of those five
+is the answer, the whole globe turns its colour.** Canada is one of them.
+
+None of the 1,620 full-detail parts does it and all five come good at half the
+tolerance, so the ladder in `coarsenPart` fixes it outright. Test `geoBounds`
+rather than a proxy for it: it is the exact question the renderer branches on.
+
+#### 2. Fifteen rings crossed themselves — see the simplification trap above
+
+#### 3. Long straight borders were filled back in along a great circle
+
+`GLOBE_MAX_SEGMENT_DEG`, and the constant's own comment carries the arithmetic.
+Simplifying leaves the 49th parallel as a **single 18° segment**, because every
+point on it lies on the line between its neighbours. The globe then fills that
+back in along a great circle, which between those two ends bulges to latitude
+49.8 — **92 km north of the border, inside Canada**. Triangles landing in the
+bulge are judged to be Canada's and dropped, so the top edge of a highlighted
+United States came out as a row of triangular bites. Splitting long runs before
+the globe sees them costs 8% more points and leaves the border straight.
+
+#### 4. The cap sinks into the globe
+
+**This is the one that put holes in Siberia.** A
 country's fill is not painted on the sphere — it is flat triangles with their
 corners on it, floating a hair above the terrain. The middle of a flat triangle
 hangs *below* the sphere it is chorded across, by `R(1 − cos(θ/2))` for a
@@ -1449,15 +1497,28 @@ geometry when it changes, so making it finer only for the country being revealed
 would rebuild that country at the exact moment the camera starts moving — which
 is the same reason the revealed country is not lifted.
 
+**Confirmed on the probe rather than argued**: the same Russia, same camera, at
+5°/0.002 and at 2°/0.004 side by side. The first has a row of dark holes punched
+across Siberia; the second is solid edge to edge.
+
+#### What the coarse world has to satisfy
+
+After all four, `globeFeatures` holds 692 parts and 16,458 points — 8% more than
+before — and, checked over the whole world: **no part spans the globe, no ring
+crosses itself, and no segment is longer than 2°.** Those three are the
+invariants. Anything that touches `coarsenForGlobe` should re-check them, and
+the check is twenty lines against `geoBounds` and a segment-crossing test.
+
 ### The reveal stands back far enough to fit the answer
 
 `revealAltitude` in `GlobeMap`. It used to be a flat 1.6 for every answer on
 Earth, which frames Jordan and Canada identically.
 
-**The reason it had to change is the phone.** three.js's field of view is
-*vertical*, so on a portrait screen the horizontal one is far narrower — at 1.6
-the globe already overflows the window sideways, and a country covering most of
-the visible face then genuinely does fill the screen with green. `fitAltitude`
+**The reason it changed is the phone**, and *not* the green screen — that was
+the islet above, and this was written while chasing it. It stands on its own
+merits: three.js's field of view is *vertical*, so on a portrait screen the
+horizontal one is far narrower — at 1.6 the globe already overflows the window
+sideways, and half of Russia is off the edge of a phone. `fitAltitude`
 solves the camera distance that puts the answer's own country inside the
 narrower of the two half-angles, and 1.6 stays the floor, so nothing that used
 to fit moves. Canada on a phone goes to 2.9, Russia and the United States to the
