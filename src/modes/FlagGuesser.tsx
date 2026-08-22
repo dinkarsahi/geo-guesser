@@ -4,7 +4,7 @@ import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
 import WorldMap from "../components/WorldMap";
 import { countryPool, flagUrl, type Country } from "../data/countries";
-import { flagFame, flagLadderPool } from "../data/flagLadder";
+import { COUNTRY_LADDER } from "../data/ladders";
 import { matchOptions } from "../lib/match";
 import { useGame } from "../lib/useGame";
 import {
@@ -21,17 +21,16 @@ interface GameProps extends ModeProps {
   /** The countries this game can ask for — see `FlagGuesser` below. */
   pool: Country[];
   shapes: WorldShapes;
-  /** Deal the pool easiest-first rather than shuffled. Today's round only. */
-  climbing: boolean;
 }
 
-function FlagGame({ onExit, settings, match, pool, shapes, climbing }: GameProps) {
+function FlagGame({ onExit, settings, match, pool, shapes }: GameProps) {
   // The whole country is the target: click anywhere inside its borders for full
   // marks, and miss by however far the country picked is from the right one.
   const game = useGame<Country>(pool, (c) => c, 2000, {
     rounds: settings.rounds,
-    // Today's round climbs and the rest of the game doesn't — see `flagLadder`.
-    easierBy: climbing ? flagFame : undefined,
+    // Rounds climb, and the pool stops short of the unanswerable — see
+    // `ladders.ts`, which is where every game's does.
+    easierBy: COUNTRY_LADDER.easierBy,
     // Counted in only on the globe, which is the one map with an arrival to
     // watch — see `intro`. The flat map is drawn by the time the round opens,
     // so a countdown in front of it is two seconds of nothing.
@@ -96,26 +95,10 @@ export default function FlagGuesser(props: ModeProps) {
   // so there's no game to start until it lands.
   const shapes = useWorldShapes();
   const everywhere = countryPool(shapes);
-
-  /**
-   * Today's round is dealt from a written ladder of flags, easiest first, and
-   * every other way of playing this game is dealt from the whole world.
-   *
-   * It is the front door: most of the people who see it arrived on a link from
-   * a friend and have never played, and a first round asking for a flag nobody
-   * has seen is a tab that closes. Off the shelf and in a duel the game stays
-   * what it was — somebody who picked Flag Spotter out of seven has chosen the
-   * whole world, and a duel is two people who agreed to it.
-   */
-  const climbing = props.match?.kind === "daily";
   // Memoised because `useGame` keeps its "recently dealt" memory against the
-  // identity of the array it was handed. Today's round is seeded and so skips
-  // that memory outright, but a pool rebuilt every render is the kind of thing
-  // that is only wrong once something else changes.
-  const pool = useMemo(
-    () => (climbing ? flagLadderPool(everywhere) : everywhere),
-    [climbing, everywhere],
-  );
+  // identity of the array it was handed, and a pool rebuilt every render would
+  // be a fresh memory every render.
+  const pool = useMemo(() => COUNTRY_LADDER.pool(everywhere), [everywhere]);
 
   if (!shapes || !pool.length) {
     return (
@@ -134,5 +117,5 @@ export default function FlagGuesser(props: ModeProps) {
     );
   }
 
-  return <FlagGame {...props} pool={pool} shapes={shapes} climbing={climbing} />;
+  return <FlagGame {...props} pool={pool} shapes={shapes} />;
 }

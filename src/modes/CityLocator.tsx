@@ -1,8 +1,10 @@
+import { useMemo } from "react";
 import FactCard from "../components/FactCard";
 import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
 import WorldMap from "../components/WorldMap";
 import { cities, type City } from "../data/cities";
+import { CITY_LADDER } from "../data/ladders";
 import { matchOptions } from "../lib/match";
 import { useGame } from "../lib/useGame";
 import type { ModeProps } from "./ModeProps";
@@ -24,8 +26,14 @@ export default function CityLocator({
   // reading, and marking it down against Westminster was scoring which part of
   // the city was picked, in a game that asked where the city is. Fifty covers
   // the sprawl of the largest of them, and on the globe it's under a pixel.
-  const game = useGame<City>(cities, (c) => c, 2000, {
+  // Memoised because `useGame` keeps its "recently dealt" memory against the
+  // identity of the array it was handed.
+  const pool = useMemo(() => CITY_LADDER.pool(cities), []);
+  const game = useGame<City>(pool, (c) => c, 2000, {
     rounds: settings.rounds,
+    // Rounds climb, and three cities nobody could place are out of the pool
+    // altogether — see `ladders.ts`.
+    easierBy: CITY_LADDER.easierBy,
     // Counted in only on the globe, which is the one map with an arrival to
     // watch — see `intro`. The flat map is drawn by the time the round opens,
     // so a countdown in front of it is two seconds of nothing.

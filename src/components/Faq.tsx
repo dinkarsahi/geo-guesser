@@ -119,6 +119,27 @@ export default function Faq({ onAbout, onPrivacy }: FaqProps) {
               city you pressed.
             </p>
           </div>
+
+          <div className="faq-card">
+            <h3>Do the rounds get harder as the game goes on?</h3>
+            <p>
+              Yes, and on purpose. Every pool is sorted by how well known its answers
+              are and cut into five, and each round is drawn from the next band along —
+              so the first round is somewhere almost everybody can place and the fifth
+              is one for the keen. Two games sort themselves by something real rather
+              than by opinion: a tube station by how central it is and how many lines
+              meet there, and a clock by how many countries keep it.
+            </p>
+            <p>
+              The hard end is meant to be <strong>hard, not unanswerable</strong>. The
+              last band is Ouagadougou and Uruguay and the Kenyan shilling, not a
+              Pacific atoll, a micro-state's population or a currency spent in one town
+              — those have been taken out of the pools altogether, along with a handful
+              of famous brands whose registered head office is in a country nobody
+              would ever guess. A round you cannot win by knowing the answer isn't a
+              hard round, it's an unfair one.
+            </p>
+          </div>
         </section>
 
         <section className="doc-section">

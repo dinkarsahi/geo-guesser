@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import FactCard from "../components/FactCard";
+import { MIN_CLOCK_COUNTRIES, clockFame } from "../data/ladders";
 import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
 import WorldMap from "../components/WorldMap";
@@ -173,6 +174,9 @@ function TimeZoneGame({
       if (gap === null) return { score: 0, label: "not a country" };
       return { score: scoreFromClockGap(gap), label: formatClockGap(gap) };
     },
+    // Rounds climb by how many countries keep the clock, which is also how big
+    // a target it is — see `clockFame` in `ladders.ts`.
+    easierBy: clockFame,
     answerFor: nearestOnTheClock,
     guessAt: (guess) => anchorAt(shapes, guess),
     ...matchOptions(match),
@@ -372,7 +376,13 @@ export default function TimeZoneGuesser(props: ModeProps) {
   // Built once and kept, so the rounds don't reshuffle underneath a game in
   // progress. What's on each clock doesn't change within a sitting; only what
   // it reads does.
-  const pool = timeZonePool(countries);
+  const all = timeZonePool(countries);
+  // The clocks only one country keeps are out: a quarter-hour offset is famous
+  // for being odd and is one small shape to find on a whole world.
+  const pool = useMemo(
+    () => all.filter((t) => t.countries.length >= MIN_CLOCK_COUNTRIES),
+    [all],
+  );
 
   if (!shapes || !pieces || !pool.length) {
     return (

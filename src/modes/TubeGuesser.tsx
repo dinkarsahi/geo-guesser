@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import FactCard from "../components/FactCard";
+import { OUTERMOST_TUBE_ZONE, tubeFame } from "../data/ladders";
 import GameFrame from "../components/GameFrame";
 import LondonMap from "../components/LondonMap";
 import {
@@ -28,8 +29,15 @@ export default function TubeGuesser({
   // the two can be a walk apart and eighteen stops apart, and the thing the
   // player got wrong there was which branch, not where the place is. The right
   // station is full marks either way.
-  const game = useGame<TubeStation>(tubeStations, (s) => s, 1.2, {
+  // Rounds climb, and the eight stations out past Rickmansworth are not in the
+  // pool at all — see `tubeFame` in `ladders.ts`.
+  const pool = useMemo(
+    () => tubeStations.filter((s) => s.zone <= OUTERMOST_TUBE_ZONE),
+    [],
+  );
+  const game = useGame<TubeStation>(pool, (s) => s, 1.2, {
     rounds: settings.rounds,
+    easierBy: tubeFame,
     // No arrival to wait for: the tube map is drawn from coordinates the
     // moment the round opens, so a countdown in front of it would be two
     // seconds of looking at a map you could already have been reading.

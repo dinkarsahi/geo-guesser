@@ -1,4 +1,6 @@
+import { useMemo } from "react";
 import FactCard from "../components/FactCard";
+import { COMPANY_LADDER } from "../data/ladders";
 import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
 import WorldMap from "../components/WorldMap";
@@ -33,6 +35,9 @@ function CompanyGame({
   // happens to sit in is never asked for, so marking it would only invite the
   // player to aim finer than the question deserves.
   const game = useGame<CompanyTarget>(pool, (c) => c, 2000, {
+    // Rounds climb, and the brands nobody outside one country has met are out
+    // of the pool altogether — see `ladders.ts`.
+    easierBy: COMPANY_LADDER.easierBy,
     rounds: settings.rounds,
     // Counted in only on the globe, which is the one map with an arrival to
     // watch — see `intro`. The flat map is drawn by the time the round opens,
@@ -105,7 +110,8 @@ export default function CompanyGuesser(props: ModeProps) {
   // The countries come from the map data, and a company can't be asked about
   // until the country it belongs to is on it.
   const shapes = useWorldShapes();
-  const pool = companyPool(countryPool(shapes));
+  const all = companyPool(countryPool(shapes));
+  const pool = useMemo(() => COMPANY_LADDER.pool(all), [all]);
 
   if (!shapes || !pool.length) {
     return (

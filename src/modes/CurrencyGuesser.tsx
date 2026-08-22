@@ -1,4 +1,6 @@
+import { useMemo } from "react";
 import FactCard from "../components/FactCard";
+import { CURRENCY_LADDER } from "../data/ladders";
 import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
 import WorldMap from "../components/WorldMap";
@@ -52,6 +54,9 @@ function CurrencyGame({
   // currency zone, which for the euro would be a field in Austria and for the
   // US dollar the middle of the Pacific.
   const game = useGame<CurrencyTarget>(pool, (m) => m, 2000, {
+    // Rounds climb, and the currencies only ever seen at home are out of the
+    // pool altogether — see `ladders.ts`.
+    easierBy: CURRENCY_LADDER.easierBy,
     rounds: settings.rounds,
     // Counted in only on the globe, which is the one map with an arrival to
     // watch — see `intro`. The flat map is drawn by the time the round opens,
@@ -130,7 +135,8 @@ export default function CurrencyGuesser(props: ModeProps) {
   // The currencies are grouped from the same country pool the flag round uses,
   // so nothing can be asked about until the map data lands.
   const shapes = useWorldShapes();
-  const pool = currencyPool(countryPool(shapes));
+  const all = currencyPool(countryPool(shapes));
+  const pool = useMemo(() => CURRENCY_LADDER.pool(all), [all]);
 
   if (!shapes || !pool.length) {
     return (

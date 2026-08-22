@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { COUNTRY_LADDER } from "../data/ladders";
 import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
 import WorldMap from "../components/WorldMap";
@@ -113,7 +114,8 @@ function PopulationGame({
         : scoreFor(guess, target),
     guessAt: (guess) => anchorAt(shapes, guess),
     // Rounds that get harder as the game goes on: the first is dealt from the
-    // most populous fifth of the world and the last from the least.
+    // most populous fifth of the pool and the last from the least. **Ranked by
+    // population but *filtered* by fame** — see below.
     easierBy: byPopulation,
     ...matchOptions(match),
   });
@@ -204,7 +206,13 @@ export default function PopulationGuesser(props: ModeProps) {
   // The countries come from the map data, and a population is no question at
   // all until there's a shape on the map to click for it.
   const shapes = useWorldShapes();
-  const pool = populationPool(countryPool(shapes));
+  // Ranked by population, but drawn only from the countries somebody could
+  // name. Population is a poor measure of fame at the bottom of the table —
+  // it would drop Iceland and Luxembourg and keep Guinea-Bissau — so the two
+  // jobs are done by two different things: `COUNTRY_LADDER` decides who is in,
+  // and the population decides where in the game they fall.
+  const all = populationPool(countryPool(shapes));
+  const pool = useMemo(() => COUNTRY_LADDER.pool(all), [all]);
 
   if (!shapes || !pool.length) {
     return (
