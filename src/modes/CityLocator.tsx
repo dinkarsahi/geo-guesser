@@ -28,12 +28,12 @@ export default function CityLocator({
   // the sprawl of the largest of them, and on the globe it's under a pixel.
   // Memoised because `useGame` keeps its "recently dealt" memory against the
   // identity of the array it was handed.
-  const pool = useMemo(() => CITY_LADDER.pool(cities), []);
+  const pool = useMemo(() => CITY_LADDER.pool(cities, false), []);
   const game = useGame<City>(pool, (c) => c, 2000, {
     rounds: settings.rounds,
     // Rounds climb, and three cities nobody could place are out of the pool
     // altogether — see `ladders.ts`.
-    easierBy: CITY_LADDER.easierBy,
+    bandOf: CITY_LADDER.bandOf,
     // Counted in only on the globe, which is the one map with an arrival to
     // watch — see `intro`. The flat map is drawn by the time the round opens,
     // so a countdown in front of it is two seconds of nothing.

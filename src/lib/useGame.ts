@@ -161,23 +161,25 @@ export interface GameOptions<T> {
    */
   guessAt?: (guess: Coord) => Coord;
   /**
-   * Deal a climbing game rather than a flat one: rank the pool by this —
-   * **bigger is easier** — cut it into as many bands as there are rounds, and
-   * take one target at random from each, easiest band first.
+   * Deal a climbing game rather than a flat one: this says which band a target
+   * belongs in — **0 is the easiest** — and the deal takes round one from the
+   * first band, round two from the second, and so on.
    *
-   * For a pool whose targets are wildly uneven in difficulty. Population
-   * Spotter is the case: a flat shuffle of every country on Earth deals mostly
-   * from the long tail of small islands, and a game of five rounds asking for
+   * For a pool whose targets are wildly uneven in difficulty, which is all
+   * seven of them: a flat shuffle of every country on Earth deals mostly from
+   * the long tail of small islands, and a game of five rounds asking for
    * Tuvalu, Nauru, Palau, Dominica and San Marino is a fair deal and a rotten
-   * game. Banding keeps every country reachable — nothing is dropped from the
-   * pool, and each band is a fifth of it — while making the shape of a game
-   * dependable: it opens somewhere everyone has heard of and ends somewhere
-   * only the stubborn will get.
+   * game. Where each game's bands come from is `src/data/ladders.ts`.
+   *
+   * **Bands, not equal slices.** This asks each target which band it is in
+   * rather than ranking the pool and cutting it into fifths, so a band can be
+   * any size — which is what lets a game hold a bagful of its hardest material
+   * for the last round without it leaking into the fourth.
    *
    * Falls back to a plain shuffle where the pool is too thin for the bands to
    * mean anything (fewer than two targets a band).
    */
-  easierBy?: (t: T) => number;
+  bandOf?: (t: T) => number;
   /**
    * Deal from this seed rather than at random. Two devices given the same seed
    * deal the same rounds in the same order, which is the whole of how a
@@ -394,33 +396,48 @@ const dealtBefore = new WeakMap<object, unknown[]>();
 const recencyWindow = (poolSize: number) => Math.floor(poolSize / 2);
 
 /**
- * One target from each band of the pool, easiest band first — see `easierBy`.
+ * One target from each band of the pool, easiest band first — see `bandOf`.
  *
- * The bands are cut by rank rather than by value, so they hold equal numbers of
- * targets rather than equal spans of whatever is being ranked. Population is
- * why: cut by value, the first band would be China and India and the last one
- * two hundred countries, and four rounds in five would come from the tail the
- * banding was meant to spread out.
+ * **The bands are the pool's own, not equal slices of it**, and that is the
+ * whole of why this changed. It used to rank the pool and cut it into as many
+ * equal-sized pieces as there were rounds, which is fine while every band is
+ * about the same size and wrong the moment one isn't — and one isn't, as soon
+ * as a game keeps a bag of its hardest material for the last round. Ninety-five
+ * currencies with fifty-nine hard ones behind them cut into fifths puts the
+ * hard ones in the *fourth* round as well as the fifth. Asked for its band
+ * directly, a band can be any size it likes.
+ *
+ * Where a band is empty the nearest one that isn't stands in, so a pool too
+ * small or too lopsided to fill five still deals five rounds.
  */
 function climbingDeal<T>(
   pool: T[],
   n: number,
-  easierBy: (t: T) => number,
+  bandOf: (t: T) => number,
   random: () => number,
 ): T[] {
   // Bands of one are not bands: with nothing to choose inside them the game
   // would deal the same targets in the same order every time.
   if (pool.length < n * 2) return shuffle([...pool], random).slice(0, n);
 
-  const ranked = [...pool].sort((a, b) => easierBy(b) - easierBy(a));
-  const band = ranked.length / n;
+  // Kept in the pool's own order inside each band, which is what makes a seeded
+  // deal the same deal on every device: the pool is built the same way
+  // everywhere, and nothing else here depends on anything local.
+  const bands: T[][] = [];
+  for (const t of pool) {
+    const at = Math.max(0, Math.floor(bandOf(t)));
+    (bands[at] ??= []).push(t);
+  }
+  const filled = bands.filter((b) => b?.length);
+  if (!filled.length) return shuffle([...pool], random).slice(0, n);
+
   const picked: T[] = [];
   for (let i = 0; i < n; i++) {
-    const from = Math.floor(i * band);
-    // The last band takes the remainder, so nothing at the hard end is cut off
-    // by the rounding.
-    const to = i === n - 1 ? ranked.length : Math.floor((i + 1) * band);
-    picked.push(ranked[from + Math.floor(random() * (to - from))]);
+    // Rounds and bands need not be the same in number — five of each today,
+    // but a ten-round game would climb the same five bands twice as slowly
+    // rather than running out of them.
+    const from = filled[Math.min(filled.length - 1, Math.floor((i * filled.length) / n))];
+    picked.push(from[Math.floor(random() * from.length)]);
   }
   return picked;
 }
@@ -430,12 +447,12 @@ function pickTargets<T>(
   pool: T[],
   n: number,
   seed?: number,
-  easierBy?: (t: T) => number,
+  bandOf?: (t: T) => number,
 ): T[] {
   const random = seed === undefined ? Math.random : seededRandom(seed);
   const deal = (from: T[]) =>
-    easierBy
-      ? climbingDeal(from, n, easierBy, random)
+    bandOf
+      ? climbingDeal(from, n, bandOf, random)
       : shuffle([...from], random).slice(0, Math.min(n, from.length));
 
   // A seeded deal is a promise to another device that it will get these same
@@ -481,7 +498,7 @@ export function useGame<T>(
     scoreGuess,
     answerFor,
     guessAt,
-    easierBy,
+    bandOf,
     seed,
     roundLimitMs,
     adjustScore,
@@ -507,7 +524,7 @@ export function useGame<T>(
   // than on that identity.
   const startAt = schedule?.startAt;
 
-  const [targets, setTargets] = useState(() => pickTargets(pool, rounds, seed, easierBy));
+  const [targets, setTargets] = useState(() => pickTargets(pool, rounds, seed, bandOf));
   const [roundIndex, setRoundIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("guessing");
   const [currentGuess, setCurrentGuess] = useState<Coord | null>(null);
@@ -746,13 +763,13 @@ export function useGame<T>(
   const restart = useCallback(() => {
     // A seeded game replays the same five rounds, which is the point of it:
     // the code names one game, not one sitting of it.
-    setTargets(pickTargets(pool, rounds, seed, easierBy));
+    setTargets(pickTargets(pool, rounds, seed, bandOf));
     setRoundIndex(0);
     setCurrentGuess(null);
     setResults([]);
     setTimeLeftMs(roundLimitMs ?? null);
     setPhase("guessing");
-  }, [pool, rounds, seed, easierBy, roundLimitMs]);
+  }, [pool, rounds, seed, bandOf, roundLimitMs]);
 
   // TEMPORARY — the tap cheat's half of the bargain. It goes through
   // `submitGuess` like any other click, so the round is marked, timed and filed

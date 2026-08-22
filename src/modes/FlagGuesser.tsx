@@ -30,7 +30,7 @@ function FlagGame({ onExit, settings, match, pool, shapes }: GameProps) {
     rounds: settings.rounds,
     // Rounds climb, and the pool stops short of the unanswerable — see
     // `ladders.ts`, which is where every game's does.
-    easierBy: COUNTRY_LADDER.easierBy,
+    bandOf: COUNTRY_LADDER.bandOf,
     // Counted in only on the globe, which is the one map with an arrival to
     // watch — see `intro`. The flat map is drawn by the time the round opens,
     // so a countdown in front of it is two seconds of nothing.
@@ -98,7 +98,10 @@ export default function FlagGuesser(props: ModeProps) {
   // Memoised because `useGame` keeps its "recently dealt" memory against the
   // identity of the array it was handed, and a pool rebuilt every render would
   // be a fresh memory every render.
-  const pool = useMemo(() => COUNTRY_LADDER.pool(everywhere), [everywhere]);
+  // Today's round is dealt from the written bands alone; a duel and a game off
+  // the shelf get the whole tail too, as the last round — see `ladders.ts`.
+  const wide = props.match?.kind !== "daily";
+  const pool = useMemo(() => COUNTRY_LADDER.pool(everywhere, wide), [everywhere, wide]);
 
   if (!shapes || !pool.length) {
     return (

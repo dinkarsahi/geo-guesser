@@ -56,7 +56,7 @@ function CurrencyGame({
   const game = useGame<CurrencyTarget>(pool, (m) => m, 2000, {
     // Rounds climb, and the currencies only ever seen at home are out of the
     // pool altogether — see `ladders.ts`.
-    easierBy: CURRENCY_LADDER.easierBy,
+    bandOf: CURRENCY_LADDER.bandOf,
     rounds: settings.rounds,
     // Counted in only on the globe, which is the one map with an arrival to
     // watch — see `intro`. The flat map is drawn by the time the round opens,
@@ -136,7 +136,10 @@ export default function CurrencyGuesser(props: ModeProps) {
   // so nothing can be asked about until the map data lands.
   const shapes = useWorldShapes();
   const all = currencyPool(countryPool(shapes));
-  const pool = useMemo(() => CURRENCY_LADDER.pool(all), [all]);
+  // Today's round is dealt from the written bands alone; a duel and a game off
+  // the shelf get the whole tail too, as the last round — see `ladders.ts`.
+  const wide = props.match?.kind !== "daily";
+  const pool = useMemo(() => CURRENCY_LADDER.pool(all, wide), [all, wide]);
 
   if (!shapes || !pool.length) {
     return (

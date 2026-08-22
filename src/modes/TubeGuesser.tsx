@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import FactCard from "../components/FactCard";
-import { OUTERMOST_TUBE_ZONE, tubeFame } from "../data/ladders";
+import { BANDS, bandsByMeasure, tubeFame } from "../data/ladders";
 import GameFrame from "../components/GameFrame";
 import LondonMap from "../components/LondonMap";
 import {
@@ -29,15 +29,13 @@ export default function TubeGuesser({
   // the two can be a walk apart and eighteen stops apart, and the thing the
   // player got wrong there was which branch, not where the place is. The right
   // station is full marks either way.
-  // Rounds climb, and the eight stations out past Rickmansworth are not in the
-  // pool at all — see `tubeFame` in `ladders.ts`.
-  const pool = useMemo(
-    () => tubeStations.filter((s) => s.zone <= OUTERMOST_TUBE_ZONE),
-    [],
-  );
-  const game = useGame<TubeStation>(pool, (s) => s, 1.2, {
+  // Every station, in every way of playing: this game is for people who know
+  // the network, and the far end of the Metropolitan line files itself in the
+  // hardest band on its fare zone alone — see `tubeFame` in `ladders.ts`.
+  const bandOf = useMemo(() => bandsByMeasure(tubeStations, tubeFame, BANDS), []);
+  const game = useGame<TubeStation>(tubeStations, (s) => s, 1.2, {
     rounds: settings.rounds,
-    easierBy: tubeFame,
+    bandOf,
     // No arrival to wait for: the tube map is drawn from coordinates the
     // moment the round opens, so a countdown in front of it would be two
     // seconds of looking at a map you could already have been reading.

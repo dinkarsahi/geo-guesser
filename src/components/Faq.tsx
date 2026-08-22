@@ -131,13 +131,20 @@ export default function Faq({ onAbout, onPrivacy }: FaqProps) {
               meet there, and a clock by how many countries keep it.
             </p>
             <p>
-              The hard end is meant to be <strong>hard, not unanswerable</strong>. The
-              last band is Ouagadougou and Uruguay and the Kenyan shilling, not a
-              Pacific atoll, a micro-state's population or a currency spent in one town
-              — those have been taken out of the pools altogether, along with a handful
-              of famous brands whose registered head office is in a country nobody
-              would ever guess. A round you cannot win by knowing the answer isn't a
-              hard round, it's an unfair one.
+              <strong>Today's round is the gentler one.</strong> It is dealt from a
+              written list of answers somebody could reasonably have met, so its last
+              round is Ouagadougou or Uruguay or the Kenyan shilling rather than a
+              Pacific atoll or a currency spent in one town. It is the round people
+              arrive at from a link, and a fifth question nobody can answer is a poor
+              welcome.
+            </p>
+            <p>
+              <strong>A duel and a game off the shelf get everything.</strong> The whole
+              tail is back in — every country on the map, all 154 currencies, all 486
+              company logos — and it can only ever turn up as the <em>fifth</em> round.
+              If you went looking for Currency Spotter on the shelf, or set a duel up
+              with somebody, you asked for the whole world, and the last round is where
+              it is settled.
             </p>
           </div>
         </section>

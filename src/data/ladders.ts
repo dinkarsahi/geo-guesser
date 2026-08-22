@@ -8,25 +8,48 @@
  * takes one from each. Round one is somewhere everybody knows and round five is
  * somewhere only the keen will get.
  *
- * **The ladder is also the floor, and that is half its job.** What a ladder
- * leaves out is not in the pool at all, so a game can no longer ask which
- * country spends the Vanuatu vatu or where the head office of Draugiem.lv is.
- * The hard end is meant to be *hard*, not *unanswerable*: a player who has
- * finished five rounds should feel they were beaten by the last one rather than
- * that it was a trick. Everything in the bottom band below is a place, a brand
- * or a currency somebody could reasonably have met.
+ * **Two pools, and which you get depends on how you are playing.**
  *
- * **Bands should stay roughly equal in size.** `climbingDeal` cuts the ranked
- * pool into as many slices as there are rounds and takes one from each, and it
- * cuts *by count* — it knows nothing about the bands written here. Equal bands
- * are what make the two line up. Where they drift a little the game still
- * climbs; where one band is half the pool it does not.
+ * - **Today's round** is dealt from the bands written below and nothing else.
+ *   It is the front door: most of the people who see it followed a link from a
+ *   friend and have never played, and a last round they cannot answer is a tab
+ *   that closes.
+ * - **A duel and a game off the shelf** get everything — the bands *plus* the
+ *   whole tail the bands leave out — and **the tail is the last band**. Somebody
+ *   who picked Currency Spotter off a shelf of seven, or who set up a duel, has
+ *   asked for the whole world, and the Vanuatu vatu is a fair way to settle a
+ *   fifth round between two people who both want one.
+ *
+ * That is the `wide` argument, and it is `match?.kind !== "daily"` at every
+ * call site: absent means off the shelf, `"room"` means a duel, and only
+ * `"daily"` narrows.
+ *
+ * **The tail can only ever be a fifth round**, however big it is, because
+ * `bandOf` hands anything the bands do not name straight to the hardest band
+ * and the deal asks for bands rather than cutting the pool into equal slices.
+ * That is what the change to `climbingDeal` bought: fifty-nine hard currencies
+ * behind ninety-five easy ones, cut into fifths, would have put hard ones in
+ * the fourth round as well as the fifth.
+ *
+ * **Written bands should stay roughly equal in size.** Not for the deal's sake
+ * any more — it asks each target which band it is in — but because a band is
+ * one round's worth of question, and a band twice the size of its neighbour is
+ * a difficulty step twice as big.
  *
  * **Not every game needs a written ladder.** Three of the seven have a real
  * measurement to hand and use it instead — see the table in CLAUDE.md. Writing
  * a list is for the games where the thing that makes a target easy is whether
  * you have *heard of it*, and there is no column in any dataset for that.
  */
+
+/**
+ * How many bands every game climbs through. Five, because a game is five rounds
+ * and a band is one round's worth of question — but the two are counted
+ * separately on purpose, and `climbingDeal` maps one onto the other, so a
+ * ten-round game would climb these same five twice as slowly rather than
+ * needing five more written.
+ */
+export const BANDS = 5;
 
 /** Targets, in bands, easiest band first. */
 type Bands = readonly (readonly string[])[];
@@ -37,28 +60,78 @@ type Bands = readonly (readonly string[])[];
  * back cities rather than the bare shape the key was read off.
  */
 export interface Ladder<K> {
-  /** Only the targets the ladder names — which is where the pool now stops. */
-  pool: <T extends K>(all: T[]) => T[];
-  /** Bigger is easier, which is what `useGame`'s `easierBy` wants. */
-  easierBy: (t: K) => number;
+  /**
+   * The targets this game may ask about. `wide` is every way of playing except
+   * today's round — see "Two pools" above.
+   */
+  pool: <T extends K>(all: T[], wide: boolean) => T[];
+  /** Which band a target sits in, 0 easiest. Anything unlisted is the hardest. */
+  bandOf: (t: K) => number;
   /** Every key the ladder names, for the games that share one. */
   keys: ReadonlySet<string>;
+  /** How many bands there are, which is also the index of the hardest plus one. */
+  count: number;
 }
 
-function ladder<K>(bands: Bands, keyOf: (t: K) => string): Ladder<K> {
-  const order = bands.flat();
-  const rank = new Map(order.map((key, i) => [key, i]));
+/**
+ * @param wideKeepsTheRest whether the wide pool takes in everything the bands
+ *   do not name. True for the games with a long tail worth keeping for the last
+ *   round; false for City, whose three dropped answers are dropped outright.
+ */
+function ladder<K>(
+  bands: Bands,
+  keyOf: (t: K) => string,
+  wideKeepsTheRest: boolean,
+): Ladder<K> {
+  const band = new Map<string, number>();
+  const order = new Map<string, number>();
+  bands.forEach((names, i) =>
+    names.forEach((key) => {
+      band.set(key, i);
+      order.set(key, order.size);
+    }),
+  );
+  const hardest = bands.length - 1;
+  // **In the ladder's own order, not the order the pool arrived in.** The deal
+  // picks the nth member of a band, so the order inside a band decides which
+  // target a given seed lands on — and the pool arrives in whatever order the
+  // map data or the data file happens to hold. Sorting here means the written
+  // list is the only thing that decides, which is what makes a day's rounds a
+  // fact about the ladder rather than about the shape of some file. It is also
+  // what let the bands be introduced mid-day without moving that day's round.
+  // The tail keeps the order it came in, after everything named.
+  const rank = (t: K) => order.get(keyOf(t)) ?? Number.MAX_SAFE_INTEGER;
   return {
-    pool: (all) => all.filter((t) => rank.has(keyOf(t))),
-    // **The place in the flattened list, not the band's index.** Ranking by
-    // band would leave every target in a band tied, and `climbingDeal` sorts
-    // before it slices — so the pool's own order would decide who fell in which
-    // slice, and a pool that is rebuilt or reordered would quietly re-deal a
-    // day that had already been played. The bands are how the order is written
-    // down and read; the order is what the deal runs on.
-    easierBy: (t) => order.length - (rank.get(keyOf(t)) ?? order.length),
-    keys: new Set(rank.keys()),
+    pool: (all, wide) =>
+      wide && wideKeepsTheRest
+        ? [...all].sort((a, b) => rank(a) - rank(b))
+        : all.filter((t) => band.has(keyOf(t))).sort((a, b) => rank(a) - rank(b)),
+    // Anything the bands do not name is the hardest band, which is the whole
+    // of how the wide pool works: the extra material can only ever be a last
+    // round, however much of it there is.
+    bandOf: (t) => band.get(keyOf(t)) ?? hardest,
+    keys: new Set(band.keys()),
+    count: bands.length,
   };
+}
+
+/**
+ * Bands cut from a measurement rather than written down: rank the pool and
+ * slice it into `count` equal pieces. For the games whose difficulty is a real
+ * number — a fare zone, a population, how many countries keep a clock.
+ *
+ * Returns a lookup rather than a formula, because a band is a fact about a
+ * target's place *in this pool* and the pool is what is being ranked.
+ */
+export function bandsByMeasure<T>(
+  pool: T[],
+  easierBy: (t: T) => number,
+  count: number,
+): (t: T) => number {
+  const ranked = [...pool].sort((a, b) => easierBy(b) - easierBy(a));
+  const at = new Map<T, number>();
+  ranked.forEach((t, i) => at.set(t, Math.min(count - 1, Math.floor((i * count) / ranked.length))));
+  return (t) => at.get(t) ?? count - 1;
 }
 
 // ---------------------------------------------------------------------------
@@ -100,7 +173,7 @@ const COUNTRY_BANDS = [
 ] as const;
 
 /** Countries by flag recognisability — Flag Spotter, and the pool for both. */
-export const COUNTRY_LADDER = ladder<{ code: string }>(COUNTRY_BANDS, (c) => c.code);
+export const COUNTRY_LADDER = ladder<{ code: string }>(COUNTRY_BANDS, (c) => c.code, true);
 
 // ---------------------------------------------------------------------------
 // Cities, by whether you could put a pin near them.
@@ -150,7 +223,7 @@ const CITY_BANDS = [
    "Valparaíso", "Cusco", "Georgetown", "Paramaribo"],
 ] as const;
 
-export const CITY_LADDER = ladder<{ name: string }>(CITY_BANDS, (c) => c.name);
+export const CITY_LADDER = ladder<{ name: string }>(CITY_BANDS, (c) => c.name, false);
 
 // ---------------------------------------------------------------------------
 // Currencies, by whether the code and the sign mean anything to you.
@@ -180,12 +253,13 @@ const CURRENCY_BANDS = [
    "NAD", "MZN", "AOA", "RWF", "XOF", "XAF", "CUP", "DOP", "JMD"],
 ] as const;
 
-export const CURRENCY_LADDER = ladder<{ code: string }>(CURRENCY_BANDS, (c) => c.code);
+export const CURRENCY_LADDER = ladder<{ code: string }>(CURRENCY_BANDS, (c) => c.code, true);
 
 // ---------------------------------------------------------------------------
 // Companies, by whether you know the brand *and* could place it.
 //
-// The other steep cut: 120 of 486. The pool was assembled from Simple Icons,
+// The written bands are 150 of the 486, and the rest are the last band of a
+// duel or a game off the shelf. The pool was assembled from Simple Icons,
 // which carries every brand that has ever had a logo drawn for it, so most of
 // it is regional software nobody outside one country has met — Kueski, Xendit,
 // Viblo, Draugiem.lv. Those are not hard rounds, they are rounds with no
@@ -195,44 +269,53 @@ export const CURRENCY_LADDER = ladder<{ code: string }>(CURRENCY_BANDS, (c) => c
 // here but everyone knows it is Finnish, while Zara is a household name whose
 // country is a real question.
 //
-// **Three famous brands are left out for being traps rather than questions.**
-// IKEA, Airbus and Garmin are filed here under the Netherlands, the Netherlands
-// and Switzerland, and each of those is the legally correct answer and the
-// opposite of what everyone believes — the data's own facts say so ("Is Swedish
-// by birth, but the brand is owned from the Netherlands"; "Is registered in
-// Switzerland though most of its engineers sit in Kansas"). A round nobody can
-// win by knowing the brand is not a hard round, it is an unfair one. Shell,
-// which really did move to London in 2022, is kept but sits in the fourth band
-// rather than the first.
+// A trap — a brand whose registered country is the opposite of what everyone
+// believes — belongs in the **last** band and nowhere else. Three of them are
+// down there and the note beside them says which. Shell, which really did move
+// to London in 2022, is a milder case and sits in the fourth.
 // ---------------------------------------------------------------------------
 
 const COMPANY_BANDS = [
   ["Apple", "Google", "Nike", "McDonald's", "Coca-Cola", "Tesla", "Boeing", "Ford",
    "Starbucks", "Netflix", "Toyota", "Sony", "Samsung", "Ferrari", "Emirates",
-   "Adidas", "BMW", "Volkswagen", "Mastercard", "Spotify", "Visa", "Nokia", "Zara"],
+   "Adidas", "BMW", "Volkswagen", "Mastercard", "Spotify", "Visa", "Nokia", "Zara",
+   // The airlines named after the place they fly from: a gift, and a first
+   // round is meant to be one.
+   "Air France", "Japan Airlines", "Turkish Airlines", "Qatar Airways",
+   "Singapore Airlines", "Air India", "Ethiopian Airlines"],
 
   ["Intel", "Nvidia", "PayPal", "Uber", "Airbnb", "Meta", "British Airways",
    "General Motors", "FedEx", "Honda", "Nissan", "Panasonic", "Hyundai", "LG",
    "Porsche", "Audi", "Lamborghini", "Fiat", "Puma", "Siemens", "Philips Hue",
-   "Volvo", "Ericsson"],
+   "Volvo", "Ericsson", "American Express", "UPS", "Delta", "Snapchat", "Etsy",
+   "Marriott", "Iberia"],
 
   ["Cisco", "Qualcomm", "AMD", "Dell", "HP", "Motorola", "eBay", "Reddit",
    "Pinterest", "Zoom", "Dropbox", "GitHub", "Shopify", "Vodafone", "HSBC",
    "Barclays", "Tesco", "Rolls-Royce", "Aston Martin", "Bentley", "McLaren",
-   "Ryanair", "Lufthansa", "DHL"],
+   "Ryanair", "Lufthansa", "DHL", "3M", "Caterpillar", "Unilever", "GSK", "Sky",
+   "Aeroflot"],
 
   ["Mazda", "Subaru", "Suzuki", "Mitsubishi", "Hitachi", "Toshiba", "Sharp",
    "Fujifilm", "Nikon", "Yamaha Corporation", "Uniqlo", "Sega", "Konami", "Kia",
    "Huawei", "Xiaomi", "Lenovo", "Alibaba.com", "WeChat", "ByteDance", "ASUS",
-   "Acer", "HTC", "Shell"],
+   "Acer", "HTC", "Shell", "Rakuten", "Baidu", "OPPO", "DJI", "Infosys", "Tata"],
 
   ["Bosch", "SAP", "Deutsche Bank", "Red Bull", "ABB", "Renault", "Peugeot",
    "Citroën", "Ubisoft", "Hermès", "Dior", "Carrefour", "Ducati", "Maserati",
    "Telefónica", "SEAT", "Booking.com", "KLM", "H&M", "Klarna", "Škoda",
-   "Qantas", "Atlassian"],
+   "Qantas", "Atlassian", "Adyen", "Scania", "Carlsberg", "Dacia",
+   // The three that were out of the game altogether for being traps, and are
+   // back here because a trap *is* a fifth round. Each is filed under a country
+   // that is legally right and the opposite of what everyone believes: IKEA and
+   // Airbus under the Netherlands, Garmin under Switzerland. The data's own
+   // facts admit it — IKEA is Swedish by birth, they say, but the brand is
+   // owned from the Netherlands. In the first band that punishes knowing the
+   // brand; in the last one it is the question.
+   "IKEA", "Airbus", "Garmin"],
 ] as const;
 
-export const COMPANY_LADDER = ladder<{ name: string }>(COMPANY_BANDS, (c) => c.name);
+export const COMPANY_LADDER = ladder<{ name: string }>(COMPANY_BANDS, (c) => c.name, true);
 
 // ---------------------------------------------------------------------------
 // The three games with a real measurement to hand.
@@ -250,13 +333,13 @@ export const COMPANY_LADDER = ladder<{ name: string }>(COMPANY_BANDS, (c) => c.n
  * single-line stop in zone 6 is one only the people who live there use. **The
  * map carries no names**, so this really is knowledge and not a search.
  *
- * Nothing on it needs a written list, but it does need a floor: the eight
- * stations in zones 7 to 9 are not in London at all — they are the far end of
- * the Metropolitan line, out past Rickmansworth into Buckinghamshire — and no
- * amount of knowing the tube map helps with somewhere that isn't on the part of
- * it anybody looks at.
+ * **No floor at all, and no wide pool either.** All 269 stations are in every
+ * way of playing it, including today's round. This is the one game already
+ * pitched at people who know the network — a Londoner who has never heard of
+ * Roding Valley is not really a Londoner — and the eight stations out past
+ * Rickmansworth, which are in Buckinghamshire rather than London, land in the
+ * hardest band on their fare zone alone without being told to.
  */
-export const OUTERMOST_TUBE_ZONE = 6;
 export const tubeFame = (s: { zone: number; lines: string[] }): number =>
   10 - s.zone + s.lines.length;
 
@@ -269,9 +352,10 @@ export const tubeFame = (s: { zone: number; lines: string[] }): number =>
  * half-hours in roughly the right place without being told about them — India's
  * UTC+5:30 has company, Iran's UTC+3:30 has none.
  *
- * The floor is `MIN_CLOCK_COUNTRIES`, and it is what takes out the quarter-hour
- * oddities — Nepal's UTC+5:45, the Chathams' UTC+12:45 — which are famous only
- * for being odd and are a single small target on the map.
+ * **No floor here either.** There are only thirty-five clocks in the world and
+ * taking ten of them out would be taking a third of the game, so the
+ * quarter-hour oddities — Nepal's UTC+5:45, the Chathams' UTC+12:45 — stay, and
+ * this measure files them in the hardest band without being told to: a clock
+ * one country keeps is one country to find.
  */
-export const MIN_CLOCK_COUNTRIES = 2;
 export const clockFame = (t: { countries: unknown[] }): number => t.countries.length;

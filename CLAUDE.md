@@ -50,11 +50,19 @@ options or in `GameFrame`'s props instead.
   can't change the score. **The raw click is still kept** as `result.click`,
   and it is the only thing that can name the country picked — an anchor can sit
   in open water or inside a neighbour.
-- **`easierBy`** — deal a game that climbs. The pool is ranked by this (**bigger
-  is easier**), cut into as many bands as there are rounds, and one target taken
-  at random from each, easiest first. **All seven games set it now**, and where
-  each one's ranking comes from is "The ladders" below. Works with `seed`, so a
-  duel and today's round climb identically on every device.
+- **`bandOf`** — deal a game that climbs: which band a target is in, **0 the
+  easiest**, and the deal takes round one from the first band, round two from
+  the second. **All seven games set it**, and where each one's bands come from
+  is "The ladders" below. Works with `seed`, so a duel and today's round climb
+  identically on every device.
+
+  It replaced an `easierBy` that ranked the pool and cut it into equal slices,
+  and the reason is the tail: ninety-five easy currencies with fifty-nine hard
+  ones behind them, cut into fifths, puts hard ones in the *fourth* round as
+  well as the fifth. **Asked for its band directly, a band can be any size** —
+  which is the whole of how a game keeps a bagful of hard material for the last
+  round. `bandsByMeasure` in `ladders.ts` builds one from a measurement for the
+  games whose difficulty is a real number.
 - **`seed`** — deal deterministically. This is the whole of how two devices play
   the same rounds without talking to each other. Seeded games deliberately skip
   the "recently seen" memory, which differs per device.
@@ -1069,70 +1077,82 @@ lets the pool be *every* country rather than the ones someone got round to.
 
 ### The ladders: how every game climbs, and where each one stops
 
-`src/data/ladders.ts`. Every game deals its first round from the easy end of
-its pool and its last from the hard end, and **every game's pool now stops
-short of the unanswerable**. Those are two jobs and it is worth keeping them
-apart: the climb is `easierBy`, the floor is what the ladder leaves out.
+`src/data/ladders.ts`. Every game deals its first round from the easy end of its
+pool and its last from the hard end. `BANDS` is five, one per round.
 
-**It applies everywhere** — today's round, a duel and a game off the shelf all
-deal the same way. It was briefly the daily's alone, which was wrong: somebody
-who picks Flag Spotter off a shelf of seven is not asking to be dealt Nauru
-either.
+**Two pools, and which you get depends on how you are playing.**
 
-| Game | Ranked by | Pool | Left out |
+- **Today's round** is dealt from the written bands and nothing else. It is the
+  front door: most of the people who see it followed a link from a friend and
+  have never played, and a last round they cannot answer is a tab that closes.
+- **A duel and a game off the shelf** get everything — the bands *plus* the tail
+  the bands leave out — and **the tail is the last band**. Somebody who picked
+  Currency Spotter off a shelf of seven, or who set up a duel, has asked for the
+  whole world.
+
+That is the `wide` argument to `Ladder.pool`, and it is `match?.kind !== "daily"`
+at every call site: absent means off the shelf, `"room"` means a duel, and only
+`"daily"` narrows. **The tail can only ever be a fifth round**, however big it
+is, because `bandOf` hands anything the bands do not name straight to the
+hardest band.
+
+| Game | Bands from | Today's round | Duel / off the shelf |
 |---|---|---|---|
-| Flag | `COUNTRY_LADDER`, written | 120 of 233 | the countries whose flag you would have to have studied |
-| City | `CITY_LADDER`, written | 192 of 195 | Apia, Papeete, Nouméa |
-| Currency | `CURRENCY_LADDER`, written | 95 of 154 | the currencies only ever seen at home |
-| Corporate HQ | `COMPANY_LADDER`, written | 117 of 486 | regional brands, and three traps — see below |
-| Population | `COUNTRY_LADDER` for the pool, **population** for the rank | 120 of 232 | as Flag |
-| Tube | `tubeFame` — fare zone, then interchanges | 261 of 269 | zones 7–9, which are not in London |
-| Time zone | `clockFame` — how many countries keep the clock | 25 of 35 | clocks kept by one country |
+| Flag | `COUNTRY_LADDER`, written | 120 | 233 — the other 113 are round five |
+| Population | `COUNTRY_LADDER` for the pool, **population** for the bands | 120 | 232 — same tail |
+| Currency | `CURRENCY_LADDER`, written | 95 | 154 |
+| Corporate HQ | `COMPANY_LADDER`, written | 150 | 486 |
+| City | `CITY_LADDER`, written | 192 | 192 — no tail, see below |
+| Tube | `tubeFame` — fare zone, then interchanges | 269 | 269 |
+| Time zone | `clockFame` — how many countries keep the clock | 35 | 35 |
 
-**A written list is only for what cannot be measured.** Three of the seven have
-a real signal to hand and use it, because a measurement never goes stale the way
-a list does. A list is for the games where "easy" means "you have heard of it",
-and there is no column in any dataset for that: ranked by population the first
-band of countries would be Burkina Faso and Malawi beside China, which is
-correct arithmetic and a rotten first round, while Switzerland is a hundredth
-their size and everyone knows its flag.
+**Three of them have no wide pool at all**, for three different reasons. City
+drops Apia, Papeete and Nouméa outright — Pacific capitals whose names carry no
+clue, and a city round is marked on distance, so a guess made at random scores
+nothing anywhere. The tube keeps all 269 in every mode because it is already
+pitched at people who know the network, and the eight stations out past
+Rickmansworth land in the hardest band on their fare zone without being told.
+The clocks keep all 35 because there are only thirty-five and dropping ten would
+be dropping a third of the game.
 
-**Population is the odd one, and deliberately.** It ranks by population and
-draws from the *country* ladder, because the two questions are different: the
-mark is a number, but you still have to know the country to find it. Population
-is also a poor measure of fame at the bottom of the table — a floor set by
-population alone would drop Iceland and Luxembourg and keep Guinea-Bissau. The
-hardest band is now Finland, Norway, Ireland, New Zealand, Croatia, Uruguay:
-countries everyone knows, with numbers they don't. **This does mean the old
-promise that "nothing leaves the population pool" is gone**, knowingly.
+**A written list is only for what cannot be measured.** Three of the seven have a
+real signal and use it, because a measurement never goes stale the way a list
+does. A list is for the games where "easy" means "you have heard of it", and no
+dataset has a column for that: ranked by population the first band of countries
+would be Burkina Faso and Malawi beside China, which is correct arithmetic and a
+rotten first round, while Switzerland is a hundredth their size and everyone
+knows its flag.
 
-**Bands should stay roughly equal in size.** `climbingDeal` cuts the ranked pool
-into as many slices as there are rounds and cuts *by count* — it knows nothing
-about the bands written in the file. Equal bands are what make the two line up.
+**Population takes its bands from two things at once.** The named countries are
+cut into five by population; everything outside that list is the hardest band
+whatever its population. Population is a fine measure of how hard a *number* is
+and a poor measure of fame — a floor set by population alone would drop Iceland
+and Luxembourg and keep Guinea-Bissau.
 
-**`easierBy` ranks by the place in the flattened list, not by the band index.**
-Ranking by band leaves every target in a band tied, and `climbingDeal` sorts
-before it slices, so the pool's own order would decide who fell in which slice —
-and a pool rebuilt or reordered would quietly re-deal a day that had already
-been played. The bands are how the order is written down and read; the flat
-order is what the deal runs on. This is also what let the ladders be introduced
-mid-day without moving that day's flag round: the country order is unchanged, so
-the numbers are unchanged, so the deal is unchanged.
+**`Ladder.pool` returns the ladder's own order, and that is load-bearing.** The
+deal picks the nth member of a band, so the order *inside* a band decides which
+target a seed lands on — and a pool arrives in whatever order the map data or
+the data file happens to hold. Sorting by the written order means the list is the
+only thing that decides. **This was got wrong once and caught by the probe**: the
+first cut of `climbingDeal` grouped in pool order and quietly re-dealt a day that
+was already being played, turning Canada into France.
 
-**Three famous brands are left out for being traps rather than questions.** IKEA,
-Airbus and Garmin are filed in `companies.ts` under the Netherlands, the
-Netherlands and Switzerland — each the legally correct answer and the opposite of
-what everyone believes, as the data's own facts admit. A round nobody can win by
-knowing the brand is not a hard round, it is an unfair one. Shell, which really
-did move to London in 2022, is kept but sits in the fourth band rather than the
-first. **When adding to a ladder, check the answer is the one the player would
-call right**, not merely the one the registry would.
+**Written bands should stay roughly equal in size.** Not for the deal's sake any
+more — it asks each target which band it is in — but because a band is one
+round's worth of question, and a band twice the size of its neighbour is a
+difficulty step twice as big.
 
-**Adding a target to a game means adding it to that game's ladder too**, or it
-will never come up. That is the trade for the floor being the list itself: it
-cannot silently include something nobody vetted, and it can silently exclude
-something somebody added. `tools/` has no generator for these — they are read
-and checked by hand against the pool they filter.
+**A trap belongs in the last band and nowhere else.** IKEA, Airbus and Garmin are
+filed in `companies.ts` under the Netherlands, the Netherlands and Switzerland —
+each the legally correct answer and the opposite of what everyone believes, as
+the data's own facts admit. In the first band that punishes knowing the brand; in
+the last one it is the question. Shell, which really did move to London in 2022,
+is a milder case and sits in the fourth. **When adding to a ladder, check which
+band the answer belongs in**, not just whether it is right.
+
+**Adding a target to a game means placing it on that game's ladder**, or it will
+only ever be a fifth round in a duel. `tools/` has no generator for these — they
+are read and checked by hand against the pool they filter.
 
 ### Per-game nuances
 
@@ -1157,9 +1177,9 @@ and checked by hand against the pool they filter.
     nothing to do with anything. That line is now gated on the round having been
     marked on distance at all, which is `RoundResult.label === undefined`; any
     mode with a `scoreGuess` supplies a label and is excluded by construction.
-  Rounds also **climb**, and the pool is the *country ladder* rather than every
-  country on the map — see "The ladders" above for why the rank and the floor
-  come from two different things here.
+  Rounds also **climb**, and today's round is dealt from the *country ladder*
+  rather than from every country on the map — see "The ladders" above for why
+  the bands come from two different things here.
 - **Time zone** must read a *live* clock (`serverNow`, ticking every second) —
   the answer can't be a screenshot of a minute that has passed. Countries that
   keep several clocks are cut into pieces (`src/lib/zoneShapes.ts`), so a press

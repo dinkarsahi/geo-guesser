@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import FactCard from "../components/FactCard";
-import { MIN_CLOCK_COUNTRIES, clockFame } from "../data/ladders";
+import { BANDS, bandsByMeasure, clockFame } from "../data/ladders";
 import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
 import WorldMap from "../components/WorldMap";
@@ -42,6 +42,8 @@ import type { ModeProps } from "./ModeProps";
 
 interface GameProps extends ModeProps {
   pool: TimeTarget[];
+  /** Which band a clock falls in — built in the wrapper, which has the pool. */
+  bandOf: (t: TimeTarget) => number;
   shapes: WorldShapes;
   pieces: ZonePieces;
 }
@@ -145,6 +147,7 @@ function TimeZoneGame({
   settings,
   match,
   pool,
+  bandOf,
   shapes,
   pieces,
 }: GameProps) {
@@ -176,7 +179,7 @@ function TimeZoneGame({
     },
     // Rounds climb by how many countries keep the clock, which is also how big
     // a target it is — see `clockFame` in `ladders.ts`.
-    easierBy: clockFame,
+    bandOf,
     answerFor: nearestOnTheClock,
     guessAt: (guess) => anchorAt(shapes, guess),
     ...matchOptions(match),
@@ -376,13 +379,12 @@ export default function TimeZoneGuesser(props: ModeProps) {
   // Built once and kept, so the rounds don't reshuffle underneath a game in
   // progress. What's on each clock doesn't change within a sitting; only what
   // it reads does.
-  const all = timeZonePool(countries);
-  // The clocks only one country keeps are out: a quarter-hour offset is famous
-  // for being odd and is one small shape to find on a whole world.
-  const pool = useMemo(
-    () => all.filter((t) => t.countries.length >= MIN_CLOCK_COUNTRIES),
-    [all],
-  );
+  const pool = timeZonePool(countries);
+  // Every clock, in every way of playing: there are only thirty-five in the
+  // world and dropping the quarter-hour oddities would be dropping a third of
+  // the game. They file themselves in the hardest band instead — a clock one
+  // country keeps is one country to find.
+  const bandOf = useMemo(() => bandsByMeasure(pool, clockFame, BANDS), [pool]);
 
   if (!shapes || !pieces || !pool.length) {
     return (
@@ -401,5 +403,5 @@ export default function TimeZoneGuesser(props: ModeProps) {
     );
   }
 
-  return <TimeZoneGame {...props} pool={pool} shapes={shapes} pieces={pieces} />;
+  return <TimeZoneGame {...props} pool={pool} shapes={shapes} pieces={pieces} bandOf={bandOf} />;
 }

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { COUNTRY_LADDER } from "../data/ladders";
+import { COUNTRY_LADDER, bandsByMeasure } from "../data/ladders";
 import GameFrame from "../components/GameFrame";
 import GlobeMap from "../components/GlobeMap";
 import WorldMap from "../components/WorldMap";
@@ -29,6 +29,8 @@ import type { ModeProps } from "./ModeProps";
 
 interface GameProps extends ModeProps {
   pool: PopulationTarget[];
+  /** Which band a country falls in — built in the wrapper, which has the pool. */
+  bandOf: (c: PopulationTarget) => number;
   shapes: WorldShapes;
 }
 
@@ -68,6 +70,7 @@ function PopulationGame({
   settings,
   match,
   pool,
+  bandOf,
   shapes,
 }: GameProps) {
   // The map's own name for whatever the click landed in, so the reveal calls a
@@ -113,10 +116,9 @@ function PopulationGame({
         ? { score: MAX_ROUND_SCORE, label: "" }
         : scoreFor(guess, target),
     guessAt: (guess) => anchorAt(shapes, guess),
-    // Rounds that get harder as the game goes on: the first is dealt from the
-    // most populous fifth of the pool and the last from the least. **Ranked by
-    // population but *filtered* by fame** — see below.
-    easierBy: byPopulation,
+    // Rounds that get harder as the game goes on — see `bandOf` below, which
+    // is where the two halves of "harder" are put together.
+    bandOf,
     ...matchOptions(match),
   });
 
@@ -206,13 +208,29 @@ export default function PopulationGuesser(props: ModeProps) {
   // The countries come from the map data, and a population is no question at
   // all until there's a shape on the map to click for it.
   const shapes = useWorldShapes();
-  // Ranked by population, but drawn only from the countries somebody could
-  // name. Population is a poor measure of fame at the bottom of the table —
-  // it would drop Iceland and Luxembourg and keep Guinea-Bissau — so the two
-  // jobs are done by two different things: `COUNTRY_LADDER` decides who is in,
-  // and the population decides where in the game they fall.
+  // Today's round is dealt from the countries somebody could name; a duel and a
+  // game off the shelf get every country on the map too, as the last round.
+  const wide = props.match?.kind !== "daily";
   const all = populationPool(countryPool(shapes));
-  const pool = useMemo(() => COUNTRY_LADDER.pool(all), [all]);
+  const pool = useMemo(() => COUNTRY_LADDER.pool(all, wide), [all, wide]);
+
+  /**
+   * Which band a country falls in, which here is two questions rather than one.
+   *
+   * **Ranked by population, but only among the countries somebody could name.**
+   * Population is a fine measure of how hard a number is to place and a poor
+   * measure of fame: a floor set by population alone would drop Iceland and
+   * Luxembourg and keep Guinea-Bissau. So the named countries are cut into five
+   * by population, and every country outside that list — the whole tail, and
+   * only in a duel or off the shelf — is the hardest band whatever its
+   * population happens to be.
+   */
+  const bandOf = useMemo(() => {
+    const named = pool.filter((c) => COUNTRY_LADDER.keys.has(c.code));
+    const byFame = bandsByMeasure(named, byPopulation, COUNTRY_LADDER.count);
+    return (c: PopulationTarget) =>
+      COUNTRY_LADDER.keys.has(c.code) ? byFame(c) : COUNTRY_LADDER.count - 1;
+  }, [pool]);
 
   if (!shapes || !pool.length) {
     return (
@@ -231,5 +249,5 @@ export default function PopulationGuesser(props: ModeProps) {
     );
   }
 
-  return <PopulationGame {...props} pool={pool} shapes={shapes} />;
+  return <PopulationGame {...props} pool={pool} shapes={shapes} bandOf={bandOf} />;
 }
