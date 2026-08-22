@@ -944,9 +944,15 @@
   justify-content: center;
   gap: 8px;
 }
+/* Half of these are anchors and half are buttons, which the browser lays out
+   differently — an inline `a` and a `button` given the same padding still come
+   out different heights, and the row sits a few pixels out of true. Both are
+   made blocks on one line-height so the row reads as one set of controls. */
 .room-share-links .btn {
+  display: block;
   padding: 7px 14px;
   font-size: 14px;
+  line-height: 1.4;
   text-decoration: none;
 }
 /* The last thing before the game takes over, so it's the biggest thing on the

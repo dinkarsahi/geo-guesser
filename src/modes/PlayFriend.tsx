@@ -710,24 +710,30 @@ export default function PlayFriend({
               <div className="button-row room-share-row">
                 <button
                   className="btn btn-ghost"
-                  onClick={() => copy("link", inviteLink(room.code))}
-                >
-                  {copied === "link" ? "Copied ✓" : "Copy invite link"}
-                </button>
-                <button className="btn btn-ghost" onClick={() => copy("code", room.code)}>
-                  {copied === "code" ? "Copied ✓" : "Copy code"}
-                </button>
-                <button
-                  className="btn btn-ghost"
                   aria-expanded={HAS_SHARE_SHEET ? undefined : shareOpen}
                   onClick={() => share(inviteLink(room.code), shareText(room))}
                 >
-                  Share
+                  Share URL
+                </button>
+                <button className="btn btn-ghost" onClick={() => copy("code", room.code)}>
+                  {copied === "code" ? "Copied ✓" : "Copy code"}
                 </button>
               </div>
 
               {shareOpen && !HAS_SHARE_SHEET && (
                 <ul className="room-share-links">
+                  {/* Copying is the first thing a share sheet offers, so the row
+                      that stands in for one has to offer it too — otherwise a
+                      browser without a sheet is a browser with no way to get
+                      the link at all, only four ways to send it somewhere. */}
+                  <li>
+                    <button
+                      className="btn btn-ghost"
+                      onClick={() => copy("link", inviteLink(room.code))}
+                    >
+                      {copied === "link" ? "Copied ✓" : "Copy link"}
+                    </button>
+                  </li>
                   {shareTargets(inviteLink(room.code), shareText(room)).map((t) => (
                     <li key={t.name}>
                       {/* Away from this tab where the service is a web page:

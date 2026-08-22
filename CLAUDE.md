@@ -939,25 +939,34 @@ the host's link is the link they are looking at, and the lobby copies that
 (`inviteLink`). The code is still printed large for reading out: a room fills up
 both ways.
 
-**Three ways to hand it out, on one row, and each is a different room-filling.**
-Copy invite link is the one people paste into the chat they are all in already.
-Copy code is for the person reading it out, or typing it into a second device —
-it was only the large type before, which cannot be pasted. Share is the phone's
-own sheet, `navigator.share`, and that is the whole reason it exists: the sheet
-lists the apps that person actually has, and it is the **only** route to several
-of them. Instagram publishes no web URL that opens a message with a link in it,
-so a hand-built row of buttons can never reach it however many buttons it has.
+**Two buttons hand it out: Share URL, then Copy code.** Share URL is the
+phone's own sheet, `navigator.share`, and it is first because it is the one that
+does the most: the sheet lists the apps that person actually has, offers Copy at
+the top of them, and is the **only** route to several — Instagram publishes no
+web URL that opens a message with a link in it, so a hand-built row of buttons
+can never reach it however many buttons it has. Copy code is for the person
+reading it out, or typing it into a second device; it was only the large type
+before, which cannot be pasted.
+
+**There was a Copy invite link button and it came out**, because the sheet
+copies the link itself and two buttons for one job is a choice the host has to
+stop and make. What that costs is paid below rather than left lying: the
+fallback row leads with **Copy link** for exactly this reason — a browser with
+no sheet would otherwise have no way to get the link at all, only four ways to
+send it somewhere.
 
 `HAS_SHARE_SHEET` in `PlayFriend` is read once at module level, and by `typeof`
 rather than truthiness — TypeScript's own DOM types declare `navigator.share` as
 always defined, so a plain `if (navigator.share)` is a build error (TS2774).
-Where there is no sheet, which is most desktop browsers, Share toggles
-`shareTargets`: a small row of the four services that publish a share URL. It is
-a fallback rather than the main event because four is all there are, and on the
-phone this feature is for that is the wrong four as often as not. **Mail is the
-one in that row without `target="_blank"`** — the browser hands a `mailto:` to
-the mail client and never navigates, so a new tab is one left blank and sitting
-there.
+Where there is no sheet, which is most desktop browsers, Share URL toggles that
+fallback row instead: Copy link, then `shareTargets`, the four services that
+publish a share URL. A fallback rather than the main event because four is all
+there are, and on the phone this feature is for that is the wrong four as often
+as not. **Mail is the one in that row without `target="_blank"`** — the browser
+hands a `mailto:` to the mail client and never navigates, so a new tab is one
+left blank and sitting there. That row also mixes a `button` with four `a`s,
+which the browser lays out to different heights on identical padding, so
+`.room-share-links .btn` makes both blocks on one line-height.
 
 **Start the game is refused until somebody else is on the list.** A duel of one
 is not a duel, and starting one is not a harmless mistake: the code shuts on
