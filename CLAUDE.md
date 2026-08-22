@@ -936,8 +936,40 @@ which is also the moment it could have become a way to replay anything.
 
 The code appears in the address bar as soon as there is a room to point at, so
 the host's link is the link they are looking at, and the lobby copies that
-rather than the bare code (`inviteLink`, and the "Copy invite link" button). The
-code is still printed large for reading out: a room fills up both ways.
+(`inviteLink`). The code is still printed large for reading out: a room fills up
+both ways.
+
+**Three ways to hand it out, on one row, and each is a different room-filling.**
+Copy invite link is the one people paste into the chat they are all in already.
+Copy code is for the person reading it out, or typing it into a second device —
+it was only the large type before, which cannot be pasted. Share is the phone's
+own sheet, `navigator.share`, and that is the whole reason it exists: the sheet
+lists the apps that person actually has, and it is the **only** route to several
+of them. Instagram publishes no web URL that opens a message with a link in it,
+so a hand-built row of buttons can never reach it however many buttons it has.
+
+`HAS_SHARE_SHEET` in `PlayFriend` is read once at module level, and by `typeof`
+rather than truthiness — TypeScript's own DOM types declare `navigator.share` as
+always defined, so a plain `if (navigator.share)` is a build error (TS2774).
+Where there is no sheet, which is most desktop browsers, Share toggles
+`shareTargets`: a small row of the four services that publish a share URL. It is
+a fallback rather than the main event because four is all there are, and on the
+phone this feature is for that is the wrong four as often as not. **Mail is the
+one in that row without `target="_blank"`** — the browser hands a `mailto:` to
+the mail client and never navigates, so a new tab is one left blank and sitting
+there.
+
+**Start the game is refused until somebody else is on the list.** A duel of one
+is not a duel, and starting one is not a harmless mistake: the code shuts on
+start, so the friend who was still typing their name arrives at a room that has
+gone. The hint under the button says which of the two things it is waiting for
+rather than only refusing.
+
+That refusal is also what turned up **`.btn:disabled` never existing**. Every
+disabled button in the app sat at full opacity with a pointer cursor over it and
+a hover that still lit — a Start that reads as pressable and does nothing reads
+as the screen being broken. The rule is in `game.css` beside `.btn`, and the two
+hovers are gated `:hover:not(:disabled)` for the same reason.
 
 What a fresh visitor to the link gets is decided in one place, the invitation
 effect in `PlayFriend`, and it is decided against the room rather than the path:

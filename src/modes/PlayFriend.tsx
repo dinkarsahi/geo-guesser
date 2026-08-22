@@ -38,6 +38,54 @@ const RULES = `${MATCH_ROUNDS} rounds, ${Math.round(
   MATCH_GRACE_MS / 1000,
 )} seconds of a round are free; after that the clock starts costing you. The room shuts the moment the host starts it, so latecomers wait for the next code. One table at the end, and then the code's done.`;
 
+/**
+ * Whether this device has a share sheet of its own. Read once — a browser does
+ * not grow the API mid-session — and by `typeof` rather than truthiness, which
+ * TypeScript refuses since its own DOM types declare `share` as always there.
+ */
+const HAS_SHARE_SHEET = typeof navigator.share === "function";
+
+/**
+ * What the host is actually sending, in words, so the message says which game
+ * and which room before anybody opens the link. The code is spelled out beside
+ * it because a link that has been forwarded twice sometimes arrives without
+ * being clickable, and the code alone is enough to get in.
+ */
+const shareText = (room: Room) =>
+  `Play me at ${modeTitle(room.mode)} on SpotOn — ${MATCH_ROUNDS} rounds, room ${spellCode(
+    room.code,
+  )}.`;
+
+/**
+ * The services that publish a URL for sharing something, for the desktop
+ * browsers with no share sheet of their own. Deliberately short: these four are
+ * the ones with a documented address that opens a message with a link already
+ * in it. Instagram has no such URL at all — nothing on the web can open a DM or
+ * a story with a link prefilled — so it is reachable only through the phone's
+ * own sheet, which is where a player would be sharing to Instagram from anyway.
+ */
+const shareTargets = (url: string, text: string) => {
+  const both = encodeURIComponent(`${text} ${url}`);
+  const just = encodeURIComponent(url);
+  return [
+    { name: "WhatsApp", href: `https://wa.me/?text=${both}`, away: true },
+    {
+      name: "Telegram",
+      href: `https://t.me/share/url?url=${just}&text=${encodeURIComponent(text)}`,
+      away: true,
+    },
+    { name: "Facebook", href: `https://www.facebook.com/sharer/sharer.php?u=${just}`, away: true },
+    // Mail is the one that must not open a tab: the browser hands the address
+    // to the mail client and never navigates, so a new tab is one left blank
+    // and sitting there — and on a machine with no mail client, blank for good.
+    {
+      name: "Email",
+      href: `mailto:?subject=${encodeURIComponent("A SpotOn duel")}&body=${both}`,
+      away: false,
+    },
+  ];
+};
+
 /** How often the lobby asks whether anyone else has arrived, or it's started. */
 const POLL_MS = 1_500;
 
@@ -155,7 +203,14 @@ export default function PlayFriend({
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  // Which of the two copy buttons was last pressed, rather than a bare "yes":
+  // one flag over two buttons ticks both, and a room whose code was copied
+  // claiming the link was copied too is the button lying about what is on the
+  // clipboard.
+  const [copied, setCopied] = useState<"link" | "code" | null>(null);
+  // The fallback sharing row, opened only where the device has no share sheet
+  // of its own to offer.
+  const [shareOpen, setShareOpen] = useState(false);
 
   const player = name.trim();
   const named = player.length > 0;
@@ -417,14 +472,36 @@ export default function PlayFriend({
     return () => clearTimeout(id);
   }, [room, player, onStart, onInvite]);
 
-  const copy = (code: string) => {
-    navigator.clipboard?.writeText(code).then(
+  const copy = (what: "link" | "code", text: string) => {
+    navigator.clipboard?.writeText(text).then(
       () => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        setCopied(what);
+        setTimeout(() => setCopied(null), 2000);
       },
-      () => setCopied(false),
+      () => setCopied(null),
     );
+  };
+
+  /**
+   * Hand the room to whatever the device shares things with.
+   *
+   * On a phone `navigator.share` opens the system sheet, which lists the apps
+   * that person actually has — WhatsApp, Messages, Instagram, mail — and is the
+   * only route to several of them: Instagram publishes no web URL that opens a
+   * message with a link in it, so a hand-built row of buttons can never reach
+   * it. Where there is no sheet, which is most desktop browsers, the row of
+   * links below opens instead. It is a fallback rather than the main event
+   * because it can only offer the four services that publish such a URL, and
+   * on the phone this is for that is the wrong four as often as not.
+   */
+  const share = (url: string, text: string) => {
+    if (!HAS_SHARE_SHEET) {
+      setShareOpen((open) => !open);
+      return;
+    }
+    // A dismissed sheet rejects, and a player changing their mind is not a
+    // failure to report at them.
+    navigator.share({ title: "SpotOn duel", text, url }).catch(() => {});
   };
 
   const back = () => {
@@ -433,6 +510,7 @@ export default function PlayFriend({
     setRoom(null);
     setPlayers([]);
     setProblem(null);
+    setShareOpen(false);
     // Off the room, so off the room's address: this screen is not an invitation
     // to anything any more.
     onInvite(null);
@@ -622,21 +700,56 @@ export default function PlayFriend({
             </p>
           ) : host ? (
             <>
-              <div className="button-row">
-                {/* The link rather than the code: it carries the code inside
-                    it, and what people actually do with a room is paste it into
-                    the chat they are all in already. The code stays in large
-                    type above to be read out, which is the other way a room
-                    fills up. */}
+              {/* Three ways to fill the room on one row, and the one that shuts
+                  it on a row of its own underneath. The link carries the code
+                  inside it and is what people paste into the chat they are all
+                  in already; the bare code is for the person reading it out, or
+                  typing it into a second device; the sheet is the phone's own
+                  list of apps. The code also stays in large type above, which
+                  is the other way a room fills up. */}
+              <div className="button-row room-share-row">
                 <button
                   className="btn btn-ghost"
-                  onClick={() => copy(inviteLink(room.code))}
+                  onClick={() => copy("link", inviteLink(room.code))}
                 >
-                  {copied ? "Copied ✓" : "Copy invite link"}
+                  {copied === "link" ? "Copied ✓" : "Copy invite link"}
+                </button>
+                <button className="btn btn-ghost" onClick={() => copy("code", room.code)}>
+                  {copied === "code" ? "Copied ✓" : "Copy code"}
                 </button>
                 <button
+                  className="btn btn-ghost"
+                  aria-expanded={HAS_SHARE_SHEET ? undefined : shareOpen}
+                  onClick={() => share(inviteLink(room.code), shareText(room))}
+                >
+                  Share
+                </button>
+              </div>
+
+              {shareOpen && !HAS_SHARE_SHEET && (
+                <ul className="room-share-links">
+                  {shareTargets(inviteLink(room.code), shareText(room)).map((t) => (
+                    <li key={t.name}>
+                      {/* Away from this tab where the service is a web page:
+                          the lobby is where the host has to still be standing
+                          when the room starts. */}
+                      <a
+                        className="btn btn-ghost"
+                        href={t.href}
+                        target={t.away ? "_blank" : undefined}
+                        rel={t.away ? "noreferrer noopener" : undefined}
+                      >
+                        {t.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="button-row">
+                <button
                   className="btn btn-primary"
-                  disabled={busy}
+                  disabled={busy || players.length < 2}
                   onClick={() =>
                     attempt(async () => {
                       const started = await startRoom(room.code);
@@ -648,10 +761,13 @@ export default function PlayFriend({
                 </button>
               </div>
               <p className="muted h2h-code-hint">
-                Send the link or read the code out, and press go once they're all on the
-                list. Starting shuts the room and the link with it: everyone plays the
-                same round at the same second, and anyone still following the link is
-                too late for this one.
+                {/* A duel of one is not a duel, and starting one costs the host
+                    the room: the code shuts on start, so the friend who was
+                    still typing their name arrives at a room that has gone. The
+                    button says why it won't go rather than only refusing. */}
+                {players.length < 2
+                  ? "Send the link or read the code out. The game starts once somebody else is on the list — a duel needs two."
+                  : "Press go once they're all on the list. Starting shuts the room and the link with it: everyone plays the same round at the same second, and anyone still following the link is too late for this one."}
               </p>
             </>
           ) : (

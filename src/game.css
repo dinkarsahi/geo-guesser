@@ -127,19 +127,28 @@
   white-space: nowrap;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
+/* A button that refuses a press has to look like it will. There was no rule
+   here at all, so a disabled Start sat at full strength with a pointer cursor
+   over it and read as the screen being broken rather than as the room not
+   being ready. The hovers below are gated on the same thing for the same
+   reason — a lit border under the cursor is the button promising again. */
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .btn-primary {
   background: var(--accent-bg);
   color: var(--accent);
   border-color: var(--accent-border);
 }
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   box-shadow: var(--shadow);
 }
 .btn-ghost {
   background: var(--social-bg);
   color: var(--text-h);
 }
-.btn-ghost:hover {
+.btn-ghost:hover:not(:disabled) {
   border-color: var(--border);
 }
 
@@ -915,6 +924,30 @@
 .room-host {
   font-size: 13px;
   font-weight: 400;
+}
+/* Three ways to hand the room out, and a phone cannot hold them on one line.
+   Wrapped rather than shrunk: a button whose label is clipped stops saying
+   which of the three it is, and these differ only by their words. */
+.room-share-row {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+/* The fallback row, on the desktop browsers with no share sheet. Set smaller
+   than the buttons above it because it is a second step inside one of them
+   rather than a fourth thing to choose between. */
+.room-share-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.room-share-links .btn {
+  padding: 7px 14px;
+  font-size: 14px;
+  text-decoration: none;
 }
 /* The last thing before the game takes over, so it's the biggest thing on the
    screen — nobody should have to hunt for how long they've got. */
